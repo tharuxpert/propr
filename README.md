@@ -51,10 +51,7 @@ After launching, Propr appears as an icon in the menu bar. Focus any text field 
 
 Contributions are welcome!
 
-Please note the current development workflow:
-- Feature development happens on branches
-- Features are merged into `main` locally
-- Only `main` is pushed to the remote
+Feel free to open an issue or submit a pull request. For larger changes, it's a good idea to discuss the approach in an issue first.
 
 ## License
 
