@@ -370,8 +370,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/tharuxpert/permiso";
 			requirement = {
-				branch = main;
-				kind = branch;
+				kind = revision;
+				revision = d93a783c489eca1399e4262b889dfa6b91c81e24;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
