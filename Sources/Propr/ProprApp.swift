@@ -1,31 +1,162 @@
 import SwiftUI
+import AppKit
+@preconcurrency import ApplicationServices
+
+// Custom notification so the AppDelegate can reliably tell the SwiftUI side to show onboarding
+extension Notification.Name {
+    static let proprDidFinishLaunching = Notification.Name("proprDidFinishLaunching")
+}
 
 @main
 struct ProprApp: App {
-    @Environment(\.openWindow) private var openWindow
+    @StateObject private var accessibility = AccessibilityManager()
+
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        // Menu bar only. No main window scene on purpose.
+        // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
         MenuBarExtra("Propr", systemImage: "sparkles") {
-            Button("Settings...") {
-                openWindow(id: "settings")
-            }
-
-            Divider()
-
-            Button("Quit Propr") {
-                NSApplication.shared.terminate(nil)
-            }
+            MenuBarContent(accessibility: accessibility)
         }
         .menuBarExtraStyle(.menu)
 
-        // Settings window (will be expanded later on its own branch)
+        // Onboarding / permission setup window
+        Window("Welcome to Propr", id: "onboarding") {
+            OnboardingView(accessibility: accessibility)
+        }
+        .windowStyle(.hiddenTitleBar)
+        .windowResizability(.contentSize)
+        .defaultPosition(.center)
+
+        // Settings window (placeholder for now)
         Window("Propr Settings", id: "settings") {
             SettingsPlaceholderView()
                 .frame(width: 420, height: 280)
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
+    }
+}
+
+// The actual menu content as a proper View so @Environment values (especially openWindow) resolve correctly.
+struct MenuBarContent: View {
+    @ObservedObject var accessibility: AccessibilityManager
+    @Environment(\.openWindow) private var openWindow
+
+    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+
+    var body: some View {
+        // Reliable cold-launch trigger via AppDelegate notification
+        Color.clear
+            .onReceive(NotificationCenter.default.publisher(for: .proprDidFinishLaunching)) { _ in
+                attemptToShowOnboarding(reason: "notification")
+            }
+
+        // Extra safety net: when the menu content is first built on launch
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onAppear {
+                // This often fires a bit later but is a good backup for agent apps
+                attemptToShowOnboarding(reason: "menu appear")
+            }
+
+        Button("Settings...") {
+            openWindow(id: "settings")
+        }
+
+        if !accessibility.hasPermission {
+            Button("Permissions & Setup...") {
+                openWindow(id: "onboarding")
+            }
+        }
+
+        Divider()
+
+        Button("Quit Propr") {
+            NSApplication.shared.terminate(nil)
+        }
+    }
+
+    private func attemptToShowOnboarding(reason: String) {
+        guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
+
+        // Multiple timed attempts — very common pattern for menu-bar-only apps
+        // because the menu content and scene can be lazy on first launch.
+        let delays: [Double] = [0.35, 0.75, 1.4]
+
+        for (index, delay) in delays.enumerated() {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
+                guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
+
+                openWindow(id: "onboarding")
+
+                // Strong activation helps the window actually appear on top in agent apps
+                if index == 0 {
+                    NSApp.activate(ignoringOtherApps: true)
+                }
+            }
+        }
+    }
+}
+
+// MARK: - App Delegate (gives us the most reliable "app finished launching" hook)
+
+final class AppDelegate: NSObject, NSApplicationDelegate {
+    /// We keep a reference to the onboarding panel so we can close it from the SwiftUI side.
+    private var onboardingPanel: NSPanel?
+
+    func applicationDidFinishLaunching(_ notification: Notification) {
+        // This is the most reliable place to decide to show onboarding on a true cold launch.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
+            MainActor.assumeIsolated {
+                self?.showOnboardingIfNeededOnLaunch()
+            }
+        }
+    }
+
+    @MainActor
+    private func showOnboardingIfNeededOnLaunch() {
+        let hasCompleted = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
+
+        // Quick permission check (we don't want to show the window if they already granted it before)
+        let options: [String: Any] = [
+            kAXTrustedCheckOptionPrompt.takeUnretainedValue() as String: false
+        ]
+        let hasPermission = AXIsProcessTrustedWithOptions(options as CFDictionary)
+
+        guard !hasCompleted || !hasPermission else { return }
+
+        // Create the manager on the main actor (required)
+        let manager = AccessibilityManager()
+
+        let panel = NSPanel(
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 420),
+            styleMask: [.titled, .closable, .fullSizeContentView],
+            backing: .buffered,
+            defer: false
+        )
+        panel.isFloatingPanel = true
+        panel.level = .floating
+        panel.titleVisibility = .hidden
+        panel.titlebarAppearsTransparent = true
+
+        let contentView = OnboardingView(accessibility: manager) {
+            // Close action for when the user taps "Start using Propr"
+            panel.orderOut(nil)
+            panel.close()
+        }
+
+        let hostingView = NSHostingView(rootView: contentView)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 460, height: 420)
+        panel.contentView = hostingView
+        panel.center()
+
+        panel.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        self.onboardingPanel = panel
     }
 }
 
