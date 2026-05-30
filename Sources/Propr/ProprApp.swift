@@ -22,17 +22,6 @@ struct ProprApp: App {
         // Start background monitoring so the menu bar reacts promptly
         // when permission is granted (especially via the cold-launch onboarding).
         accessibility.startMonitoring()
-
-        #if DEBUG
-        // In debug builds, if we don't have Accessibility permission yet,
-        // automatically trigger the system prompt. This saves you from having
-        // to manually go into System Settings after every build.
-        if !accessibility.hasPermission {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
-                accessibility.requestPermission()
-            }
-        }
-        #endif
     }
 
     var body: some Scene {
