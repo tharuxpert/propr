@@ -13,6 +13,11 @@ settings:
   CODE_SIGN_STYLE: Automatic
   DEVELOPMENT_TEAM: ""  # Set this in Xcode if you have a paid Apple Developer account (not needed for local testing)
 
+  # Modern build settings (accepted via Xcode's Perform Changes)
+  DEAD_CODE_STRIPPING: YES
+  ENABLE_USER_SCRIPT_SANDBOXING: YES
+  ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
+
 targets:
   Propr:
     type: application
@@ -47,3 +52,13 @@ targets:
     dependencies: []
     preBuildScripts: []
     postBuildScripts: []
+
+schemes:
+  Propr:
+    build:
+      targets:
+        Propr: all
+    run:
+      config: Debug
+    archive:
+      config: Release
