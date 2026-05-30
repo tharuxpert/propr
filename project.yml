@@ -58,6 +58,7 @@ targets:
         # We keep this file for future (e.g. if we add Apple Intelligence or other APIs)
     dependencies:
       - package: Permiso
+        product: Permiso
     preBuildScripts: []
     postBuildScripts: []
 
