@@ -9,16 +9,18 @@ extension Notification.Name {
 
 @main
 struct ProprApp: App {
-    @StateObject private var accessibility = AccessibilityManager()
+    // We own this instance for the entire app lifetime and start monitoring early.
+    // Using a plain `let` (instead of @StateObject) avoids the "not installed on a View" warning
+    // when accessing it from init().
+    private let accessibility = AccessibilityManager()
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     init() {
-        // Start background monitoring on the main manager so the menu bar
-        // (and "Permissions & Setup..." item) reacts promptly when permission
-        // is granted through the cold-launch onboarding.
+        // Start background monitoring so the menu bar reacts promptly
+        // when permission is granted (especially via the cold-launch onboarding).
         accessibility.startMonitoring()
     }
 

@@ -67,25 +67,12 @@ struct OnboardingView: View {
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
 
-                            Text("If you've already enabled it in System Settings but it's still not detected, remove the Propr entry there first, then click the button below.")
-                                .font(.caption)
+                            Text("Tip: If you've already enabled it manually, remove the entry in System Settings first.")
+                                .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 2)
                         }
                     }
-
-                    // Temporary diagnostic info to help debug permission detection during development
-                    #if DEBUG
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text("Debug info:")
-                            .font(.caption2.weight(.medium))
-                            .foregroundStyle(.tertiary)
-                        Text("Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
-                            .font(.caption2.monospaced())
-                            .foregroundStyle(.tertiary)
-                    }
-                    .padding(.top, 4)
-                    #endif
 
                     // Live permission status
                     HStack(spacing: 10) {
