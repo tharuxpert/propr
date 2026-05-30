@@ -12,6 +12,7 @@
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
 		A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */; };
 		E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23611B0B693E2FD16EFCB4B /* ProprApp.swift */; };
+		F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */ = {isa = PBXBuildFile; productRef = 1C04ED90828FD1CE2248C986 /* Permiso */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,6 +25,17 @@
 		C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Propr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		F23611B0B693E2FD16EFCB4B /* ProprApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProprApp.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C43B0A32F5D2C2B0B5B48D79 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
 		1BAC3D005D52F33A9EFC96EC /* Propr */ = {
@@ -81,6 +93,7 @@
 			buildPhases = (
 				220D71894254B8E5F2569EF1 /* Sources */,
 				7935EA0A91C4EB4FD5960243 /* Resources */,
+				C43B0A32F5D2C2B0B5B48D79 /* Frameworks */,
 			);
 			buildRules = (
 			);
@@ -88,6 +101,7 @@
 			);
 			name = Propr;
 			packageProductDependencies = (
+				1C04ED90828FD1CE2248C986 /* Permiso */,
 			);
 			productName = Propr;
 			productReference = C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */;
@@ -116,6 +130,9 @@
 			);
 			mainGroup = D3AC9D58EBE9BA704B84FF8E;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9A4BF0A8D139C3B444C9D9D /* Products */;
 			projectDirPath = "";
@@ -347,6 +364,25 @@
 			defaultConfigurationName = Debug;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/tharuxpert/permiso";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		1C04ED90828FD1CE2248C986 /* Permiso */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */;
+			productName = Permiso;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = C0A724EBCE8541CA0E0F35E1 /* Project object */;
 }
