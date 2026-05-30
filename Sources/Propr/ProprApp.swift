@@ -121,24 +121,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let manager = AccessibilityManager()
 
         let panel = NSPanel(
-            contentRect: NSRect(x: 0, y: 0, width: 460, height: 420),
+            contentRect: NSRect(x: 0, y: 0, width: 460, height: 540),
             styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
         panel.isFloatingPanel = true
         panel.level = .floating
+        panel.hidesOnDeactivate = false          // Keep the panel visible even when user switches to System Settings
         panel.titleVisibility = .hidden
         panel.titlebarAppearsTransparent = true
 
-        let contentView = OnboardingView(accessibility: manager) {
-            // Close action for when the user taps "Start using Propr"
-            panel.orderOut(nil)
-            panel.close()
-        }
+        let contentView = OnboardingView(
+            accessibility: manager,
+            onComplete: {
+                // Close action for when the user taps "Start using Propr"
+                panel.orderOut(nil)
+                panel.close()
+            },
+            onPermissionGranted: {
+                // Bring the panel back to front when we detect the permission was just granted
+                panel.makeKeyAndOrderFront(nil)
+                NSApp.activate(ignoringOtherApps: true)
+            },
+            onTriggerPermissionPrompt: {
+                // Lower our custom panel temporarily so the system Accessibility alert can appear above it
+                panel.level = .normal
+                NSApp.activate(ignoringOtherApps: true)
+
+                manager.requestPermission()
+
+                // Restore floating level after a short delay (or when permission is granted)
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    if !manager.hasPermission {
+                        panel.level = .floating
+                    }
+                }
+            }
+        )
 
         let hostingView = NSHostingView(rootView: contentView)
-        hostingView.frame = NSRect(x: 0, y: 0, width: 460, height: 420)
+        hostingView.frame = NSRect(x: 0, y: 0, width: 460, height: 540)
         panel.contentView = hostingView
         panel.center()
 

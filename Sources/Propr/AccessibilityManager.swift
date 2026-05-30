@@ -64,6 +64,11 @@ final class AccessibilityManager: ObservableObject {
             queue: .main
         ) { [weak self] _ in
             Task { @MainActor in
+                // Do a small burst on activation — very helpful after coming back from System Settings
+                self?.checkPermission(prompt: false)
+                try? await Task.sleep(for: .milliseconds(600))
+                self?.checkPermission(prompt: false)
+                try? await Task.sleep(for: .milliseconds(800))
                 self?.checkPermission(prompt: false)
             }
         }

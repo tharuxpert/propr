@@ -12,6 +12,14 @@ struct OnboardingView: View {
     /// If nil, we fall back to the declarative dismissWindow.
     var onComplete: (() -> Void)? = nil
 
+    /// Called when the permission status changes to granted while this view is visible.
+    /// Used to bring the manual panel back to front after the user grants in System Settings.
+    var onPermissionGranted: (() -> Void)? = nil
+
+    /// Called instead of directly calling requestPermission().
+    /// Allows the presenter (AppDelegate) to lower the panel level so the system TCC alert appears on top.
+    var onTriggerPermissionPrompt: (() -> Void)? = nil
+
     @Environment(\.dismissWindow) private var dismissWindow
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
@@ -62,8 +70,26 @@ struct OnboardingView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
+
+                            Text("If you've already enabled it in System Settings but it's still not detected, remove the Propr entry there first, then click the button below.")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 2)
                         }
                     }
+
+                    // Temporary diagnostic info to help debug permission detection during development
+                    #if DEBUG
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Debug info:")
+                            .font(.caption2.weight(.medium))
+                            .foregroundStyle(.tertiary)
+                        Text("Bundle ID: \(Bundle.main.bundleIdentifier ?? "nil")")
+                            .font(.caption2.monospaced())
+                            .foregroundStyle(.tertiary)
+                    }
+                    .padding(.top, 4)
+                    #endif
 
                     // Live permission status
                     HStack(spacing: 10) {
@@ -87,14 +113,14 @@ struct OnboardingView: View {
                             Button("Open System Settings") {
                                 accessibility.openAccessibilitySystemSettings()
 
-                                // Extra aggressive checks right after the user goes to grant permission.
-                                // This makes the green state appear quickly without relying only on the background timer.
+                                // Burst of checks after opening System Settings.
+                                // TCC changes can take a few seconds to propagate to the process.
                                 Task { @MainActor in
-                                    try? await Task.sleep(for: .seconds(2))
-                                    accessibility.checkPermission(prompt: false)
-
-                                    try? await Task.sleep(for: .seconds(2))
-                                    accessibility.checkPermission(prompt: false)
+                                    let delays: [UInt64] = [1500, 3000, 5500, 8500, 12000] // ms
+                                    for delay in delays {
+                                        try? await Task.sleep(nanoseconds: delay * 1_000_000)
+                                        accessibility.checkPermission(prompt: false)
+                                    }
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -139,7 +165,11 @@ struct OnboardingView: View {
                     if accessibility.hasPermission {
                         completeOnboarding()
                     } else {
-                        accessibility.requestPermission()
+                        if let onTriggerPermissionPrompt {
+                            onTriggerPermissionPrompt()
+                        } else {
+                            accessibility.requestPermission()
+                        }
                     }
                 } label: {
                     HStack {
@@ -160,13 +190,18 @@ struct OnboardingView: View {
             }
             .padding(.bottom, 32)
         }
-        .frame(width: 460, height: 420)
+        .frame(width: 460, height: 540)
         .background(.ultraThinMaterial)
         .onAppear {
             accessibility.startMonitoring()
         }
         .onDisappear {
             accessibility.stopMonitoring()
+        }
+        .onChange(of: accessibility.hasPermission) { _, isGranted in
+            if isGranted {
+                onPermissionGranted?()
+            }
         }
     }
 
