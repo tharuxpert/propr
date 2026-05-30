@@ -131,6 +131,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     private func showOnboardingIfNeededOnLaunch() {
+        #if DEBUG
+        // Skip automatic cold-launch onboarding during development.
+        // This avoids the repeated Accessibility prompt every time you run from Xcode.
+        // You can still manually test the flow via the menu (Permissions & Setup...).
+        return
+        #endif
+
         let hasCompleted = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
 
         // Quick permission check (we don't want to show the window if they already granted it before)
