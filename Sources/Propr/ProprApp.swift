@@ -157,20 +157,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 // Bring the panel back to front when we detect the permission was just granted
                 panel.makeKeyAndOrderFront(nil)
                 NSApp.activate(ignoringOtherApps: true)
-            },
-            onTriggerPermissionPrompt: {
-                // Lower our custom panel temporarily so the system Accessibility alert can appear above it
-                panel.level = .normal
-                NSApp.activate(ignoringOtherApps: true)
-
-                manager.requestPermission()
-
-                // Restore floating level after a short delay (or when permission is granted)
-                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
-                    if !manager.hasPermission {
-                        panel.level = .floating
-                    }
-                }
             }
         )
 

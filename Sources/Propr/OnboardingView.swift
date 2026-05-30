@@ -16,10 +16,6 @@ struct OnboardingView: View {
     /// Used to bring the manual panel back to front after the user grants in System Settings.
     var onPermissionGranted: (() -> Void)? = nil
 
-    /// Called instead of directly calling requestPermission().
-    /// Allows the presenter (AppDelegate) to lower the panel level so the system TCC alert appears on top.
-    var onTriggerPermissionPrompt: (() -> Void)? = nil
-
     @Environment(\.dismissWindow) private var dismissWindow
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
@@ -161,32 +157,31 @@ struct OnboardingView: View {
                     .transition(.opacity.combined(with: .scale))
                 }
 
-                Button {
-                    if accessibility.hasPermission {
+                if accessibility.hasPermission {
+                    Button {
                         completeOnboarding()
-                    } else {
-                        if let onTriggerPermissionPrompt {
-                            onTriggerPermissionPrompt()
-                        } else {
-                            accessibility.requestPermission()
-                        }
+                    } label: {
+                        Text("Start using Propr")
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
                     }
-                } label: {
-                    HStack {
-                        if !accessibility.hasPermission {
-                            Text("Grant Accessibility Access")
-                        } else {
-                            Text("Start using Propr")
-                                .fontWeight(.semibold)
-                        }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .tint(.green)
+                    .padding(.horizontal, 32)
+                } else {
+                    // We no longer try to trigger the system prompt directly (it has z-order issues
+                    // with floating panels). We guide the user to System Settings instead.
+                    Button {
+                        accessibility.openAccessibilitySystemSettings()
+                    } label: {
+                        Text("Open System Settings")
+                            .frame(maxWidth: .infinity)
                     }
-                    .frame(maxWidth: .infinity)
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.large)
+                    .padding(.horizontal, 32)
                 }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.large)
-                .tint(accessibility.hasPermission ? .green : .accentColor)
-                .disabled(accessibility.isChecking)
-                .padding(.horizontal, 32)
             }
             .padding(.bottom, 32)
         }
