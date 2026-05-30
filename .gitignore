@@ -1,0 +1,47 @@
+# Xcode
+build/
+DerivedData/
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+*.xccheckout
+*.moved-aside
+*.xcuserstate
+*.xcscmblueprint
+*.xcodeproj/project.xcworkspace/xcshareddata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# XcodeGen generated (we keep project.yml as source of truth, but we commit the .xcodeproj for easy clone-and-open)
+# If you prefer not to commit .xcodeproj, uncomment the next line and run xcodegen after clone
+# *.xcodeproj
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# IDE / editors
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Project specific
+codedb.snapshot
+
+# Misc
+*.log
+*.tmp
+*.bak
