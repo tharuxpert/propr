@@ -15,6 +15,13 @@ struct ProprApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
+    init() {
+        // Start background monitoring on the main manager so the menu bar
+        // (and "Permissions & Setup..." item) reacts promptly when permission
+        // is granted through the cold-launch onboarding.
+        accessibility.startMonitoring()
+    }
+
     var body: some Scene {
         // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
         MenuBarExtra("Propr", systemImage: "sparkles") {
@@ -48,10 +55,17 @@ struct MenuBarContent: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        // Backup trigger from AppDelegate (in case the menu content is ready when the notification fires)
+        // Backup trigger from AppDelegate
         Color.clear
             .onReceive(NotificationCenter.default.publisher(for: .proprDidFinishLaunching)) { _ in
                 attemptToShowOnboarding(reason: "notification")
+            }
+
+        // Force a fresh check every time the user opens the menu so the
+        // "Permissions & Setup..." item disappears immediately after granting.
+        Color.clear
+            .onAppear {
+                accessibility.checkPermission(prompt: false)
             }
 
         Button("Settings...") {
