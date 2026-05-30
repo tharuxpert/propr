@@ -13,8 +13,12 @@ final class AccessibilityManager: ObservableObject {
     @Published private(set) var hasPermission: Bool = false
     @Published private(set) var isChecking: Bool = false
 
+    /// Used to prevent multiple auto-show attempts for the onboarding window in one app run.
+    @Published private(set) var hasAttemptedAutoShowOnboardingThisLaunch = false
+
     private var monitoringTask: Task<Void, Never>?
     private var isMonitoring = false
+    private var didBecomeActiveObserver: NSObjectProtocol?
 
     init() {
         // Initial check (fast, no prompt)
@@ -54,7 +58,7 @@ final class AccessibilityManager: ObservableObject {
         isMonitoring = true
 
         // Listen for when Propr becomes active (user might have switched to System Settings and back)
-        NotificationCenter.default.addObserver(
+        didBecomeActiveObserver = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification,
             object: nil,
             queue: .main
@@ -64,10 +68,11 @@ final class AccessibilityManager: ObservableObject {
             }
         }
 
-        // Lightweight poll while monitoring is active (every 1.2s is plenty and cheap)
+        // Poll while the onboarding/settings UI is visible.
+        // 900ms is responsive without being wasteful.
         monitoringTask = Task { [weak self] in
             while !Task.isCancelled {
-                try? await Task.sleep(for: .milliseconds(1200))
+                try? await Task.sleep(for: .milliseconds(900))
                 await MainActor.run {
                     self?.checkPermission(prompt: false)
                 }
@@ -79,7 +84,17 @@ final class AccessibilityManager: ObservableObject {
         isMonitoring = false
         monitoringTask?.cancel()
         monitoringTask = nil
-        NotificationCenter.default.removeObserver(self, name: NSApplication.didBecomeActiveNotification, object: nil)
+
+        if let observer = didBecomeActiveObserver {
+            NotificationCenter.default.removeObserver(observer)
+            didBecomeActiveObserver = nil
+        }
+    }
+
+    /// Marks that we have already attempted to auto-show the onboarding window this launch.
+    /// Prevents duplicate windows when menu content re-appears or multiple triggers fire.
+    func markAutoShowOnboardingAttempted() {
+        hasAttemptedAutoShowOnboardingThisLaunch = true
     }
 
     /// Opens System Settings directly to the Accessibility privacy pane.

@@ -48,18 +48,10 @@ struct MenuBarContent: View {
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
-        // Reliable cold-launch trigger via AppDelegate notification
+        // Backup trigger from AppDelegate (in case the menu content is ready when the notification fires)
         Color.clear
             .onReceive(NotificationCenter.default.publisher(for: .proprDidFinishLaunching)) { _ in
                 attemptToShowOnboarding(reason: "notification")
-            }
-
-        // Extra safety net: when the menu content is first built on launch
-        Color.clear
-            .frame(width: 0, height: 0)
-            .onAppear {
-                // This often fires a bit later but is a good backup for agent apps
-                attemptToShowOnboarding(reason: "menu appear")
             }
 
         Button("Settings...") {
@@ -82,21 +74,18 @@ struct MenuBarContent: View {
     private func attemptToShowOnboarding(reason: String) {
         guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
 
-        // Multiple timed attempts — very common pattern for menu-bar-only apps
-        // because the menu content and scene can be lazy on first launch.
-        let delays: [Double] = [0.35, 0.75, 1.4]
+        // Prevent duplicate onboarding windows.
+        // The AppDelegate cold-launch path (manual NSPanel) + this flag ensure we only try once per run.
+        guard !accessibility.hasAttemptedAutoShowOnboardingThisLaunch else { return }
+        accessibility.markAutoShowOnboardingAttempted()
 
-        for (index, delay) in delays.enumerated() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
+        // Single delayed attempt is sufficient for the menu backup paths.
+        // The main reliable cold-launch show now happens directly from AppDelegate via NSPanel.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
 
-                openWindow(id: "onboarding")
-
-                // Strong activation helps the window actually appear on top in agent apps
-                if index == 0 {
-                    NSApp.activate(ignoringOtherApps: true)
-                }
-            }
+            openWindow(id: "onboarding")
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 }

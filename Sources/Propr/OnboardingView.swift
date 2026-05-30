@@ -86,6 +86,16 @@ struct OnboardingView: View {
                         if !accessibility.hasPermission {
                             Button("Open System Settings") {
                                 accessibility.openAccessibilitySystemSettings()
+
+                                // Extra aggressive checks right after the user goes to grant permission.
+                                // This makes the green state appear quickly without relying only on the background timer.
+                                Task { @MainActor in
+                                    try? await Task.sleep(for: .seconds(2))
+                                    accessibility.checkPermission(prompt: false)
+
+                                    try? await Task.sleep(for: .seconds(2))
+                                    accessibility.checkPermission(prompt: false)
+                                }
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
