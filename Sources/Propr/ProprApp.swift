@@ -26,7 +26,7 @@ struct ProprApp: App {
 
     var body: some Scene {
         // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
-        MenuBarExtra("Propr", systemImage: "sparkles") {
+        MenuBarExtra("Propr", systemImage: "sparkles") {  // Replace with custom asset later for a polished menubar icon
             MenuBarContent(accessibility: accessibility)
         }
         .menuBarExtraStyle(.menu)
@@ -70,21 +70,29 @@ struct MenuBarContent: View {
                 accessibility.checkPermission(prompt: false)
             }
 
-        Button("Settings...") {
+        Button {
             openWindow(id: "settings")
+        } label: {
+            Label("Settings...", systemImage: "gearshape")
         }
+        .keyboardShortcut(",")
 
         if !accessibility.hasPermission {
-            Button("Permissions & Setup...") {
+            Button {
                 openWindow(id: "onboarding")
+            } label: {
+                Label("Permissions & Setup...", systemImage: "exclamationmark.shield")
             }
         }
 
         Divider()
 
-        Button("Quit Propr") {
+        Button {
             NSApplication.shared.terminate(nil)
+        } label: {
+            Label("Quit Propr", systemImage: "power")
         }
+        .keyboardShortcut("q")
     }
 
     private func attemptToShowOnboarding(reason: String) {
