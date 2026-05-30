@@ -1,4 +1,5 @@
 import SwiftUI
+import Permiso
 
 /// Beautiful first-run / permission setup screen.
 /// 
@@ -67,7 +68,7 @@ struct OnboardingView: View {
                                 .foregroundStyle(.secondary)
                                 .fixedSize(horizontal: false, vertical: true)
 
-                            Text("Tip: If you've already enabled it manually, remove the entry in System Settings first.")
+                            Text("Tip: If it’s already enabled, remove the entry in System Settings and try again.")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                                 .padding(.top, 2)
@@ -94,17 +95,7 @@ struct OnboardingView: View {
 
                         if !accessibility.hasPermission {
                             Button("Open System Settings") {
-                                accessibility.openAccessibilitySystemSettings()
-
-                                // Burst of checks after opening System Settings.
-                                // TCC changes can take a few seconds to propagate to the process.
-                                Task { @MainActor in
-                                    let delays: [UInt64] = [1500, 3000, 5500, 8500, 12000] // ms
-                                    for delay in delays {
-                                        try? await Task.sleep(nanoseconds: delay * 1_000_000)
-                                        accessibility.checkPermission(prompt: false)
-                                    }
-                                }
+                                PermisoAssistant.shared.present(panel: .accessibility)
                             }
                             .buttonStyle(.bordered)
                             .controlSize(.small)
@@ -157,10 +148,10 @@ struct OnboardingView: View {
                     .tint(.green)
                     .padding(.horizontal, 32)
                 } else {
-                    // We no longer try to trigger the system prompt directly (it has z-order issues
-                    // with floating panels). We guide the user to System Settings instead.
                     Button {
-                        accessibility.openAccessibilitySystemSettings()
+                        // Use Permiso for a much better guided experience when directing users
+                        // to grant Accessibility in System Settings.
+                        PermisoAssistant.shared.present(panel: .accessibility)
                     } label: {
                         Text("Open System Settings")
                             .frame(maxWidth: .infinity)

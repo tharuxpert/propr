@@ -7,6 +7,13 @@ options:
   useBaseInternationalization: false
   createIntermediateGroups: true
 
+packages:
+  # Forked to fix the incorrect macOS platform requirement (original declares .v26)
+  # See: https://github.com/tharuxpert/permiso
+  Permiso:
+    url: https://github.com/tharuxpert/permiso
+    revision: d93a783c489eca1399e4262b889dfa6b91c81e24  # Platform fix (.v14)
+
 settings:
   SWIFT_VERSION: 6
   SWIFT_STRICT_CONCURRENCY: complete
@@ -49,7 +56,9 @@ targets:
       properties:
         # No special entitlements needed for basic Accessibility + menu bar
         # We keep this file for future (e.g. if we add Apple Intelligence or other APIs)
-    dependencies: []
+    dependencies:
+      - package: Permiso
+        product: Permiso
     preBuildScripts: []
     postBuildScripts: []
 
