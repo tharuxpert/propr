@@ -1,0 +1,49 @@
+name: Propr
+options:
+  bundleIdPrefix: com.tharuxpert
+  deploymentTarget:
+    macOS: "14.0"
+  xcodeVersion: "16.0"
+  useBaseInternationalization: false
+  createIntermediateGroups: true
+
+settings:
+  SWIFT_VERSION: 6
+  SWIFT_STRICT_CONCURRENCY: complete
+  CODE_SIGN_STYLE: Automatic
+  DEVELOPMENT_TEAM: ""  # Set this in Xcode if you have a paid Apple Developer account (not needed for local testing)
+
+targets:
+  Propr:
+    type: application
+    platform: macOS
+    deploymentTarget: "14.0"
+    sources:
+      - path: Sources/Propr
+        createIntermediateGroups: true
+      - path: Resources
+        createIntermediateGroups: true
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: com.tharuxpert.Propr
+      PRODUCT_NAME: Propr
+      INFOPLIST_KEY_CFBundleDisplayName: Propr
+      INFOPLIST_KEY_LSUIElement: true
+      INFOPLIST_KEY_NSHumanReadableCopyright: "Copyright © 2026 tharuxpert. All rights reserved."
+      # App is agent (menu bar only, no Dock icon)
+      # This + LSUIElement hides it from Dock and Cmd+Tab
+    info:
+      path: Sources/Propr/Info.plist
+      properties:
+        LSUIElement: true
+        NSPrincipalClass: NSApplication
+        # Accessibility permission description (shown in System Settings)
+        NSAccessibilityUsageDescription: "Propr needs Accessibility access to detect when you focus a text field in any app and read the text so it can help you refine it."
+        # We will add more privacy strings later if needed (e.g. for future local model features)
+    entitlements:
+      path: Sources/Propr/Propr.entitlements
+      properties:
+        # No special entitlements needed for basic Accessibility + menu bar
+        # We keep this file for future (e.g. if we add Apple Intelligence or other APIs)
+    dependencies: []
+    preBuildScripts: []
+    postBuildScripts: []
