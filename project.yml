@@ -64,7 +64,29 @@ targets:
       - package: Permiso
         product: Permiso
     preBuildScripts: []
-    postBuildScripts: []
+    postBuildScripts:
+      - name: "Copy Debug build to stable location (for persistent Accessibility permission)"
+        script: |
+          # This copies the built app to a fixed path so macOS TCC doesn't treat
+          # every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).
+          DEST="$SRCROOT/Build/Debug/Propr.app"
+
+          echo "→ Copying debug build to stable location..."
+          rm -rf "$DEST"
+          mkdir -p "$(dirname "$DEST")"
+          cp -R "$TARGET_BUILD_DIR/Propr.app" "$DEST"
+
+          # Ad-hoc re-sign the copy (helps a bit with TCC stability)
+          codesign --force --deep --sign - "$DEST" 2>/dev/null || true
+
+          echo "✅ Stable debug build available at:"
+          echo "   $DEST"
+          echo ""
+          echo "   → For development, launch from this location instead of running directly from Xcode:"
+          echo "     open \"$DEST\""
+          echo ""
+          echo "   This prevents having to re-grant Accessibility permission after every build."
+        alwaysOutOfDate: true   # Force this script to run on every build (important for xcodebuild + stable permission copy)
 
 schemes:
   Propr:

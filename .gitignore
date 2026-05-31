@@ -41,6 +41,10 @@ Package.resolved
 # Project specific
 codedb.snapshot
 
+# Development debug builds (stable location so Accessibility permission survives rebuilds)
+# Run ./run-debug.sh to launch from the stable copy instead of Xcode.
+Build/
+
 # Misc
 *.log
 *.tmp
