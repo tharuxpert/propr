@@ -78,15 +78,13 @@ struct MenuBarContent: View {
         }
         .keyboardShortcut(",")
 
-        if accessibility.hasPermission {
-            Button {
-                // Manual summon is useful when auto-detection is noisy or the user wants explicit control.
-                (NSApp.delegate as? AppDelegate)?.summonFloatingBar()
-            } label: {
-                Label("Refine focused field", systemImage: "sparkles")
-            }
-            .keyboardShortcut("r", modifiers: [.command, .shift])
-        } else {
+        Button {
+            NotificationCenter.default.post(name: AppDelegate.summonFloatingBarNotification, object: nil)
+        } label: {
+            Label("Show Floating Bar", systemImage: "sparkles")
+        }
+
+        if !accessibility.hasPermission {
             Button {
                 openWindow(id: "onboarding")
             } label: {
@@ -140,9 +138,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var permissionCancellable: AnyCancellable?
 
+    // Double-tap Command key detection for quick summon
+    private var lastCommandPressTime: Date?
+    private var commandKeyMonitor: Any?
+
+    static let summonFloatingBarNotification = Notification.Name("ProprSummonFloatingBar")
+
     override init() {
-        // Must create the controller *after* fieldDetector so we can pass it.
-        // This ensures the observation that drives auto-show is wired from the very beginning.
         floatingBarController = FloatingBarController(detector: fieldDetector)
         super.init()
     }
@@ -166,6 +168,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         accessibility.startMonitoring()
         accessibility.checkPermission(prompt: false)
 
+        // Double-Command key summon
+        setupDoubleCommandHotkey()
+
+        // Reliable way for menu bar items (and anything) to summon the bar
+        NotificationCenter.default.addObserver(
+            forName: Self.summonFloatingBarNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.summonFloatingBar()
+        }
+
         // This is the most reliable place to decide to show onboarding on a true cold launch.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             MainActor.assumeIsolated {
@@ -174,7 +188,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    /// Called from the menu bar ("Refine focused field" or ⌘⇧R).
+    private func setupDoubleCommandHotkey() {
+        commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
+            guard let self else { return }
+
+            // Only care about Command key (either side)
+            let hasCommand = event.modifierFlags.contains(.command)
+
+            if hasCommand {
+                let now = Date()
+                if let last = self.lastCommandPressTime,
+                   now.timeIntervalSince(last) < 0.45 {
+                    // Double press detected
+                    self.lastCommandPressTime = nil
+                    DispatchQueue.main.async {
+                        self.summonFloatingBar()
+                    }
+                } else {
+                    self.lastCommandPressTime = now
+                }
+            }
+        }
+    }
+
     @MainActor
     func summonFloatingBar() {
         floatingBarController.summonForCurrentFocus()

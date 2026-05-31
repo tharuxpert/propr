@@ -3,6 +3,13 @@ import AppKit
 @preconcurrency import ApplicationServices
 import Combine
 
+/// Custom panel that can become key so SwiftUI TextFields inside can receive keyboard input.
+/// We still keep nonactivatingPanel style so it doesn't steal activation from the original app aggressively.
+final class FloatingPanel: NSPanel {
+    override var canBecomeKey: Bool { true }
+    override var canBecomeMain: Bool { false }
+}
+
 /// Controls the floating refinement bar (NSPanel + SwiftUI content).
 /// 
 /// - Appears near a detected text field when the FocusedFieldDetector publishes a snapshot.
@@ -11,7 +18,7 @@ import Combine
 /// - All AX element mutation for apply happens here.
 @MainActor
 final class FloatingBarController {
-    private var panel: NSPanel?
+    private var panel: FloatingPanel?
     private var hostingView: NSHostingView<FloatingBarView>?
 
     private weak var detector: FocusedFieldDetector?
@@ -32,36 +39,35 @@ final class FloatingBarController {
     }
 
     private func setupObservation() {
-        // Observe detector changes on main and react.
+        // We no longer auto-show the bar on focus changes.
+        // The bar is now summon-only (via hotkey or menu).
+        // We keep a no-op observation so the detector can still be used for manual capture on summon.
         detectorObservation = detector?.$currentField
-            .receive(on: RunLoop.main)
-            .sink { [weak self] snapshot in
-                guard let self else { return }
-                if let snapshot, snapshot.isWorthShowing {
-                    print("[Propr Bar] Received focus snapshot for \(snapshot.appName) (len=\(snapshot.characterCount)) — showing bar")
-                    self.show(for: snapshot)
-                } else {
-                    if let s = snapshot {
-                        print("[Propr Bar] Snapshot for \(s.appName) not worth showing (len=\(s.characterCount), pid=\(s.pid)) — hiding")
-                    } else {
-                        print("[Propr Bar] No focused field (or focus lost) — hiding bar")
-                    }
-                    self.hide()
-                }
-            }
+            .sink { _ in }
     }
 
     // MARK: - Public API
 
-    /// Manually summon the bar for whatever is currently focused (bypasses the detector publish).
-    func summonForCurrentFocus() {
+    /// Summon the floating bar (centered on screen). Captures the currently focused text field.
+    func summon() {
         detector?.refreshCurrentFocus()
-        // The observation will pick it up shortly; give it a nudge if needed.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) { [weak self] in
-            if let snap = self?.detector?.currentField, snap.isWorthShowing {
-                self?.show(for: snap)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
+            guard let self else { return }
+
+            // Always center when summoned, regardless of where the field is
+            if let snap = self.detector?.currentField, snap.isWorthShowing {
+                self.showCentered(for: snap)
+            } else {
+                // Even if no good field, still show the bar centered (user can still type instructions)
+                self.showCenteredEmpty()
             }
         }
+    }
+
+    /// Legacy name kept for the menu/hotkey call site
+    func summonForCurrentFocus() {
+        summon()
     }
 
     /// Hide the floating bar and clear any captured target.
@@ -126,12 +132,96 @@ final class FloatingBarController {
         // We do NOT call NSApp.activate here on purpose.
     }
 
+    private func showCentered(for snapshot: FieldSnapshot) {
+        print("[Propr Bar] summon — showing centered for \(snapshot.appName)")
+
+        applyTargetElement = captureCurrentFocusedElement()
+        currentSnapshot = snapshot
+
+        ensurePanelExists()
+        guard let panel, let hosting = hostingView else { return }
+
+        let view = FloatingBarView(
+            snapshot: snapshot,
+            onQuickAction: { _ in }, // no longer used (minimal mode)
+            onRefine: { [weak self] prompt in
+                self?.performRefine(context: prompt, snapshot: snapshot)
+            },
+            onClose: { [weak self] in self?.hide() }
+        )
+
+        hosting.rootView = view
+        hosting.setFrameSize(viewSize(for: snapshot))
+
+        centerPanel(size: hosting.frame.size)
+
+        panel.alphaValue = 0
+        panel.orderFront(nil)
+        panel.makeKey()                    // ← this is what allows the TextField to become first responder
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.16
+            panel.animator().alphaValue = 1
+        }
+
+        isVisible = true
+    }
+
+    private func showCenteredEmpty() {
+        // Show even without a strong field (user can still give instructions)
+        let dummy = FieldSnapshot(appName: "—", pid: 0, fullText: "", selectedText: nil, frame: .zero, role: nil)
+
+        applyTargetElement = captureCurrentFocusedElement()
+        currentSnapshot = dummy
+
+        ensurePanelExists()
+        guard let panel, let hosting = hostingView else { return }
+
+        let view = FloatingBarView(
+            snapshot: dummy,
+            onQuickAction: { _ in },
+            onRefine: { [weak self] prompt in
+                self?.performRefine(context: prompt, snapshot: dummy)
+            },
+            onClose: { [weak self] in self?.hide() }
+        )
+
+        hosting.rootView = view
+        hosting.setFrameSize(viewSize(for: dummy))
+
+        centerPanel(size: hosting.frame.size)
+
+        panel.alphaValue = 0
+        panel.orderFront(nil)
+        panel.makeKey()                    // ← allows typing in the prompt field
+        NSAnimationContext.runAnimationGroup { ctx in
+            ctx.duration = 0.16
+            panel.animator().alphaValue = 1
+        }
+
+        isVisible = true
+    }
+
+    private func centerPanel(size: NSSize) {
+        guard let screen = NSScreen.main else {
+            panel?.setFrame(NSRect(origin: .zero, size: size), display: true)
+            return
+        }
+
+        let screenFrame = screen.visibleFrame
+        let origin = CGPoint(
+            x: screenFrame.midX - size.width / 2,
+            y: screenFrame.midY - size.height / 2
+        )
+
+        panel?.setFrame(NSRect(origin: origin, size: size), display: true)
+    }
+
     private func ensurePanelExists() {
         guard panel == nil else { return }
 
         let contentRect = NSRect(x: 0, y: 0, width: 420, height: 140)
 
-        let newPanel = NSPanel(
+        let newPanel = FloatingPanel(
             contentRect: contentRect,
             styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
@@ -146,6 +236,7 @@ final class FloatingBarController {
         newPanel.isOpaque = false
         newPanel.ignoresMouseEvents = false
         newPanel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+        newPanel.isMovableByWindowBackground = true   // makes the whole bar draggable
 
         // We rely on .nonactivatingPanel style + not calling makeKeyAndOrderFront in ways that activate us.
         // canBecomeKey is get-only on NSWindow in this SDK; the style mask is the correct signal.

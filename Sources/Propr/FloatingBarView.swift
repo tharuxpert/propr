@@ -32,150 +32,87 @@ enum QuickAction: String, CaseIterable, Identifiable {
 }
 
 /// The actual floating bar UI shown inside the NSPanel.
+/// Minimal summon-only design.
 struct FloatingBarView: View {
     let snapshot: FieldSnapshot
 
-    let onQuickAction: (QuickAction) -> Void
+    let onQuickAction: (QuickAction) -> Void   // kept for signature compatibility (unused now)
     let onRefine: (String) -> Void
     let onClose: () -> Void
 
-    @State private var contextText: String = "Make this clearer and more concise"
+    @State private var prompt: String = ""
+    @FocusState private var isPromptFocused: Bool
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top bar: app badge + count + close
+            // Minimal top bar
             HStack(spacing: 8) {
-                // App source
                 HStack(spacing: 6) {
                     Image(nsImage: appIcon(for: snapshot.pid))
                         .resizable()
-                        .frame(width: 16, height: 16)
+                        .frame(width: 15, height: 15)
                         .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
 
-                    Text(snapshot.appName)
-                        .font(.callout.weight(.medium))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
+                    if snapshot.appName != "—" {
+                        Text(snapshot.appName)
+                            .font(.caption.weight(.medium))
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Spacer()
 
-                // Character count
-                Text("\(snapshot.characterCount) chars")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.tertiary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 2)
-                    .background(
-                        Capsule(style: .continuous)
-                            .fill(.quaternary.opacity(0.6))
-                    )
+                if snapshot.characterCount > 0 {
+                    Text("\(snapshot.characterCount)")
+                        .font(.caption2.monospacedDigit())
+                        .foregroundStyle(.tertiary)
+                }
 
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
-                        .frame(width: 22, height: 22)
-                        .background(
-                            Circle()
-                                .fill(.quaternary.opacity(0.5))
-                        )
+                        .frame(width: 18, height: 18)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.escape, modifiers: [])
             }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
-            .padding(.bottom, 6)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             Divider()
-                .opacity(0.4)
+                .opacity(0.25)
 
-            // Context / instruction field
-            VStack(alignment: .leading, spacing: 6) {
-                Text("Context")
-                    .font(.caption.weight(.medium))
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 4)
-
-                TextField("What should the rewrite do?", text: $contextText)
-                    .textFieldStyle(.plain)
-                    .font(.callout)
-                    .padding(8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(.regularMaterial)
-                    )
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .stroke(.quaternary, lineWidth: 0.5)
-                    )
-            }
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
-
-            // Quick actions
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(QuickAction.allCases) { action in
-                        Button {
-                            onQuickAction(action)
-                        } label: {
-                            Label(action.rawValue, systemImage: action.systemImage)
-                                .font(.caption.weight(.medium))
-                                .labelStyle(.titleAndIcon)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 5)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                        .tint(.secondary)
+            // Main instruction input
+            TextField("What do you want to do with this text?", text: $prompt)
+                .textFieldStyle(.plain)
+                .font(.callout)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 10)
+                .focused($isPromptFocused)
+                .onSubmit {
+                    let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        onRefine(trimmed)
                     }
                 }
-                .padding(.horizontal, 14)
-            }
-            .padding(.top, 8)
-
-            // Refine button
-            Button {
-                onRefine(contextText)
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "sparkles")
-                    Text("Refine")
-                        .fontWeight(.semibold)
+                .onAppear {
+                    // Auto-focus the input as soon as the bar appears
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        isPromptFocused = true
+                    }
                 }
-                .frame(maxWidth: .infinity)
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-            .tint(.accentColor)
-            .padding(.horizontal, 14)
-            .padding(.top, 10)
-            .padding(.bottom, 14)
-
-            // Subtle footer note (temporary until real AI)
-            Text("Local simulation • real AI coming soon")
-                .font(.caption2)
-                .foregroundStyle(.tertiary.opacity(0.7))
-                .padding(.bottom, 6)
         }
-        .frame(width: 460)
+        .frame(width: 420)
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
                 .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.18), radius: 16, x: 0, y: 6)
+                .shadow(color: .black.opacity(0.2), radius: 14, x: 0, y: 5)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.white.opacity(0.08), lineWidth: 0.5)
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .stroke(.white.opacity(0.06), lineWidth: 0.5)
         )
-        .onAppear {
-            // Seed a reasonable context from the snapshot if the user hasn't customized
-            if contextText == "Make this clearer and more concise" && !snapshot.fullText.isEmpty {
-                // Leave the default — it's good. Could auto-adapt later.
-            }
-        }
     }
 
     private func appIcon(for pid: pid_t) -> NSImage {
