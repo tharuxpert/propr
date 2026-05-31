@@ -71,18 +71,21 @@ struct MenuBarContent: View {
                 accessibility.checkPermission(prompt: false)
             }
 
+        // Primary action at the very top, in its own section
+        Button {
+            NotificationCenter.default.post(name: AppDelegate.summonFloatingBarNotification, object: nil)
+        } label: {
+            Text("Show Floating Bar")
+        }
+
+        Divider()
+
         Button {
             openWindow(id: "settings")
         } label: {
             Label("Settings...", systemImage: "gearshape")
         }
         .keyboardShortcut(",")
-
-        Button {
-            NotificationCenter.default.post(name: AppDelegate.summonFloatingBarNotification, object: nil)
-        } label: {
-            Label("Show Floating Bar", systemImage: "sparkles")
-        }
 
         if !accessibility.hasPermission {
             Button {
