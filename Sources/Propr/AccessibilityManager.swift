@@ -10,6 +10,8 @@ import AppKit
 ///   when the user toggles permission in System Settings.
 @MainActor
 final class AccessibilityManager: ObservableObject {
+    static let shared = AccessibilityManager()
+
     @Published private(set) var hasPermission: Bool = false
     @Published private(set) var isChecking: Bool = false
 
@@ -20,7 +22,7 @@ final class AccessibilityManager: ObservableObject {
     private var isMonitoring = false
     private var didBecomeActiveObserver: NSObjectProtocol?
 
-    init() {
+    private init() {
         // Initial check (fast, no prompt)
         checkPermission(prompt: false)
     }
@@ -100,6 +102,12 @@ final class AccessibilityManager: ObservableObject {
     /// Prevents duplicate windows when menu content re-appears or multiple triggers fire.
     func markAutoShowOnboardingAttempted() {
         hasAttemptedAutoShowOnboardingThisLaunch = true
+    }
+
+    /// Resets the one-per-launch guard. Use only for explicit user-initiated actions
+    /// (e.g. clicking "Permissions & Setup..." from the menu) so they can open the UI again.
+    func resetOnboardingAttemptFlag() {
+        hasAttemptedAutoShowOnboardingThisLaunch = false
     }
 
     /// Opens System Settings directly to the Accessibility privacy pane.
