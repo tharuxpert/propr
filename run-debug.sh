@@ -1,12 +1,14 @@
 #!/bin/zsh
 # Convenience script to launch the stable debug build.
-# This is the recommended way to run Propr during development
+# This is the recommended (and only supported) way to run Propr during development
 # so that Accessibility permission survives rebuilds.
+#
+# CRITICAL: Never use Xcode's Run button (⌘R) for this app during development.
 #
 # Usage:
 #   ./run-debug.sh          # or ./run-debug.sh 1   → Just open the app (no build)
 #   ./run-debug.sh 2        # or --build            → Build (incremental) then open
-#   ./run-debug.sh 3        # or --clean            → Clean + build then open
+#   ./run-debug.sh 3        # or --clean            → Clean + build then launch
 
 set -e
 
@@ -27,6 +29,11 @@ run_xcodegen() {
 
 do_build() {
     local clean=$1
+
+    # Kill any running instance first (prevents TCC weirdness)
+    echo "→ Quitting any running Propr instance..."
+    pkill -x Propr 2>/dev/null || true
+    sleep 0.5
 
     run_xcodegen
 
@@ -52,9 +59,19 @@ do_build() {
     rm -rf "$APP_PATH"
     cp -R "$LATEST_BUILT" "$APP_PATH"
 
+    # Re-sign the stable copy
     codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
 
-    echo "✅ Stable build updated at: $APP_PATH"
+    echo ""
+    echo "✅ Stable build updated at:"
+    echo "   $APP_PATH"
+    echo ""
+    echo "IMPORTANT FOR ACCESSIBILITY PERMISSION:"
+    echo "  → Grant permission ONLY to this exact path:"
+    echo "    $APP_PATH"
+    echo "  → REMOVE any entries that point to DerivedData."
+    echo "  → Never use Xcode's Run button (⌘R) — always use this script."
+    echo ""
 }
 
 case "$MODE" in

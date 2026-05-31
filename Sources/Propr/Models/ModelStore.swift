@@ -9,7 +9,12 @@ final class ModelStore {
     private let endpointsKey = "customEndpoints"
     private let selectedModelKey = "selectedModelID"
     
-    var customEndpoints: [CustomEndpoint] = []
+    var customEndpoints: [CustomEndpoint] = [] {
+        didSet {
+            rebuildAvailableModels()
+        }
+    }
+    
     var selectedModelID: UUID? {
         didSet {
             if let id = selectedModelID {
@@ -20,9 +25,12 @@ final class ModelStore {
         }
     }
     
+    private(set) var allAvailableModels: [ModelSelection] = []
+    
     private init() {
         loadEndpoints()
         loadSelectedModel()
+        rebuildAvailableModels()
     }
     
     // MARK: - Persistence
@@ -54,7 +62,7 @@ final class ModelStore {
     
     // MARK: - Public API
     
-    var allAvailableModels: [ModelSelection] {
+    private func rebuildAvailableModels() {
         var models: [ModelSelection] = []
         
         for endpoint in customEndpoints {
@@ -69,7 +77,7 @@ final class ModelStore {
             }
         }
         
-        return models
+        allAvailableModels = models
     }
     
     func selectedModel() -> ModelSelection? {
