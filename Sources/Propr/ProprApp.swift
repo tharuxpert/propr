@@ -184,11 +184,29 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Full AppKit status item for reliable menubar (no SwiftUI menu flicker)
         StatusItemController.shared.setup()
 
+        // Listen for requests to open Settings (from AppKit menu items like "Settings..." and "Manage Models...")
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(openSettingsWindow),
+            name: .proprOpenSettings,
+            object: nil
+        )
+
         // This is the most reliable place to decide to show onboarding on a true cold launch.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             MainActor.assumeIsolated {
                 self?.showOnboardingIfNeededOnLaunch()
             }
+        }
+    }
+
+    @objc private func openSettingsWindow() {
+        if let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "settings" }) {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+        } else {
+            // Fallback: activate the app so the user can open it manually if needed
+            NSApp.activate(ignoringOtherApps: true)
         }
     }
 
