@@ -12,7 +12,7 @@ packages:
   # See: https://github.com/tharuxpert/permiso
   Permiso:
     url: https://github.com/tharuxpert/permiso
-    revision: bf83420f58296c91fcb059c055a05d77279ac354  # Fixed swift-tools-version 6.1 + platform .v14
+    revision: 2e90e906f5bde02b8cfa0f3823446c79c4bcdf3c  # Fixed Sendable conformance for NSImage + swift 6.1
 
 settings:
   SWIFT_VERSION: 6

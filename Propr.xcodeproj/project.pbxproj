@@ -371,7 +371,7 @@
 			repositoryURL = "https://github.com/tharuxpert/permiso";
 			requirement = {
 				kind = revision;
-				revision = d93a783c489eca1399e4262b889dfa6b91c81e24;
+				revision = 2e90e906f5bde02b8cfa0f3823446c79c4bcdf3c;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
