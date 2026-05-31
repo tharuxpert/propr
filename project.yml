@@ -12,7 +12,7 @@ packages:
   # See: https://github.com/tharuxpert/permiso
   Permiso:
     url: https://github.com/tharuxpert/permiso
-    revision: 2e90e906f5bde02b8cfa0f3823446c79c4bcdf3c  # Fixed Sendable conformance for NSImage + swift 6.1
+    revision: 7b960ad83b514ecf0a097395672ed0674d59f8f0  # Removed Sendable conformance (NSImage fix for Swift 6)
 
 settings:
   SWIFT_VERSION: 6
