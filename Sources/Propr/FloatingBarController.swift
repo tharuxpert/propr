@@ -19,7 +19,7 @@ final class FloatingPanel: NSPanel {
 @MainActor
 final class FloatingBarController {
     private var panel: FloatingPanel?
-    private var hostingView: NSHostingView<FloatingBarView>?
+    private var hostingView: NSHostingView<AnyView>?
 
     private weak var detector: FocusedFieldDetector?
     private var detectorObservation: AnyCancellable?
@@ -29,6 +29,13 @@ final class FloatingBarController {
 
     /// Snapshot we showed for (used for positioning + UI state).
     private var currentSnapshot: FieldSnapshot?
+
+    // Undo support
+    private var undoOriginalText: String?
+    private var undoElement: AXUIElement?
+
+    // Used to force SwiftUI view recreation on every summon (resets @State)
+    private var summonID = UUID()
 
     /// Whether the bar is currently visible.
     private(set) var isVisible: Bool = false
@@ -75,9 +82,11 @@ final class FloatingBarController {
         guard isVisible else { return }
         panel?.orderOut(nil)
         isVisible = false
-        // We intentionally keep the applyTarget for a short time in case of rapid hide/show,
-        // but clear the snapshot.
         currentSnapshot = nil
+
+        // Clear undo state when the bar is dismissed
+        undoOriginalText = nil
+        undoElement = nil
     }
 
     // MARK: - Show / Position
@@ -95,17 +104,23 @@ final class FloatingBarController {
         guard let panel, let hosting = hostingView else { return }
 
         // Update the SwiftUI view with fresh data
-        let view = FloatingBarView(
-            snapshot: snapshot,
-            onQuickAction: { [weak self] action in
-                self?.handleQuickAction(action, snapshot: snapshot)
-            },
-            onRefine: { [weak self] customContext in
-                self?.performRefine(context: customContext, snapshot: snapshot)
-            },
-            onClose: { [weak self] in
-                self?.hide()
-            }
+        summonID = UUID()
+
+        let view = AnyView(
+            FloatingBarView(
+                snapshot: snapshot,
+                onQuickAction: { [weak self] action in
+                    self?.handleQuickAction(action, snapshot: snapshot)
+                },
+                onRefine: { [weak self] customContext in
+                    self?.performRefine(context: customContext, snapshot: snapshot)
+                },
+                onClose: { [weak self] in
+                    self?.hide()
+                },
+                onUndo: { [weak self] in self?.undoLastApply() }
+            )
+            .id(summonID)
         )
 
         hosting.rootView = view
@@ -135,19 +150,26 @@ final class FloatingBarController {
     private func showCentered(for snapshot: FieldSnapshot) {
         print("[Propr Bar] summon — showing centered for \(snapshot.appName)")
 
+        // Fresh ID so SwiftUI recreates the view and resets all @State (prompt, hasApplied, etc.)
+        summonID = UUID()
+
         applyTargetElement = captureCurrentFocusedElement()
         currentSnapshot = snapshot
 
         ensurePanelExists()
         guard let panel, let hosting = hostingView else { return }
 
-        let view = FloatingBarView(
-            snapshot: snapshot,
-            onQuickAction: { _ in }, // no longer used (minimal mode)
-            onRefine: { [weak self] prompt in
-                self?.performRefine(context: prompt, snapshot: snapshot)
-            },
-            onClose: { [weak self] in self?.hide() }
+        let view = AnyView(
+            FloatingBarView(
+                snapshot: snapshot,
+                onQuickAction: { _ in },
+                onRefine: { [weak self] prompt in
+                    self?.performRefine(context: prompt, snapshot: snapshot)
+                },
+                onClose: { [weak self] in self?.hide() },
+                onUndo: { [weak self] in self?.undoLastApply() }
+            )
+            .id(summonID)
         )
 
         hosting.rootView = view
@@ -157,7 +179,7 @@ final class FloatingBarController {
 
         panel.alphaValue = 0
         panel.orderFront(nil)
-        panel.makeKey()                    // ← this is what allows the TextField to become first responder
+        panel.makeKey()
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.16
             panel.animator().alphaValue = 1
@@ -170,19 +192,25 @@ final class FloatingBarController {
         // Show even without a strong field (user can still give instructions)
         let dummy = FieldSnapshot(appName: "—", pid: 0, fullText: "", selectedText: nil, frame: .zero, role: nil)
 
+        summonID = UUID()
+
         applyTargetElement = captureCurrentFocusedElement()
         currentSnapshot = dummy
 
         ensurePanelExists()
         guard let panel, let hosting = hostingView else { return }
 
-        let view = FloatingBarView(
-            snapshot: dummy,
-            onQuickAction: { _ in },
-            onRefine: { [weak self] prompt in
-                self?.performRefine(context: prompt, snapshot: dummy)
-            },
-            onClose: { [weak self] in self?.hide() }
+        let view = AnyView(
+            FloatingBarView(
+                snapshot: dummy,
+                onQuickAction: { _ in },
+                onRefine: { [weak self] prompt in
+                    self?.performRefine(context: prompt, snapshot: dummy)
+                },
+                onClose: { [weak self] in self?.hide() },
+                onUndo: { [weak self] in self?.undoLastApply() }
+            )
+            .id(summonID)
         )
 
         hosting.rootView = view
@@ -192,7 +220,7 @@ final class FloatingBarController {
 
         panel.alphaValue = 0
         panel.orderFront(nil)
-        panel.makeKey()                    // ← allows typing in the prompt field
+        panel.makeKey()
         NSAnimationContext.runAnimationGroup { ctx in
             ctx.duration = 0.16
             panel.animator().alphaValue = 1
@@ -241,12 +269,13 @@ final class FloatingBarController {
         // We rely on .nonactivatingPanel style + not calling makeKeyAndOrderFront in ways that activate us.
         // canBecomeKey is get-only on NSWindow in this SDK; the style mask is the correct signal.
 
-        let hosting = NSHostingView(rootView: FloatingBarView(
+        let hosting = NSHostingView<AnyView>(rootView: AnyView(FloatingBarView(
             snapshot: FieldSnapshot(appName: "—", pid: 0, fullText: "", selectedText: nil, frame: .zero, role: nil),
             onQuickAction: { _ in },
             onRefine: { _ in },
-            onClose: {}
-        ))
+            onClose: {},
+            onUndo: nil
+        )))
         hosting.frame = contentRect
 
         newPanel.contentView = hosting
@@ -308,18 +337,25 @@ final class FloatingBarController {
 
     private func performRefine(context: String, snapshot: FieldSnapshot) {
         guard let element = applyTargetElement ?? captureCurrentFocusedElement() else {
-            // Nothing to apply into anymore
             hide()
             return
         }
+
+        // Save undo state *before* we mutate anything
+        let originalText = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
+        self.undoOriginalText = originalText
+        self.undoElement = element
 
         let resultText = generateResult(from: snapshot, context: context)
 
         Task { @MainActor in
             await applyWithTypingAnimation(result: resultText, into: element)
-            // After successful apply, hide the bar (user can re-focus to bring it back)
-            try? await Task.sleep(for: .milliseconds(420))
-            hide()
+
+            // Instead of auto-hiding immediately, switch to "applied" state with Undo
+            // For now we'll keep the bar open so the user can undo
+            // (We'll improve the UI in the view next)
+            // try? await Task.sleep(for: .milliseconds(420))
+            // hide()
         }
     }
 
@@ -376,49 +412,75 @@ final class FloatingBarController {
         return "Refined text would appear here."
     }
 
-    private func applyWithTypingAnimation(result: String, into element: AXUIElement) async {
-        // Strategy for refinement:
-        // 1. Try to select the original selected range (or whole value if none).
-        // 2. Progressively replace via kAXSelectedTextAttribute for a nice typing feel.
+    func undoLastApply() {
+        guard let element = undoElement,
+              let originalText = undoOriginalText else {
+            hide()
+            return
+        }
 
-        // First, attempt to restore a reasonable selection range if we have one from capture time.
-        // For simplicity in v1 we just set caret to end of current content and insert/overwrite.
-
-        // Read current value length to place caret at end (common refinement pattern)
+        // Try to restore the original text cleanly
+        // First select everything
         var currentValue: AnyObject?
         if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &currentValue) == .success,
            let text = currentValue as? String {
             let len = (text as NSString).length
-            var range = CFRange(location: len, length: 0)
+            var range = CFRange(location: 0, length: len)
             if let rangeVal = AXValueCreate(.cfRange, &range) {
                 AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, rangeVal)
             }
         }
 
-        // Now "type" the result progressively.
-        // Using small chunks feels smoother than 1 char at very high speed.
-        let chunkSize = 2
-        var index = result.startIndex
+        // Replace with original
+        _ = AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, originalText as CFString)
 
-        while index < result.endIndex {
-            let end = result.index(index, offsetBy: chunkSize, limitedBy: result.endIndex) ?? result.endIndex
-            let chunk = String(result[index..<end])
+        // Clear undo state
+        undoOriginalText = nil
+        undoElement = nil
 
-            let status = AXUIElementSetAttributeValue(
+        // Hide after a short moment so the user sees the restoration
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            hide()
+        }
+    }
+
+    private func applyWithTypingAnimation(result: String, into element: AXUIElement) async {
+        // Clean, visible dummy writing using AX only.
+        // This is currently the most reliable way to see the typing effect
+        // without triggering macOS alert sounds.
+
+        // 1. Select the whole current field
+        var currentValue: AnyObject?
+        if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &currentValue) == .success,
+           let text = currentValue as? String, !text.isEmpty {
+            let len = (text as NSString).length
+            var range = CFRange(location: 0, length: len)
+            if let rangeVal = AXValueCreate(.cfRange, &range) {
+                AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, rangeVal)
+            }
+        }
+
+        // 2. Delete the old text
+        _ = AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, "" as CFString)
+
+        // Let the target app breathe for a moment
+        try? await Task.sleep(for: .milliseconds(70))
+
+        // 3. Progressively insert the new result, one character at a time.
+        // This is the visible "writing" animation for the dummy mode.
+        // Deliberately slow so you can clearly watch it type.
+        for character in result {
+            let chunk = String(character)
+
+            _ = AXUIElementSetAttributeValue(
                 element,
                 kAXSelectedTextAttribute as CFString,
                 chunk as CFString
             )
 
-            if status != .success {
-                // Fallback: try full value replace for this chunk (some fields only support value)
-                // For demo we just continue; real impl could fall back harder.
-            }
-
-            // Natural typing cadence
-            try? await Task.sleep(for: .milliseconds(28))
-
-            index = end
+            // Visible typing speed for demo (adjust this number to taste)
+            try? await Task.sleep(for: .milliseconds(48))
         }
     }
 }

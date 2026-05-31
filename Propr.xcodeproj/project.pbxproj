@@ -100,6 +100,7 @@
 				220D71894254B8E5F2569EF1 /* Sources */,
 				7935EA0A91C4EB4FD5960243 /* Resources */,
 				C43B0A32F5D2C2B0B5B48D79 /* Frameworks */,
+				0DFD583C54C320F6DB5FFAEC /* Copy Debug build to stable location (for persistent Accessibility permission) */,
 			);
 			buildRules = (
 			);
@@ -159,6 +160,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0DFD583C54C320F6DB5FFAEC /* Copy Debug build to stable location (for persistent Accessibility permission) */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy Debug build to stable location (for persistent Accessibility permission)";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# This copies the built app to a fixed path so macOS TCC doesn't treat\n# every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).\nDEST=\"$SRCROOT/Build/Debug/Propr.app\"\n\necho \"→ Copying debug build to stable location...\"\nrm -rf \"$DEST\"\nmkdir -p \"$(dirname \"$DEST\")\"\ncp -R \"$TARGET_BUILD_DIR/Propr.app\" \"$DEST\"\n\n# Ad-hoc re-sign the copy (helps a bit with TCC stability)\ncodesign --force --deep --sign - \"$DEST\" 2>/dev/null || true\n\necho \"✅ Stable debug build available at:\"\necho \"   $DEST\"\necho \"\"\necho \"   → For development, launch from this location instead of running directly from Xcode:\"\necho \"     open \\\"$DEST\\\"\"\necho \"\"\necho \"   This prevents having to re-grant Accessibility permission after every build.\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		220D71894254B8E5F2569EF1 /* Sources */ = {

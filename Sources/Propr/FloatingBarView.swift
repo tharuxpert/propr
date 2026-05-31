@@ -39,9 +39,21 @@ struct FloatingBarView: View {
     let onQuickAction: (QuickAction) -> Void   // kept for signature compatibility (unused now)
     let onRefine: (String) -> Void
     let onClose: () -> Void
+    var onUndo: (() -> Void)? = nil
 
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
+    @State private var hasApplied = false
+    @State private var lastPrompt: String = ""
+
+    private var textPreview: String {
+        let text = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
+        let maxLength = 110
+        if text.count > maxLength {
+            return String(text.prefix(maxLength)) + "…"
+        }
+        return text
+    }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -83,6 +95,21 @@ struct FloatingBarView: View {
             Divider()
                 .opacity(0.25)
 
+            // Truncated preview of the text being refined (not the whole thing)
+            if !textPreview.isEmpty {
+                Text(textPreview)
+                    .font(.caption)
+                    .foregroundStyle(.secondary.opacity(0.85))
+                    .lineLimit(2)
+                    .multilineTextAlignment(.leading)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 6)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Divider()
+                    .opacity(0.2)
+            }
+
             // Main instruction input
             TextField("What do you want to do with this text?", text: $prompt)
                 .textFieldStyle(.plain)
@@ -93,6 +120,8 @@ struct FloatingBarView: View {
                 .onSubmit {
                     let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
+                        lastPrompt = trimmed
+                        hasApplied = true
                         onRefine(trimmed)
                     }
                 }
@@ -102,6 +131,27 @@ struct FloatingBarView: View {
                         isPromptFocused = true
                     }
                 }
+                .disabled(hasApplied)
+
+            if hasApplied {
+                HStack(spacing: 12) {
+                    if let onUndo {
+                        Button("Undo", action: onUndo)
+                            .buttonStyle(.bordered)
+                            .controlSize(.small)
+                    }
+
+                    Spacer()
+
+                    Button("Done") {
+                        onClose()
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
         }
         .frame(width: 420)
         .background(

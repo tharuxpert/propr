@@ -180,7 +180,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             object: nil,
             queue: .main
         ) { [weak self] _ in
-            self?.summonFloatingBar()
+            Task { @MainActor in
+                self?.summonFloatingBar()
+            }
         }
 
         // This is the most reliable place to decide to show onboarding on a true cold launch.
@@ -195,14 +197,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
             guard let self else { return }
 
-            // Only care about Command key (either side)
-            let hasCommand = event.modifierFlags.contains(.command)
+            let flags = event.modifierFlags
 
-            if hasCommand {
+            // Only trigger on *pure* Command (no Shift, Option, Control, etc.)
+            // This prevents Command+Shift, Command+Option, etc. from counting as Command presses.
+            let isPureCommand = flags.contains(.command) &&
+                                !flags.contains(.shift) &&
+                                !flags.contains(.option) &&
+                                !flags.contains(.control) &&
+                                !flags.contains(.function)
+
+            if isPureCommand {
                 let now = Date()
                 if let last = self.lastCommandPressTime,
                    now.timeIntervalSince(last) < 0.45 {
-                    // Double press detected
+                    // Double pure Command tap detected
                     self.lastCommandPressTime = nil
                     DispatchQueue.main.async {
                         self.summonFloatingBar()
