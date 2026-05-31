@@ -1,6 +1,7 @@
 import SwiftUI
 import AppKit
 @preconcurrency import ApplicationServices
+import Combine
 
 // Custom notification so the AppDelegate can reliably tell the SwiftUI side to show onboarding
 extension Notification.Name {
@@ -9,25 +10,23 @@ extension Notification.Name {
 
 @main
 struct ProprApp: App {
-    // We own this instance for the entire app lifetime and start monitoring early.
-    // Using a plain `let` (instead of @StateObject) avoids the "not installed on a View" warning
-    // when accessing it from init().
-    private let accessibility = AccessibilityManager()
+    // Access the single long-lived instances that live on the AppDelegate.
+    // This avoids duplicate managers/detectors in a menu-bar-only LSUIElement app.
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
-    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    private var accessibility: AccessibilityManager { appDelegate.accessibility }
+    private var fieldDetector: FocusedFieldDetector { appDelegate.fieldDetector }
 
     init() {
-        // Start background monitoring so the menu bar reacts promptly
-        // when permission is granted (especially via the cold-launch onboarding).
-        accessibility.startMonitoring()
+        // Nothing extra — the delegate wires everything in applicationDidFinishLaunching.
     }
 
     var body: some Scene {
         // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
         MenuBarExtra {
-            MenuBarContent(accessibility: accessibility)
+            MenuBarContent(accessibility: appDelegate.accessibility)
         } label: {
             Image("MenuBarIcon")
         }
@@ -35,7 +34,7 @@ struct ProprApp: App {
 
         // Onboarding / permission setup window
         Window("Welcome to Propr", id: "onboarding") {
-            OnboardingView(accessibility: accessibility)
+            OnboardingView(accessibility: appDelegate.accessibility)
         }
         .windowStyle(.hiddenTitleBar)
         .windowResizability(.contentSize)
@@ -79,7 +78,15 @@ struct MenuBarContent: View {
         }
         .keyboardShortcut(",")
 
-        if !accessibility.hasPermission {
+        if accessibility.hasPermission {
+            Button {
+                // Manual summon is useful when auto-detection is noisy or the user wants explicit control.
+                (NSApp.delegate as? AppDelegate)?.summonFloatingBar()
+            } label: {
+                Label("Refine focused field", systemImage: "sparkles")
+            }
+            .keyboardShortcut("r", modifiers: [.command, .shift])
+        } else {
             Button {
                 openWindow(id: "onboarding")
             } label: {
@@ -117,18 +124,60 @@ struct MenuBarContent: View {
 }
 
 // MARK: - App Delegate (gives us the most reliable "app finished launching" hook)
-
+// Marked @MainActor because it owns @MainActor-isolated objects (AccessibilityManager, detector, controller)
+// and all delegate callbacks + AX work happen on the main thread anyway.
+@MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     /// We keep a reference to the onboarding panel so we can close it from the SwiftUI side.
     private var onboardingPanel: NSPanel?
 
+    // Long-lived core objects owned by the delegate (reliable lifetime in LSUIElement apps).
+    let accessibility = AccessibilityManager()
+    let fieldDetector = FocusedFieldDetector()
+    // Eagerly created so its Combine subscription to the detector is active for the entire lifetime.
+    // This is what actually drives the auto-show behavior when a text field is focused.
+    private let floatingBarController: FloatingBarController
+
+    private var permissionCancellable: AnyCancellable?
+
+    override init() {
+        // Must create the controller *after* fieldDetector so we can pass it.
+        // This ensures the observation that drives auto-show is wired from the very beginning.
+        floatingBarController = FloatingBarController(detector: fieldDetector)
+        super.init()
+    }
+
     func applicationDidFinishLaunching(_ notification: Notification) {
+        // Wire permission → detector start (single source of truth in the delegate)
+        permissionCancellable = accessibility.$hasPermission
+            .receive(on: RunLoop.main)
+            .sink { [weak self] granted in
+                guard let self else { return }
+                if granted {
+                    print("[Propr] Accessibility permission is now true — starting focus detector")
+                    self.fieldDetector.start()
+                } else {
+                    print("[Propr] Accessibility permission lost — stopping focus detector")
+                    self.fieldDetector.stop()
+                }
+            }
+
+        // Kick an initial permission check
+        accessibility.startMonitoring()
+        accessibility.checkPermission(prompt: false)
+
         // This is the most reliable place to decide to show onboarding on a true cold launch.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             MainActor.assumeIsolated {
                 self?.showOnboardingIfNeededOnLaunch()
             }
         }
+    }
+
+    /// Called from the menu bar ("Refine focused field" or ⌘⇧R).
+    @MainActor
+    func summonFloatingBar() {
+        floatingBarController.summonForCurrentFocus()
     }
 
     @MainActor
@@ -143,8 +192,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         guard !hasCompleted || !hasPermission else { return }
 
-        // Create the manager on the main actor (required)
-        let manager = AccessibilityManager()
+        // Use the delegate-owned manager so monitoring state stays consistent
+        let manager = self.accessibility
 
         let panel = NSPanel(
             contentRect: NSRect(x: 0, y: 0, width: 460, height: 540),
