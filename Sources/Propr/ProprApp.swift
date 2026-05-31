@@ -40,10 +40,9 @@ struct ProprApp: App {
         .windowResizability(.contentSize)
         .defaultPosition(.center)
 
-        // Settings window (placeholder for now)
+        // Settings window
         Window("Propr Settings", id: "settings") {
-            SettingsPlaceholderView()
-                .frame(width: 420, height: 280)
+            SettingsView()
         }
         .windowResizability(.contentSize)
         .defaultPosition(.center)
@@ -54,6 +53,7 @@ struct ProprApp: App {
 struct MenuBarContent: View {
     @ObservedObject var accessibility: AccessibilityManager
     @Environment(\.openWindow) private var openWindow
+    @Bindable var modelStore = ModelStore.shared
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
@@ -79,6 +79,28 @@ struct MenuBarContent: View {
         }
 
         Divider()
+
+        // Model selection (nested menu with checkmark for current selection)
+        Menu("Model...") {
+            if modelStore.allAvailableModels.isEmpty {
+                Text("No models configured")
+                    .foregroundStyle(.secondary)
+            } else {
+                Picker("Model", selection: $modelStore.selectedModelID) {
+                    ForEach(modelStore.allAvailableModels) { model in
+                        Text(model.displayName)
+                            .tag(model.id as UUID?)
+                    }
+                }
+                .pickerStyle(.inline)
+            }
+            
+            Divider()
+            
+            Button("Manage Models...") {
+                openWindow(id: "settings")
+            }
+        }
 
         Button {
             openWindow(id: "settings")
