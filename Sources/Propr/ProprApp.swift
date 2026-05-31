@@ -26,8 +26,10 @@ struct ProprApp: App {
 
     var body: some Scene {
         // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
-        MenuBarExtra("Propr", systemImage: "sparkles") {  // Replace with custom asset later for a polished menubar icon
+        MenuBarExtra("Propr") {
             MenuBarContent(accessibility: accessibility)
+        } label: {
+            Image("MenuBarIcon")
         }
         .menuBarExtraStyle(.menu)
 
@@ -187,9 +189,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 struct SettingsPlaceholderView: View {
     var body: some View {
         VStack(spacing: 16) {
-            Image(systemName: "sparkles")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
+            Image("BrandIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 64, height: 64)
 
             Text("Propr Settings")
                 .font(.title2.weight(.semibold))

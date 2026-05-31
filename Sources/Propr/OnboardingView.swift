@@ -25,13 +25,10 @@ struct OnboardingView: View {
         VStack(spacing: 0) {
             // Top icon + header
             VStack(spacing: 12) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 56, weight: .medium))
-                    .foregroundStyle(.linearGradient(
-                        colors: [.accentColor, .purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
+                Image("BrandIcon")
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 72, height: 72)
                     .padding(.top, 32)
 
                 Text("Welcome to Propr")
