@@ -26,7 +26,7 @@ struct ProprApp: App {
 
     var body: some Scene {
         // Menu bar only. No Dock icon (controlled via Info.plist LSUIElement).
-        MenuBarExtra("Propr") {
+        MenuBarExtra {
             MenuBarContent(accessibility: accessibility)
         } label: {
             Image("MenuBarIcon")
