@@ -21,38 +21,30 @@ else
     echo "If you recently edited project.yml, run 'xcodegen generate' manually first."
 fi
 
-if [ ! -d "$APP_PATH" ]; then
-    echo "→ Stable debug build not found at $APP_PATH"
-    echo "→ Building now using xcodebuild (this will trigger the post-build copy script)..."
-    
-    xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug build
-    
-    # The postBuildScript in project.yml *should* have copied it, but it can be flaky
-    # with xcodebuild from terminal. We guarantee it here as a fallback.
-    DERIVED_APP="$HOME/Library/Developer/Xcode/DerivedData/Propr-*/Build/Products/Debug/Propr.app"
-    
-    if [ ! -d "$APP_PATH" ]; then
-        echo "→ Post-build copy script didn't create the stable app. Doing it manually now..."
-        
-        # Find the most recent built app in DerivedData
-        LATEST_BUILT=$(ls -td $HOME/Library/Developer/Xcode/DerivedData/Propr-*/Build/Products/Debug/Propr.app 2>/dev/null | head -1)
-        
-        if [ -z "$LATEST_BUILT" ] || [ ! -d "$LATEST_BUILT" ]; then
-            echo "Error: Could not find a built Propr.app in DerivedData."
-            echo "Build output location may have changed. Please build once from Xcode (⌘B) first."
-            exit 1
-        fi
-        
-        mkdir -p "$(dirname "$APP_PATH")"
-        rm -rf "$APP_PATH"
-        cp -R "$LATEST_BUILT" "$APP_PATH"
-        
-        # Re-sign the copy
-        codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
-        
-        echo "✅ Manually copied stable build to: $APP_PATH"
-    fi
+echo "→ Building (xcodebuild will do incremental build if nothing changed)..."
+
+xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug build
+
+# Always refresh the stable copy after build (even if it already existed).
+# This ensures the latest code is in Build/Debug/Propr.app for stable Accessibility permissions.
+echo "→ Updating stable debug build at $APP_PATH ..."
+
+LATEST_BUILT=$(ls -td $HOME/Library/Developer/Xcode/DerivedData/Propr-*/Build/Products/Debug/Propr.app 2>/dev/null | head -1)
+
+if [ -z "$LATEST_BUILT" ] || [ ! -d "$LATEST_BUILT" ]; then
+    echo "Error: Could not find a built Propr.app after build."
+    echo "Please try building once from Xcode (⌘B) first."
+    exit 1
 fi
+
+mkdir -p "$(dirname "$APP_PATH")"
+rm -rf "$APP_PATH"
+cp -R "$LATEST_BUILT" "$APP_PATH"
+
+# Re-sign the copy (helps with some TCC edge cases)
+codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true
+
+echo "✅ Stable build updated at: $APP_PATH"
 
 echo "→ Launching stable debug build from: $APP_PATH"
 open "$APP_PATH"
