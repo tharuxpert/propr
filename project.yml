@@ -12,7 +12,7 @@ packages:
   # See: https://github.com/tharuxpert/permiso
   Permiso:
     url: https://github.com/tharuxpert/permiso
-    revision: d93a783c489eca1399e4262b889dfa6b91c81e24  # Platform fix (.v14)
+    revision: bf83420f58296c91fcb059c055a05d77279ac354  # Fixed swift-tools-version 6.1 + platform .v14
 
 settings:
   SWIFT_VERSION: 6
