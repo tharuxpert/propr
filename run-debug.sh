@@ -1,14 +1,19 @@
 #!/bin/zsh
 # Convenience script to launch the stable debug build.
-# This is the recommended (and only supported) way to run Propr during development
-# so that Accessibility permission survives rebuilds.
+# This is the recommended (and only supported) way to run Propr during development.
+#
+# It does several things to reduce Accessibility (TCC) pain:
+#   - Always builds to a stable path: Build/Debug/Propr.app
+#   - Kills any running instance before building
+#   - Runs `tccutil reset Accessibility com.tharuxpert.Propr` on every build
+#     so old DerivedData entries don't keep haunting you.
 #
 # CRITICAL: Never use Xcode's Run button (⌘R) for this app during development.
 #
 # Usage:
 #   ./run-debug.sh          # or ./run-debug.sh 1   → Just open the app (no build)
-#   ./run-debug.sh 2        # or --build            → Build (incremental) then open
-#   ./run-debug.sh 3        # or --clean            → Clean + build then launch
+#   ./run-debug.sh 2        # or --build            → Build (incremental) + reset TCC + launch
+#   ./run-debug.sh 3        # or --clean            → Clean + build + reset TCC + launch
 
 set -e
 
@@ -34,6 +39,12 @@ do_build() {
     echo "→ Quitting any running Propr instance..."
     pkill -x Propr 2>/dev/null || true
     sleep 0.5
+
+    # Remove any existing entries for this bundle ID from Accessibility / TCC.
+    # This stops the "have to re-grant permission after every rebuild" pain.
+    # The stable Build/Debug/Propr.app will get a fresh prompt on next launch.
+    echo "→ Clearing old Accessibility permission entries for com.tharuxpert.Propr..."
+    tccutil reset Accessibility com.tharuxpert.Propr 2>/dev/null || true
 
     run_xcodegen
 
@@ -67,10 +78,11 @@ do_build() {
     echo "   $APP_PATH"
     echo ""
     echo "IMPORTANT FOR ACCESSIBILITY PERMISSION:"
-    echo "  → Grant permission ONLY to this exact path:"
+    echo "  → The script already ran: tccutil reset Accessibility com.tharuxpert.Propr"
+    echo "  → Grant permission ONLY to this exact stable path:"
     echo "    $APP_PATH"
-    echo "  → REMOVE any entries that point to DerivedData."
     echo "  → Never use Xcode's Run button (⌘R) — always use this script."
+    echo "  → You may get a fresh permission prompt on the next launch."
     echo ""
 }
 
@@ -79,8 +91,11 @@ case "$MODE" in
         echo "Usage: $0 [1|2|3|--open|--build|--clean]"
         echo ""
         echo "  1, --open, (default)   Just launch the stable app (fastest)"
-        echo "  2, --build             Build (incremental) then launch"
-        echo "  3, --clean             Clean + build then launch"
+        echo "  2, --build             Build (incremental) + reset TCC + launch"
+        echo "  3, --clean             Clean + build + reset TCC + launch"
+        echo ""
+        echo "On build modes the script automatically runs:"
+        echo "  tccutil reset Accessibility com.tharuxpert.Propr"
         exit 0
         ;;
     1|--open|-o|"")
@@ -96,8 +111,8 @@ case "$MODE" in
         echo "Usage: $0 [1|2|3|--open|--build|--clean]"
         echo ""
         echo "  1, --open, (default)   Just launch the stable app"
-        echo "  2, --build             Build (incremental) then launch"
-        echo "  3, --clean             Clean + build then launch"
+        echo "  2, --build             Build (incremental) + reset TCC + launch"
+        echo "  3, --clean             Clean + build + reset TCC + launch"
         exit 1
         ;;
 esac

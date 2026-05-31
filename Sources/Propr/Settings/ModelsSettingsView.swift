@@ -18,11 +18,14 @@ struct ModelsSettingsView: View {
     @State private var addedModels: [CustomModel] = []
     
     var body: some View {
-        VStack(alignment: .leading, spacing: 24) {
-            Text("Models")
-                .font(.title2.weight(.semibold))
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+            // Removed the "Models" title here — the TabView tab already labels this section,
+            // and having it caused ugly double-labeling + truncation near the window title bar.
             
             // Quick Start (Built-in providers)
+            // Explicitly disable animation from the BYOK form toggle below so the
+            // provider cards don't slide around when you expand/collapse the form.
             VStack(alignment: .leading, spacing: 12) {
                 Text("Quick Start")
                     .font(.headline)
@@ -54,6 +57,7 @@ struct ModelsSettingsView: View {
             }
             .padding()
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .animation(nil, value: showingAddForm)
             
             // Quick Add Form (appears when a provider is selected)
             if let provider = quickAddProvider {
@@ -99,11 +103,9 @@ struct ModelsSettingsView: View {
                     .foregroundStyle(.secondary)
                 
                 Button {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
-                        showingAddForm.toggle()
-                        if !showingAddForm {
-                            resetAddForm()
-                        }
+                    showingAddForm.toggle()
+                    if !showingAddForm {
+                        resetAddForm()
                     }
                 } label: {
                     Label("Add custom endpoint", systemImage: "plus")
@@ -111,6 +113,8 @@ struct ModelsSettingsView: View {
                 .buttonStyle(.bordered)
                 
                 // Inline add form (smoothly appears)
+                // We scope the animation to *this* VStack only so the Quick Start
+                // cards above don't get unwanted layout animation when the form expands.
                 if showingAddForm {
                     addEndpointForm
                         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -119,6 +123,7 @@ struct ModelsSettingsView: View {
             }
             .padding()
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingAddForm)
             
             // Existing custom endpoints
             if !modelStore.customEndpoints.isEmpty {
@@ -135,12 +140,13 @@ struct ModelsSettingsView: View {
                     description: Text("Add your first OpenAI-compatible endpoint above.")
                 )
             }
-            
-            Spacer()
         }
-        .padding(24)
-        .frame(minWidth: 520, minHeight: 420)
+        .padding(.top, 12)
+        .padding(.horizontal, 24)
+        .padding(.bottom, 24)
     }
+    .frame(minWidth: 520)
+}
     
     private var addEndpointForm: some View {
         VStack(alignment: .leading, spacing: 16) {

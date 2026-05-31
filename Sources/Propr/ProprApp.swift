@@ -261,15 +261,17 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let window = NSWindow(contentViewController: hostingController)
             window.title = "Propr Settings"
             window.identifier = NSUserInterfaceItemIdentifier("settings")
-            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            window.titlebarAppearsTransparent = true
             window.center()
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 540, height: 460)
+            window.minSize = NSSize(width: 560, height: 480)
             window.collectionBehavior = [.canJoinAllSpaces]
 
-            // Give the SwiftUI TabView a comfortable initial size that accounts for the title bar.
-            window.setContentSize(NSSize(width: 580, height: 500))
+            // Generous initial size; the transparent title bar + fullSizeContentView
+            // lets the SwiftUI content sit nicely underneath without truncation.
+            window.setContentSize(NSSize(width: 620, height: 520))
 
             settingsWindow = window
         }

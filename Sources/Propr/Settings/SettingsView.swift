@@ -8,12 +8,16 @@ struct SettingsView: View {
                     Label("Models", systemImage: "brain")
                 }
             
-            GeneralSettingsView()
-                .tabItem {
-                    Label("General", systemImage: "gearshape")
-                }
+            ScrollView {
+                GeneralSettingsView()
+            }
+            .tabItem {
+                Label("General", systemImage: "gearshape")
+            }
         }
-        .frame(width: 580, height: 480)
+        // No hard frame here — it fights with the window title bar when hosted manually.
+        // Individual tab views control their own comfortable size + padding.
+        .padding(.top, 8)
     }
 }
 
