@@ -23,12 +23,8 @@ struct ProprApp: App {
     }
 
     var body: some Scene {
-        // All real windows (onboarding for first launch, settings for menu items)
-        // are created on-demand via AppDelegate using NSWindow + NSHostingView.
-        // This is the only reliable approach for an LSUIElement menu-bar agent app
-        // when opening from pure AppKit menu actions / notifications.
-        //
-        // The tiny WindowGroup keeps SwiftUI's application lifecycle valid.
+        // Dummy scene to keep the SwiftUI app lifecycle happy in this LSUIElement app.
+        // The actual Settings window is created manually for reliable opening from the menu.
         WindowGroup {
             EmptyView()
         }
@@ -126,7 +122,60 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     @objc private func openSettingsWindow() {
-        showSettingsWindow()
+        NSApp.activate(ignoringOtherApps: true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.showSettingsWindow()
+        }
+    }
+
+    @MainActor
+    private func showSettingsWindow() {
+        if settingsWindow == nil {
+            let hostingController = NSHostingController(rootView: SettingsView())
+
+            // Tell the hosting controller to let Auto Layout fully control its size
+            // (prevents it from collapsing to the intrinsic size of the tab bar only).
+            hostingController.sizingOptions = []
+
+            let contentRect = NSRect(x: 0, y: 0, width: 620, height: 620)
+            let window = NSWindow(
+                contentRect: contentRect,
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+
+            let hostingView = hostingController.view
+            hostingView.translatesAutoresizingMaskIntoConstraints = false
+
+            window.contentView = hostingView
+            window.title = "Propr Settings"
+            window.identifier = NSUserInterfaceItemIdentifier("settings")
+            window.center()
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.minSize = NSSize(width: 560, height: 520)
+            window.collectionBehavior = [.canJoinAllSpaces]
+
+            // Pin the hosting view to all edges
+            if let contentView = window.contentView {
+                NSLayoutConstraint.activate([
+                    hostingView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+                    hostingView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+                    hostingView.topAnchor.constraint(equalTo: contentView.topAnchor),
+                    hostingView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+                ])
+            }
+
+            settingsWindow = window
+        }
+
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Force layout so the hosted SwiftUI content gets its size immediately
+        settingsWindow?.contentView?.layoutSubtreeIfNeeded()
     }
 
     private func setupDoubleCommandHotkey() {
@@ -250,35 +299,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.activate(ignoringOtherApps: true)
     }
 
-    @MainActor
-    private func showSettingsWindow() {
-        if settingsWindow == nil {
-            // Using NSHostingController + contentViewController gives much better
-            // layout integration with the title bar than raw NSHostingView on contentView.
-            // This fixes the truncated/tab-overlap issues at the top of the window.
-            let hostingController = NSHostingController(rootView: SettingsView())
 
-            let window = NSWindow(contentViewController: hostingController)
-            window.title = "Propr Settings"
-            window.identifier = NSUserInterfaceItemIdentifier("settings")
-            window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-            window.titlebarAppearsTransparent = true
-            window.center()
-            window.isReleasedWhenClosed = false
-            window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 560, height: 520)
-            window.collectionBehavior = [.canJoinAllSpaces]
-
-            // Generous initial size so the add form and content are visible without immediate scrolling.
-            // The ScrollView inside the tabs will handle overflow when the form expands or many endpoints are added.
-            window.setContentSize(NSSize(width: 620, height: 620))
-
-            settingsWindow = window
-        }
-
-        settingsWindow?.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-    }
 }
 
 // Full AppKit status item for reliable menubar menu (no SwiftUI hover flicker).

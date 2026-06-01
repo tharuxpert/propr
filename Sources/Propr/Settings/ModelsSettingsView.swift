@@ -58,109 +58,111 @@ struct ModelsSettingsView: View {
             .padding()
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             .animation(nil, value: showingAddForm)
+            .animation(nil, value: quickAddProvider != nil)
             
             // Quick Add Form (appears when a provider is selected)
-            if let provider = quickAddProvider {
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Add \(provider.name)")
-                        .font(.headline)
-                    
-                    if provider.requiresKey {
-                        SecureField("API Key", text: $quickAddAPIKey)
-                            .textFieldStyle(.roundedBorder)
-                    } else {
-                        Text("No API key required for local models.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
-                    
-                    // Same model + alias picker as custom BYOK, so users can cherry-pick
-                    // specific models from large catalogs (e.g. OpenRouter) and give them nice short names.
-                    Divider()
-                    
-                    Text("Models to include")
-                        .font(.subheadline.weight(.medium))
-                    
-                    VStack(alignment: .leading, spacing: 6) {
-                        TextField("Model ID (exact string sent to the API)", text: $newModelName)
-                            .textFieldStyle(.roundedBorder)
+            // We wrap it so we can scope the smooth expand/collapse animation
+            // (same treatment as the BYOK custom form).
+            VStack {
+                if let provider = quickAddProvider {
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Add \(provider.name)")
+                            .font(.headline)
                         
-                        TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
-                            .textFieldStyle(.roundedBorder)
-                        
-                        Button {
-                            addModelToList()
-                        } label: {
-                            Label("Add model", systemImage: "plus.circle.fill")
-                        }
-                        .buttonStyle(.bordered)
-                        .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
-                    }
-                    
-                    if !addedModels.isEmpty {
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text("Models to add")
-                                .font(.caption)
+                        if provider.requiresKey {
+                            SecureField("API Key", text: $quickAddAPIKey)
+                                .textFieldStyle(.roundedBorder)
+                        } else {
+                            Text("No API key required for local models.")
+                                .font(.subheadline)
                                 .foregroundStyle(.secondary)
+                        }
+                        
+                        // Same model + alias picker as custom BYOK
+                        Divider()
+                        
+                        Text("Models to include")
+                            .font(.subheadline.weight(.medium))
+                        
+                        VStack(alignment: .leading, spacing: 6) {
+                            TextField("Model ID (exact string sent to the API)", text: $newModelName)
+                                .textFieldStyle(.roundedBorder)
                             
-                            ForEach(addedModels) { model in
-                                HStack {
-                                    VStack(alignment: .leading, spacing: 1) {
-                                        Text(model.displayName)
-                                            .fontWeight(model.alias != nil ? .medium : .regular)
-                                        
-                                        if let alias = model.alias {
-                                            Text(model.name)
-                                                .font(.caption2)
-                                                .foregroundStyle(.secondary)
+                            TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
+                                .textFieldStyle(.roundedBorder)
+                            
+                            Button {
+                                addModelToList()
+                            } label: {
+                                Label("Add model", systemImage: "plus.circle.fill")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
+                        }
+                        
+                        if !addedModels.isEmpty {
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Models to add")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                
+                                ForEach(addedModels) { model in
+                                    HStack {
+                                        VStack(alignment: .leading, spacing: 1) {
+                                            Text(model.displayName)
+                                                .fontWeight(model.alias != nil ? .medium : .regular)
+                                            
+                                            if let alias = model.alias {
+                                                Text(model.name)
+                                                    .font(.caption2)
+                                                    .foregroundStyle(.secondary)
+                                            }
                                         }
+                                        Spacer()
+                                        
+                                        Button {
+                                            removeModelFromList(model)
+                                        } label: {
+                                            Image(systemName: "minus.circle.fill")
+                                                .foregroundStyle(.red)
+                                        }
+                                        .buttonStyle(.plain)
                                     }
-                                    Spacer()
-                                    
-                                    Button {
-                                        removeModelFromList(model)
-                                    } label: {
-                                        Image(systemName: "minus.circle.fill")
-                                            .foregroundStyle(.red)
-                                    }
-                                    .buttonStyle(.plain)
                                 }
                             }
-                        }
-                        .padding(8)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
-                    }
-                    
-                    HStack {
-                        Button("Cancel") {
-                            quickAddProvider = nil
-                            quickAddAPIKey = ""
-                            addedModels = []
-                            newModelName = ""
-                            newModelAlias = ""
+                            .padding(8)
+                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                         }
                         
-                        Spacer()
-                        
-                        Button("Add \(provider.name)") {
-                            addQuickProvider()
+                        HStack {
+                            Button("Cancel") {
+                                quickAddProvider = nil
+                                quickAddAPIKey = ""
+                                addedModels = []
+                                newModelName = ""
+                                newModelAlias = ""
+                            }
+                            
+                            Spacer()
+                            
+                            Button("Add \(provider.name)") {
+                                addQuickProvider()
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .disabled( (provider.requiresKey && quickAddAPIKey.trimmingCharacters(in: .whitespaces).isEmpty) || addedModels.isEmpty )
                         }
-                        .buttonStyle(.borderedProminent)
-                        .disabled(provider.requiresKey && quickAddAPIKey.trimmingCharacters(in: .whitespaces).isEmpty)
                     }
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
                 }
-                .padding()
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
+            .animation(.spring(response: 0.3, dampingFraction: 0.8), value: quickAddProvider != nil)
             
-            // Full Custom Endpoint
+            // Custom Endpoint (BYOK)
             VStack(alignment: .leading, spacing: 12) {
                 Text("Bring Your Own Key (BYOK)")
                     .font(.headline)
-                
-                Text("Add any OpenAI-compatible endpoint manually.")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
                 
                 Button {
                     showingAddForm.toggle()
@@ -177,7 +179,10 @@ struct ModelsSettingsView: View {
                 // cards above don't get unwanted layout animation when the form expands.
                 if showingAddForm {
                     addEndpointForm
-                        .transition(.opacity.combined(with: .move(edge: .top)))
+                        // Use scale from the top instead of .move(edge: .top) so the form
+                        // expands downward in place and never visually flies in from above
+                        // the BYOK section (avoiding overlap on Quick Start cards).
+                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
                         .padding(.top, 8)
                 }
             }
@@ -194,11 +199,24 @@ struct ModelsSettingsView: View {
                     endpointRow(endpoint)
                 }
             } else if !showingAddForm {
-                ContentUnavailableView(
-                    "No custom endpoints yet",
-                    systemImage: "network",
-                    description: Text("Add your first OpenAI-compatible endpoint above.")
-                )
+                Spacer()
+
+                VStack(spacing: 16) {
+                    Image(systemName: "network")
+                        .font(.largeTitle)
+                        .foregroundStyle(.secondary)
+
+                    Text("No custom endpoints yet")
+                        .font(.headline)
+
+                    Text("Add your first OpenAI-compatible endpoint above.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                }
+                .frame(maxWidth: .infinity)
+
+                Spacer()
             }
         }
         .padding(.top, 12)
@@ -211,9 +229,6 @@ struct ModelsSettingsView: View {
     
     private var addEndpointForm: some View {
         VStack(alignment: .leading, spacing: 16) {
-            Text("Add Custom Endpoint")
-                .font(.headline)
-            
             TextField("Endpoint name", text: $endpointName)
                 .textFieldStyle(.roundedBorder)
             
@@ -225,18 +240,14 @@ struct ModelsSettingsView: View {
             
             Divider()
             
-            Text("Models from this endpoint")
+            Text("Models")
                 .font(.subheadline.weight(.medium))
             
-            Text("Only add the models you want to use. For large catalogs (OpenRouter, etc.), cherry-pick specific ones and give them short aliases — these aliases will appear in the menu instead of the long model IDs.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            
             VStack(alignment: .leading, spacing: 6) {
-                TextField("Model ID (exact string sent to the API, e.g. anthropic/claude-3-5-sonnet)", text: $newModelName)
+                TextField("Model ID (e.g. anthropic/claude-3-5-sonnet)", text: $newModelName)
                     .textFieldStyle(.roundedBorder)
                 
-                TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
+                TextField("Alias (shown in menu, optional)", text: $newModelAlias)
                     .textFieldStyle(.roundedBorder)
                 
                 Button {
@@ -250,11 +261,7 @@ struct ModelsSettingsView: View {
             }
             
             if !addedModels.isEmpty {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Models to add")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(addedModels) { model in
                         HStack {
                             VStack(alignment: .leading, spacing: 1) {
@@ -373,9 +380,9 @@ struct ModelsSettingsView: View {
         quickAddProvider = provider
         quickAddAPIKey = ""
         
-        // Pre-populate with the provider's suggested models so the user can
-        // cherry-pick, remove some, and add aliases — same experience as custom BYOK.
-        addedModels = provider.defaultModels.map { CustomModel(name: $0) }
+        // Start empty so the user manually adds exactly the models they want
+        // (with aliases), same as the custom BYOK flow.
+        addedModels = []
     }
     
     private func addQuickProvider() {
