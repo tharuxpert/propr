@@ -156,7 +156,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
             window.minSize = NSSize(width: 680, height: 540)
-            window.collectionBehavior = [.canJoinAllSpaces]
+            // Do not use .canJoinAllSpaces — we want the settings window to stay on the current Space
+            // like a normal utility window, not follow the user across all desktops.
+            window.collectionBehavior = []
 
             // Pin the hosting view to all edges
             if let contentView = window.contentView {
