@@ -8,6 +8,7 @@ struct ModelsSettingsView: View {
     // Quick Add state
     @State private var quickAddProvider: BuiltInProvider?
     @State private var quickAddAPIKey = ""
+    @State private var quickAddBaseURL = ""   // editable for Local provider (Ollama/LM Studio etc.)
     
     // Form state for adding new endpoint (full custom)
     @State private var endpointName = ""
@@ -72,9 +73,20 @@ struct ModelsSettingsView: View {
                             SecureField(provider.apiKeyExample ?? "API Key", text: $quickAddAPIKey)
                                 .textFieldStyle(.roundedBorder)
                         } else {
-                            Text("No API key required for local models.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                            // For Local providers the base URL is critical and frequently customized
+                            // (different ports for LM Studio, OLLAMA_HOST changes, LAN, Docker, WSL, etc.)
+                            VStack(alignment: .leading, spacing: 6) {
+                                Text("Base URL")
+                                    .font(.subheadline.weight(.medium))
+                                
+                                TextField("http://127.0.0.1:11434/v1", text: $quickAddBaseURL)
+                                    .textFieldStyle(.roundedBorder)
+                                
+                                Text("Ollama default is 11434. LM Studio default is 1234. Use 127.0.0.1 for best compatibility with Docker/WSL. Change the port or host if you modified OLLAMA_HOST or the LM Studio server settings.")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .fixedSize(horizontal: false, vertical: true)
+                            }
                         }
                         
                         // Same model + alias picker as custom BYOK
@@ -84,8 +96,16 @@ struct ModelsSettingsView: View {
                             .font(.subheadline.weight(.medium))
                         
                         VStack(alignment: .leading, spacing: 6) {
-                            TextField("Model ID (exact string sent to the API)", text: $newModelName)
+                            let isLocal = !(quickAddProvider?.requiresKey ?? true)
+                            
+                            TextField(isLocal ? "Model name (e.g. llama3.1 or qwen2.5:14b)" : "Model ID (exact string sent to the API)", text: $newModelName)
                                 .textFieldStyle(.roundedBorder)
+                            
+                            if isLocal {
+                                Text("Must match exactly what you see in `ollama list` or LM Studio")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
                             
                             TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
                                 .textFieldStyle(.roundedBorder)
@@ -137,6 +157,7 @@ struct ModelsSettingsView: View {
                             Button("Cancel") {
                                 quickAddProvider = nil
                                 quickAddAPIKey = ""
+                                quickAddBaseURL = ""
                                 addedModels = []
                                 newModelName = ""
                                 newModelAlias = ""
@@ -148,7 +169,11 @@ struct ModelsSettingsView: View {
                                 addQuickProvider()
                             }
                             .buttonStyle(.borderedProminent)
-                            .disabled( (provider.requiresKey && quickAddAPIKey.trimmingCharacters(in: .whitespaces).isEmpty) || addedModels.isEmpty )
+                            .disabled( 
+                                (provider.requiresKey && quickAddAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty) ||
+                                (!provider.requiresKey && (quickAddBaseURL.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || !isValidEndpointURL(quickAddBaseURL))) ||
+                                addedModels.isEmpty 
+                            )
                         }
                     }
                     .padding()
@@ -468,6 +493,7 @@ struct ModelsSettingsView: View {
     private func startQuickAdd(for provider: BuiltInProvider) {
         quickAddProvider = provider
         quickAddAPIKey = ""
+        quickAddBaseURL = provider.baseURL   // prefill with the provider's default (user can edit for Local)
         
         // Start empty so the user manually adds exactly the models they want
         // (with aliases), same as the custom BYOK flow.
@@ -475,21 +501,30 @@ struct ModelsSettingsView: View {
     }
     
     private func addQuickProvider() {
-        guard let provider = quickAddProvider,
-              !quickAddAPIKey.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        guard let provider = quickAddProvider else { return }
+        
+        let trimmedKey = quickAddAPIKey.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedURL = quickAddBaseURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // For local providers we don't require a key, but we do require a valid base URL
+        if provider.requiresKey && trimmedKey.isEmpty { return }
+        if trimmedURL.isEmpty || !isValidEndpointURL(trimmedURL) { return }
         
         // Use whatever models + aliases the user curated in the list (same as custom endpoint flow)
         let models = addedModels
         
+        // For Local quick-add we respect the (possibly edited) URL the user entered
+        let finalBaseURL = provider.requiresKey ? provider.baseURL : trimmedURL
+        
         let endpoint = CustomEndpoint(
             name: provider.name,
-            baseURL: provider.baseURL,
+            baseURL: finalBaseURL,
             models: models
         )
         
         do {
             if provider.requiresKey {
-                try modelStore.saveAPIKey(quickAddAPIKey.trimmingCharacters(in: .whitespaces), for: endpoint.id)
+                try modelStore.saveAPIKey(trimmedKey, for: endpoint.id)
             }
             
             modelStore.addEndpoint(endpoint)
@@ -509,6 +544,7 @@ struct ModelsSettingsView: View {
             // Reset quick add state + the shared model list
             quickAddProvider = nil
             quickAddAPIKey = ""
+            quickAddBaseURL = ""
             addedModels = []
             newModelName = ""
             newModelAlias = ""
@@ -525,6 +561,7 @@ struct ModelsSettingsView: View {
         newModelName = ""
         newModelAlias = ""
         addedModels = []
+        quickAddBaseURL = ""
     }
     
     private func endpointRow(_ endpoint: CustomEndpoint) -> some View {

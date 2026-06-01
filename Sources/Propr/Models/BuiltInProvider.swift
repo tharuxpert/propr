@@ -75,7 +75,7 @@ extension BuiltInProvider {
         ),
         BuiltInProvider(
             name: "Local (Ollama / LM Studio)",
-            baseURL: "http://localhost:11434/v1",
+            baseURL: "http://127.0.0.1:11434/v1",
             defaultModels: ["llama3.1", "qwen2.5", "mistral"],
             requiresKey: false,
             description: "Run models locally (no API key needed)",
