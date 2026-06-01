@@ -346,16 +346,34 @@ final class FloatingBarController {
         self.undoOriginalText = originalText
         self.undoElement = element
 
-        let resultText = generateResult(from: snapshot, context: context)
-
         Task { @MainActor in
-            await applyWithTypingAnimation(result: resultText, into: element)
+            do {
+                guard let selection = ModelStore.shared.selectedModel() else {
+                    let fallback = "[No model selected – please choose one in Settings]"
+                    await applyWithTypingAnimation(result: fallback, into: element)
+                    return
+                }
 
-            // Instead of auto-hiding immediately, switch to "applied" state with Undo
-            // For now we'll keep the bar open so the user can undo
-            // (We'll improve the UI in the view next)
-            // try? await Task.sleep(for: .milliseconds(420))
-            // hide()
+                guard let key = try ModelStore.shared.apiKey(for: selection.endpointID) else {
+                    let fallback = "[No API key found for selected model]"
+                    await applyWithTypingAnimation(result: fallback, into: element)
+                    return
+                }
+
+                let resultText = try await AIService.shared.refine(
+                    original: originalText,
+                    instruction: context,
+                    selection: selection,
+                    apiKey: key
+                )
+
+                await applyWithTypingAnimation(result: resultText, into: element)
+
+            } catch {
+                print("AI refinement failed: \(error)")
+                let errorText = "[Error: \(error.localizedDescription)]"
+                await applyWithTypingAnimation(result: errorText, into: element)
+            }
         }
     }
 
@@ -363,53 +381,6 @@ final class FloatingBarController {
         // Quick actions fill the context and immediately trigger refine with that intent.
         let context = action.defaultContext
         performRefine(context: context, snapshot: snapshot)
-    }
-
-    private func generateResult(from snapshot: FieldSnapshot, context: String) -> String {
-        // Temporary local transforms until real AI is wired up.
-        // The goal is to demonstrate the end-to-end flow + beautiful typing animation.
-        let original = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
-        let lower = context.lowercased()
-
-        if lower.contains("shorter") || lower.contains("concise") {
-            let words = original.split(separator: " ")
-            let keep = max(3, words.count * 3 / 5)
-            return words.prefix(keep).joined(separator: " ") + (words.count > keep ? "…" : "")
-        }
-
-        if lower.contains("professional") || lower.contains("formal") {
-            return original
-                .replacingOccurrences(of: "hey", with: "Hello")
-                .replacingOccurrences(of: "thanks", with: "Thank you")
-                .replacingOccurrences(of: "gonna", with: "going to")
-                .capitalized
-        }
-
-        if lower.contains("casual") || lower.contains("friendly") {
-            return "Hey — " + original.lowercased()
-        }
-
-        if lower.contains("bullet") {
-            return original
-                .split(separator: ".")
-                .map { "• " + $0.trimmingCharacters(in: .whitespaces) }
-                .joined(separator: "\n")
-        }
-
-        if lower.contains("fix") || lower.contains("grammar") {
-            // Very naive demo "fix"
-            var t = original
-            if !t.hasSuffix(".") && !t.hasSuffix("!") && !t.hasSuffix("?") && !t.isEmpty {
-                t += "."
-            }
-            return t
-        }
-
-        // Default demo transform: elegant rewrite stub
-        if !original.isEmpty {
-            return original.prefix(1).uppercased() + original.dropFirst() + " — refined."
-        }
-        return "Refined text would appear here."
     }
 
     func undoLastApply() {
