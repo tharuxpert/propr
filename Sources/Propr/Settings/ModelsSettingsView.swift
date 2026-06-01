@@ -24,8 +24,9 @@ struct ModelsSettingsView: View {
             // and having it caused ugly double-labeling + truncation near the window title bar.
             
             // Quick Start (Built-in providers)
-            // Explicitly disable animation from the BYOK form toggle below so the
-            // provider cards don't slide around when you expand/collapse the form.
+            // Non-lazy grid to avoid cells disappearing during fast scroll when the
+            // quick-add form below is open (LazyVGrid + dynamic content height change
+            // below it is a known source of recycling glitches).
             VStack(alignment: .leading, spacing: 12) {
                 Text("Quick Start")
                     .font(.headline)
@@ -34,24 +35,22 @@ struct ModelsSettingsView: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 
-                LazyVGrid(columns: [GridItem(.adaptive(minimum: 140))], spacing: 10) {
-                    ForEach(BuiltInProvider.all) { provider in
-                        Button {
-                            startQuickAdd(for: provider)
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(provider.name)
-                                    .font(.subheadline.weight(.medium))
-                                Text(provider.description)
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                // Stable non-lazy rows (8 providers → max 3 per row). Eliminates the
+                // fast-scroll disappearance bug while the quick-add form is visible.
+                let providers = BuiltInProvider.all
+                VStack(alignment: .leading, spacing: 10) {
+                    ForEach(Array(stride(from: 0, to: providers.count, by: 3)), id: \.self) { start in
+                        HStack(spacing: 10) {
+                            ForEach(0..<3, id: \.self) { offset in
+                                let index = start + offset
+                                if index < providers.count {
+                                    quickStartCard(for: providers[index])
+                                } else {
+                                    Spacer()
+                                        .frame(maxWidth: .infinity)
+                                }
                             }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(10)
-                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                         }
-                        .buttonStyle(.plain)
                     }
                 }
             }
@@ -568,6 +567,27 @@ struct ModelsSettingsView: View {
         }
         .padding(12)
         .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+    }
+
+    // Small stable card used in the non-lazy Quick Start grid.
+    // Extracted so the row layout code above stays readable.
+    private func quickStartCard(for provider: BuiltInProvider) -> some View {
+        Button {
+            startQuickAdd(for: provider)
+        } label: {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(provider.name)
+                    .font(.subheadline.weight(.medium))
+                Text(provider.description)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(10)
+            .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+        }
+        .buttonStyle(.plain)
     }
 }
 
