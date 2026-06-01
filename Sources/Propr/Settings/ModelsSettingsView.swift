@@ -145,6 +145,7 @@ struct ModelsSettingsView: View {
         .padding(.horizontal, 24)
         .padding(.bottom, 24)
     }
+    .frame(maxWidth: .infinity, maxHeight: .infinity)
     .frame(minWidth: 520)
 }
     
@@ -167,27 +168,47 @@ struct ModelsSettingsView: View {
             Text("Models from this endpoint")
                 .font(.subheadline.weight(.medium))
             
-            HStack {
-                TextField("Model name (e.g. llama-3.1-70b)", text: $newModelName)
+            Text("Only add the models you want to use. For large catalogs (OpenRouter, etc.), cherry-pick specific ones and give them short aliases — these aliases will appear in the menu instead of the long model IDs.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                TextField("Model ID (exact string sent to the API, e.g. anthropic/claude-3-5-sonnet)", text: $newModelName)
                     .textFieldStyle(.roundedBorder)
                 
-                TextField("Alias (optional)", text: $newModelAlias)
+                TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
                     .textFieldStyle(.roundedBorder)
                 
                 Button {
                     addModelToList()
                 } label: {
-                    Image(systemName: "plus.circle.fill")
+                    Label("Add model", systemImage: "plus.circle.fill")
+                        .labelStyle(.titleAndIcon)
                 }
+                .buttonStyle(.bordered)
                 .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
             }
             
             if !addedModels.isEmpty {
-                VStack(alignment: .leading, spacing: 4) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Models to add")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    
                     ForEach(addedModels) { model in
                         HStack {
-                            Text(model.displayName)
+                            VStack(alignment: .leading, spacing: 1) {
+                                Text(model.displayName)
+                                    .fontWeight(model.alias != nil ? .medium : .regular)
+                                
+                                if let alias = model.alias {
+                                    Text(model.name)
+                                        .font(.caption2)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                             Spacer()
+                            
                             Button {
                                 removeModelFromList(model)
                             } label: {
@@ -360,8 +381,18 @@ struct ModelsSettingsView: View {
                 .truncationMode(.middle)
             
             ForEach(endpoint.models) { model in
-                Text("• \(model.displayName)")
-                    .font(.caption)
+                if let alias = model.alias {
+                    HStack(spacing: 4) {
+                        Text("• \(alias)")
+                            .font(.caption)
+                        Text("(\(model.name))")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                } else {
+                    Text("• \(model.name)")
+                        .font(.caption)
+                }
             }
         }
         .padding(12)

@@ -266,12 +266,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             window.center()
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 560, height: 480)
+            window.minSize = NSSize(width: 560, height: 520)
             window.collectionBehavior = [.canJoinAllSpaces]
 
-            // Generous initial size; the transparent title bar + fullSizeContentView
-            // lets the SwiftUI content sit nicely underneath without truncation.
-            window.setContentSize(NSSize(width: 620, height: 520))
+            // Generous initial size so the add form and content are visible without immediate scrolling.
+            // The ScrollView inside the tabs will handle overflow when the form expands or many endpoints are added.
+            window.setContentSize(NSSize(width: 620, height: 620))
 
             settingsWindow = window
         }

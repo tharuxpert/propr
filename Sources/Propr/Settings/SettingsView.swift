@@ -11,6 +11,7 @@ struct SettingsView: View {
             ScrollView {
                 GeneralSettingsView()
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             .tabItem {
                 Label("General", systemImage: "gearshape")
             }
