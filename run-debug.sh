@@ -1,14 +1,19 @@
 #!/bin/zsh
 # Convenience script to launch the stable debug build.
-# This is the recommended (and only supported) way to run Propr during development
-# so that Accessibility permission survives rebuilds.
+# This is the recommended (and only supported) way to run Propr during development.
+#
+# It does several things to reduce Accessibility (TCC) pain:
+#   - Always builds to a stable path: Build/Debug/Propr.app
+#   - Kills any running instance before building
+#   - Only resets TCC on clean builds (mode 3). Normal builds reuse the existing
+#     permission because the app is always at the exact same stable path.
 #
 # CRITICAL: Never use Xcode's Run button (⌘R) for this app during development.
 #
 # Usage:
 #   ./run-debug.sh          # or ./run-debug.sh 1   → Just open the app (no build)
-#   ./run-debug.sh 2        # or --build            → Build (incremental) then open
-#   ./run-debug.sh 3        # or --clean            → Clean + build then launch
+#   ./run-debug.sh 2        # or --build            → Build (incremental) + launch (keeps existing Accessibility permission)
+#   ./run-debug.sh 3        # or --clean            → Clean + build + reset TCC + launch (fresh permission prompt)
 
 set -e
 
@@ -34,6 +39,14 @@ do_build() {
     echo "→ Quitting any running Propr instance..."
     pkill -x Propr 2>/dev/null || true
     sleep 0.5
+
+    if [[ "$clean" == "true" ]]; then
+        # Only reset TCC on clean builds. This gives you a completely fresh permission state.
+        echo "→ Cleaning old Accessibility permission entries (clean build)..."
+        tccutil reset Accessibility com.tharuxpert.Propr 2>/dev/null || true
+    else
+        echo "→ Incremental build — keeping existing Accessibility permission (if any)."
+    fi
 
     run_xcodegen
 
@@ -66,10 +79,23 @@ do_build() {
     echo "✅ Stable build updated at:"
     echo "   $APP_PATH"
     echo ""
-    echo "IMPORTANT FOR ACCESSIBILITY PERMISSION:"
-    echo "  → Grant permission ONLY to this exact path:"
-    echo "    $APP_PATH"
-    echo "  → REMOVE any entries that point to DerivedData."
+
+    if [[ "$clean" == "true" ]]; then
+        echo "IMPORTANT FOR ACCESSIBILITY PERMISSION:"
+        echo "  → TCC was reset for this clean build."
+        echo "  → You will get a fresh prompt when you launch."
+        echo "  → Grant permission ONLY to this exact stable path:"
+        echo "    $APP_PATH"
+        echo ""
+        echo "→ Opening Accessibility settings for you..."
+        open "x-apple.systempreferences:com.apple.preference.security?Privacy_Accessibility"
+    else
+        echo "NOTE: Accessibility permission should be preserved from previous runs"
+        echo "      (because the app is always at the same stable path)."
+        echo "      If it asks again, grant it to: $APP_PATH"
+    fi
+
+    echo ""
     echo "  → Never use Xcode's Run button (⌘R) — always use this script."
     echo ""
 }
@@ -79,8 +105,12 @@ case "$MODE" in
         echo "Usage: $0 [1|2|3|--open|--build|--clean]"
         echo ""
         echo "  1, --open, (default)   Just launch the stable app (fastest)"
-        echo "  2, --build             Build (incremental) then launch"
-        echo "  3, --clean             Clean + build then launch"
+        echo "  2, --build             Build (incremental) + launch (keeps existing Accessibility permission)"
+        echo "  3, --clean             Clean + build + reset TCC + fresh permission prompt"
+        echo ""
+        echo "TCC / Accessibility handling:"
+        echo "  - Normal builds (mode 2) do NOT reset permission (stable path = permission sticks)."
+        echo "  - Clean builds (mode 3) reset TCC so you get a fresh prompt."
         exit 0
         ;;
     1|--open|-o|"")
@@ -96,8 +126,8 @@ case "$MODE" in
         echo "Usage: $0 [1|2|3|--open|--build|--clean]"
         echo ""
         echo "  1, --open, (default)   Just launch the stable app"
-        echo "  2, --build             Build (incremental) then launch"
-        echo "  3, --clean             Clean + build then launch"
+        echo "  2, --build             Build (incremental) + launch"
+        echo "  3, --clean             Clean + build + reset TCC + launch"
         exit 1
         ;;
 esac

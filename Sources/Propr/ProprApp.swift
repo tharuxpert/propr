@@ -3,9 +3,8 @@ import AppKit
 @preconcurrency import ApplicationServices
 import Combine
 
-// Custom notification so the AppDelegate can reliably tell the SwiftUI side to show onboarding
 extension Notification.Name {
-    static let proprDidFinishLaunching = Notification.Name("proprDidFinishLaunching")
+    static let proprOpenSettings = Notification.Name("proprOpenSettings")
 }
 
 @main
@@ -24,102 +23,13 @@ struct ProprApp: App {
     }
 
     var body: some Scene {
-        // Onboarding / permission setup window
-        Window("Welcome to Propr", id: "onboarding") {
-            OnboardingView(accessibility: appDelegate.accessibility)
+        // Dummy scene to keep the SwiftUI app lifecycle happy in this LSUIElement app.
+        // The actual Settings window is created manually for reliable opening from the menu.
+        WindowGroup {
+            EmptyView()
         }
         .windowStyle(.hiddenTitleBar)
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
-
-        // Settings window
-        Window("Propr Settings", id: "settings") {
-            SettingsView()
-        }
-        .windowResizability(.contentSize)
-        .defaultPosition(.center)
-    }
-}
-
-// The actual menu content as a proper View so @Environment values (especially openWindow) resolve correctly.
-struct MenuBarContent: View {
-    @ObservedObject var accessibility: AccessibilityManager
-    @Environment(\.openWindow) private var openWindow
-    @Bindable var modelStore = ModelStore.shared
-
-    @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
-
-    var body: some View {
-        // Backup trigger from AppDelegate
-        Color.clear
-            .onReceive(NotificationCenter.default.publisher(for: .proprDidFinishLaunching)) { _ in
-                attemptToShowOnboarding(reason: "notification")
-            }
-
-        // Force a fresh check every time the user opens the menu so the
-        // "Permissions & Setup..." item disappears immediately after granting.
-        Color.clear
-            .onAppear {
-                accessibility.checkPermission(prompt: false)
-            }
-
-        // Listen for "Manage Models..." request from the isolated ModelSelectionMenu
-        Color.clear
-            .onReceive(NotificationCenter.default.publisher(for: .proprOpenSettings)) { _ in
-                openWindow(id: "settings")
-            }
-
-        // Primary action at the very top, in its own section
-        Button {
-            NotificationCenter.default.post(name: AppDelegate.summonFloatingBarNotification, object: nil)
-        } label: {
-            Text("Show Floating Bar")
-        }
-
-        Divider()
-
-        // Note: The main menu (including Model selection with native hover/no flicker)
-        // is now handled by StatusItemController (AppKit NSStatusItem + NSMenu).
-        // We keep minimal SwiftUI items here for the MenuBarExtra icon.
-
-        Button {
-            openWindow(id: "settings")
-        } label: {
-            Label("Settings...", systemImage: "gearshape")
-        }
-        .keyboardShortcut(",")
-
-        if !accessibility.hasPermission {
-            Button {
-                openWindow(id: "onboarding")
-            } label: {
-                Label("Permissions & Setup...", systemImage: "exclamationmark.shield")
-            }
-        }
-
-        Divider()
-
-        Button {
-            NSApplication.shared.terminate(nil)
-        } label: {
-            Label("Quit Propr", systemImage: "power")
-        }
-        .keyboardShortcut("q")
-    }
-
-    private func attemptToShowOnboarding(reason: String) {
-        guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
-
-        // Prevent duplicate onboarding windows.
-        guard !accessibility.hasAttemptedAutoShowOnboardingThisLaunch else { return }
-        accessibility.markAutoShowOnboardingAttempted()
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
-            guard !hasCompletedOnboarding || !accessibility.hasPermission else { return }
-
-            openWindow(id: "onboarding")
-            NSApp.activate(ignoringOtherApps: true)
-        }
+        .defaultSize(width: 0, height: 0)
     }
 }
 
@@ -129,7 +39,7 @@ struct MenuBarContent: View {
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // Long-lived core objects owned by the delegate (reliable lifetime in LSUIElement apps).
-    let accessibility = AccessibilityManager()
+    let accessibility = AccessibilityManager.shared
     let fieldDetector = FocusedFieldDetector()
     // Eagerly created so its Combine subscription to the detector is active for the entire lifetime.
     // This is what actually drives the auto-show behavior when a text field is focused.
@@ -141,7 +51,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var lastCommandPressTime: Date?
     private var commandKeyMonitor: Any?
 
+    // Lazily-created windows presented manually via NSWindow + NSHostingView.
+    // This is required for reliable "Settings..." / "Manage Models..." and first-launch
+    // onboarding in a pure LSUIElement (menu-bar-only) agent app.
+    private var onboardingWindow: NSWindow?
+    private var settingsWindow: NSWindow?
+
     static let summonFloatingBarNotification = Notification.Name("ProprSummonFloatingBar")
+
+    // Allow the AppKit menu controller to trigger onboarding/permission UI without tight coupling.
+    static weak var shared: AppDelegate?
 
     override init() {
         floatingBarController = FloatingBarController(detector: fieldDetector)
@@ -149,6 +68,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        AppDelegate.shared = self
+
         // Wire permission → detector start (single source of truth in the delegate)
         permissionCancellable = accessibility.$hasPermission
             .receive(on: RunLoop.main)
@@ -184,12 +105,77 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Full AppKit status item for reliable menubar (no SwiftUI menu flicker)
         StatusItemController.shared.setup()
 
+        // Listen for requests to open Settings (from AppKit menu items like "Settings..." and "Manage Models...")
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(openSettingsWindow),
+            name: .proprOpenSettings,
+            object: nil
+        )
+
         // This is the most reliable place to decide to show onboarding on a true cold launch.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { [weak self] in
             MainActor.assumeIsolated {
                 self?.showOnboardingIfNeededOnLaunch()
             }
         }
+    }
+
+    @objc private func openSettingsWindow() {
+        NSApp.activate(ignoringOtherApps: true)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            self.showSettingsWindow()
+        }
+    }
+
+    @MainActor
+    private func showSettingsWindow() {
+        if settingsWindow == nil {
+            let hostingController = NSHostingController(rootView: SettingsView())
+
+            // Tell the hosting controller to let Auto Layout fully control its size.
+            hostingController.sizingOptions = []
+
+            // Wider initial + minimum size to accommodate the new left sidebar + content.
+            let contentRect = NSRect(x: 0, y: 0, width: 760, height: 620)
+            let window = NSWindow(
+                contentRect: contentRect,
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
+                backing: .buffered,
+                defer: false
+            )
+
+            let hostingView = hostingController.view
+            hostingView.translatesAutoresizingMaskIntoConstraints = false
+
+            window.contentView = hostingView
+            window.title = "Settings"
+            window.identifier = NSUserInterfaceItemIdentifier("settings")
+            window.center()
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.minSize = NSSize(width: 680, height: 540)
+            window.collectionBehavior = [.canJoinAllSpaces]
+
+            // Pin the hosting view to all edges
+            if let contentView = window.contentView {
+                NSLayoutConstraint.activate([
+                    hostingView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
+                    hostingView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
+                    hostingView.topAnchor.constraint(equalTo: contentView.topAnchor),
+                    hostingView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
+                ])
+            }
+
+            settingsWindow = window
+        }
+
+        settingsWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        // Force layout so the hosted SwiftUI content gets its size immediately
+        settingsWindow?.contentView?.layoutSubtreeIfNeeded()
     }
 
     private func setupDoubleCommandHotkey() {
@@ -227,55 +213,93 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         floatingBarController.summonForCurrentFocus()
     }
 
+    /// Called from the menu when the user explicitly chooses "Permissions & Setup...".
+    /// We show the onboarding UI (it handles both first-run and returning users with missing permission).
+    @MainActor
+    func showOnboardingForPermissionRecovery() {
+        // Reset the launch guard so an explicit menu action can show it even on the same launch.
+        accessibility.resetOnboardingAttemptFlag()
+        showOnboardingWindow()
+    }
+
     @MainActor
     private func showOnboardingIfNeededOnLaunch() {
-        let hasCompleted = UserDefaults.standard.bool(forKey: "hasCompletedOnboarding")
-
         // Quick permission check using the main manager
         accessibility.checkPermission(prompt: false)
 
-        guard !hasCompleted || !accessibility.hasPermission else { return }
+        // Show the onboarding/permission window on launch if permission is missing.
+        // This applies to both true first runs and returning users whose permission
+        // became unavailable (new build, TCC reset, etc.).
+        //
+        // The hasAttempted guard + final delayed re-check prevents most transient
+        // false positives. The header inside OnboardingView is toned down for
+        // returning users so it doesn't feel like marketing spam.
+        guard !accessibility.hasPermission else { return }
 
-        // Use the single shared manager and the declarative Window
-        // to avoid duplicate windows and state desync.
-        DispatchQueue.main.async {
-            NotificationCenter.default.post(name: .proprDidFinishLaunching, object: nil)
+        guard !accessibility.hasAttemptedAutoShowOnboardingThisLaunch else { return }
+        accessibility.markAutoShowOnboardingAttempted()
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                // Final defensive check right before showing (gives monitoring / TCC more time)
+                self.accessibility.checkPermission(prompt: false)
+                if !self.accessibility.hasPermission {
+                    self.showOnboardingWindow()
+                }
+            }
         }
     }
-}
 
-// Temporary placeholder so the Settings button does something visible.
-// This whole view + window will be replaced with real settings on a later branch.
-struct SettingsPlaceholderView: View {
-    var body: some View {
-        VStack(spacing: 16) {
-            Image("BrandIcon")
-                .resizable()
-                .scaledToFit()
-                .frame(width: 64, height: 64)
+    // MARK: - Manual window presentation (reliable for LSUIElement + menu triggers)
 
-            Text("Propr Settings")
-                .font(.title2.weight(.semibold))
+    @MainActor
+    private func showOnboardingWindow() {
+        if onboardingWindow == nil {
+            let hosting = NSHostingView(rootView: OnboardingView(
+                accessibility: accessibility,
+                onComplete: { [weak self] in
+                    // OnboardingView already set the UserDefaults flag inside completeOnboarding()
+                    self?.onboardingWindow?.orderOut(nil)
 
-            Text("This is just a placeholder.\nReal settings (API keys, always-approve toggle, launch at login, etc.) will be built on a dedicated branch.")
-                .multilineTextAlignment(.center)
-                .foregroundStyle(.secondary)
-                .font(.callout)
+                    // Belt-and-suspenders: make sure the permissions menu item is gone
+                    // if this completion path is taken after granting.
+                    StatusItemController.shared.refreshMenu()
+                },
+                onPermissionGranted: { [weak self] in
+                    self?.onboardingWindow?.makeKeyAndOrderFront(nil)
+                    NSApp.activate(ignoringOtherApps: true)
 
-            Spacer()
+                    // Make the menu item disappear promptly when they grant from System Settings.
+                    StatusItemController.shared.refreshMenu()
+                }
+            ))
 
-            Text("v0.1.0  •  menu bar only  •  native Swift")
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
+            let contentRect = NSRect(x: 0, y: 0, width: 460, height: 540)
+            hosting.frame = contentRect
+
+            let window = NSWindow(
+                contentRect: contentRect,
+                styleMask: [.titled, .closable, .fullSizeContentView],
+                backing: .buffered,
+                defer: false
+            )
+            window.title = "Welcome to Propr"
+            window.identifier = NSUserInterfaceItemIdentifier("onboarding")
+            window.contentView = hosting
+            window.center()
+            window.isReleasedWhenClosed = false
+            window.hidesOnDeactivate = false
+            window.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+            onboardingWindow = window
         }
-        .padding(24)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear {
-            // Required for windows opened from menu-bar-only apps (LSUIElement)
-            // so the window actually appears in front and can receive focus.
-            NSApp.activate(ignoringOtherApps: true)
-        }
+
+        onboardingWindow?.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
     }
+
+
 }
 
 // Full AppKit status item for reliable menubar menu (no SwiftUI hover flicker).
@@ -285,14 +309,13 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     static let shared = StatusItemController()
     
     private var statusItem: NSStatusItem?
+    private var permissionCancellable: AnyCancellable?
     
     private override init() {
         super.init()
     }
     
     func setup() {
-        // Remove the SwiftUI MenuBarExtra menu if we want full control (icon stays via this)
-        // For now, we create our own status item with the custom icon.
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
         
         if let button = statusItem?.button {
@@ -303,6 +326,24 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let menu = buildMainMenu()
         menu.delegate = self
         statusItem?.menu = menu
+
+        // Live update the menu when permission state changes (so "Permissions & Setup..."
+        // disappears immediately after the user grants it, without needing to re-open the menu).
+        permissionCancellable = AccessibilityManager.shared.$hasPermission
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                self?.refreshMenu()
+            }
+    }
+    
+    /// Forces a fresh permission check + rebuild of the dynamic parts of the menu.
+    /// Safe to call from anywhere (e.g. when permission is granted from the onboarding window).
+    func refreshMenu() {
+        AccessibilityManager.shared.checkPermission(prompt: false)
+
+        let freshMenu = buildMainMenu()
+        freshMenu.delegate = self
+        statusItem?.menu = freshMenu
     }
     
     private func buildMainMenu() -> NSMenu {
@@ -328,8 +369,18 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         settings.target = self
         menu.addItem(settings)
         
-        // Permissions if needed
-        // (We can add conditional logic here similar to SwiftUI version)
+        // Permissions & Setup (only when accessibility is missing)
+        // This keeps the menu in sync with reality so users don't get surprised by the
+        // onboarding window on launch when permissions are actually fine.
+        if !AccessibilityManager.shared.hasPermission {
+            let perms = NSMenuItem(title: "Permissions & Setup...", action: #selector(openPermissions), keyEquivalent: "")
+            perms.target = self
+            if let icon = NSImage(systemSymbolName: "exclamationmark.shield", accessibilityDescription: "Permissions") {
+                icon.isTemplate = true
+                perms.image = icon
+            }
+            menu.addItem(perms)
+        }
         
         menu.addItem(.separator())
         
@@ -367,18 +418,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         
         submenu.addItem(.separator())
         
-        let manage = NSMenuItem(title: "Manage Models...", action: #selector(openSettings), keyEquivalent: "")
+        let manage = NSMenuItem(title: "Manage Models...", action: #selector(openManageModels), keyEquivalent: "")
         manage.target = self
         submenu.addItem(manage)
         
         return submenu
     }
     
-    // Rebuild dynamic parts when menu is about to open (keeps it fresh)
+    // Called by the system right before the menu is shown.
     func menuWillOpen(_ menu: NSMenu) {
-        // For the top level menu, we can rebuild if needed.
-        // For simplicity, we rebuild the model submenu when its parent is the main menu.
-        // In practice, call rebuild on the statusItem menu if you want live updates.
+        // Make sure everything (permission item + model checkmark) is up to date.
+        refreshMenu()
     }
     
     @objc private func showFloatingBar() {
@@ -396,13 +446,24 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     @objc private func openSettings() {
         NotificationCenter.default.post(name: .proprOpenSettings, object: nil)
     }
+
+    @objc private func openManageModels() {
+        NotificationCenter.default.post(
+            name: .proprOpenSettings,
+            object: nil,
+            userInfo: ["selectSection": "models"]
+        )
+    }
+    
+    @objc private func openPermissions() {
+        // For returning users we still want the real OnboardingView (it handles the
+        // current permission state + "Start using Propr" button gracefully).
+        AppDelegate.shared?.showOnboardingForPermissionRecovery()
+    }
     
     @objc private func quitApp() {
         NSApplication.shared.terminate(nil)
     }
 }
 
-// Helper notification for opening settings from nested menu
-extension Notification.Name {
-    static let proprOpenSettings = Notification.Name("proprOpenSettings")
-}
+

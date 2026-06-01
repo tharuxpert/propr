@@ -24,21 +24,42 @@ struct OnboardingView: View {
     var body: some View {
         VStack(spacing: 0) {
             // Top icon + header
+            // For returning users (already completed onboarding before), we show a
+            // much more minimal header so it feels like a permission recovery flow
+            // rather than being re-marketed the whole app.
             VStack(spacing: 12) {
-                Image("BrandIcon")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 72, height: 72)
-                    .padding(.top, 32)
+                if !hasCompletedOnboarding {
+                    Image("BrandIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 72, height: 72)
+                        .padding(.top, 32)
 
-                Text("Welcome to Propr")
-                    .font(.system(size: 28, weight: .semibold, design: .rounded))
+                    Text("Welcome to Propr")
+                        .font(.system(size: 28, weight: .semibold, design: .rounded))
 
-                Text("Refine your writing instantly, anywhere on your Mac.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
+                    Text("Refine your writing instantly, anywhere on your Mac.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                } else {
+                    // Recovery / re-permission case for returning users
+                    Image("BrandIcon")
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 48, height: 48)
+                        .padding(.top, 24)
+
+                    Text("Accessibility Access Needed")
+                        .font(.title3.weight(.semibold))
+
+                    Text("Propr needs Accessibility permission to detect and edit text fields.")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal, 24)
+                }
             }
             .padding(.bottom, 28)
 
@@ -194,5 +215,5 @@ struct OnboardingView: View {
 }
 
 #Preview {
-    OnboardingView(accessibility: AccessibilityManager())
+    OnboardingView(accessibility: AccessibilityManager.shared)
 }

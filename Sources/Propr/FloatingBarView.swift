@@ -41,10 +41,67 @@ struct FloatingBarView: View {
     let onClose: () -> Void
     var onUndo: (() -> Void)? = nil
 
+    /// Called by the controller when it starts waiting for the model.
+    var onThinkingStarted: (() -> Void)? = nil
+    /// Called by the controller when the first token arrives (streaming).
+    var onFirstTokenReceived: (() -> Void)? = nil
+    /// Controller can call this to explicitly stop the thinking indicator.
+    var onStopThinking: (() -> Void)? = nil
+    /// Controller reports a user-facing error.
+    var onError: ((String) -> Void)? = nil
+
+    /// Called when live streaming starts typing into the target field.
+    var onTypingStarted: (() -> Void)? = nil
+    /// Called when live streaming typing finishes.
+    var onTypingFinished: (() -> Void)? = nil
+
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
     @State private var hasApplied = false
     @State private var lastPrompt: String = ""
+    @State private var isThinking = false
+    @State private var isTyping = false
+    @State private var errorMessage: String? = nil
+
+    func startThinking() {
+        errorMessage = nil
+        isThinking = true
+        isTyping = false
+        onThinkingStarted?()
+    }
+
+    func stopThinking() {
+        isThinking = false
+        onStopThinking?()
+        onFirstTokenReceived?()
+    }
+
+    func startTyping() {
+        isThinking = false
+        isTyping = true
+    }
+
+    func stopTyping() {
+        isTyping = false
+        onTypingFinished?()
+    }
+
+    func startTypingIndicator() {
+        isThinking = false
+        isTyping = true
+        onTypingStarted?()
+    }
+
+    func showError(_ message: String) {
+        isThinking = false
+        isTyping = false
+        errorMessage = message
+        onError?(message)
+    }
+
+    func clearError() {
+        errorMessage = nil
+    }
 
     private var textPreview: String {
         let text = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
@@ -122,6 +179,15 @@ struct FloatingBarView: View {
                     if !trimmed.isEmpty {
                         lastPrompt = trimmed
                         hasApplied = true
+                        isThinking = true
+
+                        // For non-streaming: show thinking for a short time, then reveal Undo/Done
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
+                            if hasApplied {
+                                isThinking = false
+                            }
+                        }
+
                         onRefine(trimmed)
                     }
                 }
@@ -133,7 +199,51 @@ struct FloatingBarView: View {
                 }
                 .disabled(hasApplied)
 
-            if hasApplied {
+            if isThinking {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Thinking…")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            } else if isTyping {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .controlSize(.small)
+                    Text("Typing…")
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+
+            if let error = errorMessage {
+                HStack(spacing: 8) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.orange)
+                    Text(error)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                    Spacer()
+                    Button("Dismiss") {
+                        clearError()
+                    }
+                    .buttonStyle(.bordered)
+                    .controlSize(.mini)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
+                .background(Color.orange.opacity(0.1))
+            }
+
+            if hasApplied && !isThinking && errorMessage == nil {
                 HStack(spacing: 12) {
                     if let onUndo {
                         Button("Undo", action: onUndo)
