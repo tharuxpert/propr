@@ -18,7 +18,7 @@ extension BuiltInProvider {
             defaultModels: ["gpt-4o", "gpt-4o-mini", "o1-preview", "o1-mini"],
             requiresKey: true,
             description: "Official OpenAI models",
-            apiKeyExample: "sk-..."
+            apiKeyExample: "sk-proj-..."   // Modern project keys; legacy sk- keys also work
         ),
         BuiltInProvider(
             name: "Groq",
@@ -47,7 +47,7 @@ extension BuiltInProvider {
             defaultModels: ["meta-llama/Meta-Llama-3.1-70B-Instruct-Turbo", "Qwen/Qwen2.5-72B-Instruct"],
             requiresKey: true,
             description: "Large selection of open models",
-            apiKeyExample: "tgp_v1_..."
+            apiKeyExample: "your-together-key"   // No standard short prefix published
         ),
         BuiltInProvider(
             name: "Fireworks AI",
@@ -63,11 +63,11 @@ extension BuiltInProvider {
             defaultModels: ["anthropic/claude-3.5-sonnet", "meta-llama/llama-3.1-70b-instruct", "openai/gpt-4o"],
             requiresKey: true,
             description: "Access many providers through one key",
-            apiKeyExample: "sk-or-..."
+            apiKeyExample: "sk-or-v1-..."
         ),
         BuiltInProvider(
             name: "DeepSeek",
-            baseURL: "https://api.deepseek.com/v1",
+            baseURL: "https://api.deepseek.com",   // Official OpenAI-compatible base ( /v1 also works in most clients)
             defaultModels: ["deepseek-chat", "deepseek-reasoner"],
             requiresKey: true,
             description: "Strong coding & reasoning models",
