@@ -41,8 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     // Long-lived core objects owned by the delegate (reliable lifetime in LSUIElement apps).
     let accessibility = AccessibilityManager.shared
     let fieldDetector = FocusedFieldDetector()
-    // Eagerly created so its Combine subscription to the detector is active for the entire lifetime.
-    // This is what actually drives the auto-show behavior when a text field is focused.
+    // Eagerly created so menu/hotkey summons can reuse one controller for the app lifetime.
     private let floatingBarController: FloatingBarController
 
     private var permissionCancellable: AnyCancellable?
@@ -70,15 +69,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
 
-        // Wire permission → detector start (single source of truth in the delegate)
+        // Keep detector state cleared if Accessibility goes away. The floating bar reads focus
+        // only when explicitly summoned; it does not run a live focus observer.
         permissionCancellable = accessibility.$hasPermission
             .receive(on: RunLoop.main)
             .sink { [weak self] granted in
                 guard let self else { return }
-                if granted {
-                    print("[Propr] Accessibility permission is now true — starting focus detector")
-                    self.fieldDetector.start()
-                } else {
+                if !granted {
                     print("[Propr] Accessibility permission lost — stopping focus detector")
                     self.fieldDetector.stop()
                 }
@@ -312,6 +309,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     
     private var statusItem: NSStatusItem?
     private var permissionCancellable: AnyCancellable?
+    private var modelChangeObserver: NSObjectProtocol?
     
     private override init() {
         super.init()
@@ -336,6 +334,16 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             .sink { [weak self] _ in
                 self?.refreshMenu()
             }
+
+        modelChangeObserver = NotificationCenter.default.addObserver(
+            forName: .proprModelStoreDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.refreshMenu()
+            }
+        }
     }
     
     /// Forces a fresh permission check + rebuild of the dynamic parts of the menu.
@@ -389,6 +397,10 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         // Quit
         let quit = NSMenuItem(title: "Quit Propr", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
+        if let icon = NSImage(systemSymbolName: "power", accessibilityDescription: "Quit") {
+            icon.isTemplate = true
+            quit.image = icon
+        }
         menu.addItem(quit)
         
         return menu
@@ -467,5 +479,3 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         NSApplication.shared.terminate(nil)
     }
 }
-
-

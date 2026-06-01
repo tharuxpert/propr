@@ -1,6 +1,10 @@
 import Foundation
 import SwiftUI
 
+extension Notification.Name {
+    static let proprModelStoreDidChange = Notification.Name("proprModelStoreDidChange")
+}
+
 @MainActor
 @Observable
 final class ModelStore {
@@ -16,6 +20,7 @@ final class ModelStore {
         didSet {
             // Persisted via saveEndpoints() → ModelConfigStore (models.json)
             saveEndpoints()
+            notifyChanged()
         }
     }
     
@@ -57,6 +62,7 @@ final class ModelStore {
         }
         
         allAvailableModels = models
+        notifyChanged()
     }
     
     func selectedModel() -> ModelSelection? {
@@ -106,6 +112,10 @@ final class ModelStore {
         var config = ModelConfigStore.shared.load()
         config.apiKeys[endpointID.uuidString] = key
         ModelConfigStore.shared.save(config)
+    }
+
+    private func notifyChanged() {
+        NotificationCenter.default.post(name: .proprModelStoreDidChange, object: self)
     }
 }
 

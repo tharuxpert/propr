@@ -23,8 +23,8 @@ struct FieldSnapshot: Equatable {
     }
 }
 
-/// Manages system-wide observation of focused text fields via the Accessibility API.
-/// Publishes a `currentField` snapshot whenever a qualifying text field gains focus.
+/// Reads focused text field snapshots via the Accessibility API.
+/// The app only calls this from explicit summon paths; it should not auto-show UI on focus changes.
 ///
 /// All heavy AX work stays on the main actor. The C callback hops back via Unmanaged refcon.
 @MainActor
@@ -121,8 +121,8 @@ final class FocusedFieldDetector: ObservableObject {
         }
 
         // Reliable AppKit-level fallback. This fires whenever any app becomes frontmost.
-        // We use it to trigger a fresh AX query of the current focused UI element.
-        // This works even when AXObserver notification registration completely fails on system-wide.
+        // Live observation is intentionally not started by the app in summon-only mode, but
+        // keeping this path correct protects callers that explicitly opt into start().
         if appActivationObserver == nil {
             appActivationObserver = NSWorkspace.shared.notificationCenter.addObserver(
                 forName: NSWorkspace.didActivateApplicationNotification,
@@ -136,7 +136,7 @@ final class FocusedFieldDetector: ObservableObject {
                     }
                 }
             }
-            print("[Propr Detector] Registered NSWorkspace app-activation fallback (this should make auto-show reliable).")
+            print("[Propr Detector] Registered NSWorkspace app-activation fallback.")
         }
 
         // Always do an initial query
@@ -163,7 +163,10 @@ final class FocusedFieldDetector: ObservableObject {
 
     /// Force an immediate re-evaluation of the currently focused element (useful for manual summon).
     func refreshCurrentFocus() {
-        guard let sys = systemWide ?? AXUIElementCreateSystemWide() as AXUIElement? else { return }
+        let sys = systemWide ?? AXUIElementCreateSystemWide()
+        if systemWide == nil {
+            systemWide = sys
+        }
 
         var focused: AnyObject?
         let result = AXUIElementCopyAttributeValue(sys, kAXFocusedUIElementAttribute as CFString, &focused)
@@ -183,7 +186,10 @@ final class FocusedFieldDetector: ObservableObject {
         // The `element` passed here may be the *application* (when kAXFocusedApplicationChangedNotification fired)
         // or a UI element (when the direct focused-UI notification fired on systems where it works).
         // The only reliable thing is to freshly read the actual focused UI element right now.
-        guard let sys = systemWide else { return }
+        let sys = systemWide ?? AXUIElementCreateSystemWide()
+        if systemWide == nil {
+            systemWide = sys
+        }
 
         var focusedRef: AnyObject?
         let copyResult = AXUIElementCopyAttributeValue(sys, kAXFocusedUIElementAttribute as CFString, &focusedRef)
