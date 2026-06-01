@@ -74,10 +74,70 @@ struct ModelsSettingsView: View {
                             .foregroundStyle(.secondary)
                     }
                     
+                    // Same model + alias picker as custom BYOK, so users can cherry-pick
+                    // specific models from large catalogs (e.g. OpenRouter) and give them nice short names.
+                    Divider()
+                    
+                    Text("Models to include")
+                        .font(.subheadline.weight(.medium))
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        TextField("Model ID (exact string sent to the API)", text: $newModelName)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        TextField("Alias (optional – what shows in Propr’s menu)", text: $newModelAlias)
+                            .textFieldStyle(.roundedBorder)
+                        
+                        Button {
+                            addModelToList()
+                        } label: {
+                            Label("Add model", systemImage: "plus.circle.fill")
+                        }
+                        .buttonStyle(.bordered)
+                        .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
+                    }
+                    
+                    if !addedModels.isEmpty {
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("Models to add")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            ForEach(addedModels) { model in
+                                HStack {
+                                    VStack(alignment: .leading, spacing: 1) {
+                                        Text(model.displayName)
+                                            .fontWeight(model.alias != nil ? .medium : .regular)
+                                        
+                                        if let alias = model.alias {
+                                            Text(model.name)
+                                                .font(.caption2)
+                                                .foregroundStyle(.secondary)
+                                        }
+                                    }
+                                    Spacer()
+                                    
+                                    Button {
+                                        removeModelFromList(model)
+                                    } label: {
+                                        Image(systemName: "minus.circle.fill")
+                                            .foregroundStyle(.red)
+                                    }
+                                    .buttonStyle(.plain)
+                                }
+                            }
+                        }
+                        .padding(8)
+                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                    }
+                    
                     HStack {
                         Button("Cancel") {
                             quickAddProvider = nil
                             quickAddAPIKey = ""
+                            addedModels = []
+                            newModelName = ""
+                            newModelAlias = ""
                         }
                         
                         Spacer()
@@ -228,6 +288,9 @@ struct ModelsSettingsView: View {
                     withAnimation {
                         showingAddForm = false
                         resetAddForm()
+                        addedModels = []
+                        newModelName = ""
+                        newModelAlias = ""
                     }
                 }
                 
@@ -282,9 +345,12 @@ struct ModelsSettingsView: View {
             try modelStore.saveAPIKey(apiKey.trimmingCharacters(in: .whitespaces), for: endpoint.id)
             modelStore.addEndpoint(endpoint)
             
-            // Reset form
+            // Reset form + model picker state
             resetAddForm()
             showingAddForm = false
+            addedModels = []
+            newModelName = ""
+            newModelAlias = ""
             
             // Auto-select the first model from the new endpoint
             if let firstModel = endpoint.models.first {
@@ -306,13 +372,18 @@ struct ModelsSettingsView: View {
     private func startQuickAdd(for provider: BuiltInProvider) {
         quickAddProvider = provider
         quickAddAPIKey = ""
+        
+        // Pre-populate with the provider's suggested models so the user can
+        // cherry-pick, remove some, and add aliases — same experience as custom BYOK.
+        addedModels = provider.defaultModels.map { CustomModel(name: $0) }
     }
     
     private func addQuickProvider() {
         guard let provider = quickAddProvider,
               !quickAddAPIKey.trimmingCharacters(in: .whitespaces).isEmpty else { return }
         
-        let models = provider.defaultModels.map { CustomModel(name: $0) }
+        // Use whatever models + aliases the user curated in the list (same as custom endpoint flow)
+        let models = addedModels
         
         let endpoint = CustomEndpoint(
             name: provider.name,
@@ -339,9 +410,12 @@ struct ModelsSettingsView: View {
                 modelStore.selectModel(selection)
             }
             
-            // Reset
+            // Reset quick add state + the shared model list
             quickAddProvider = nil
             quickAddAPIKey = ""
+            addedModels = []
+            newModelName = ""
+            newModelAlias = ""
             
         } catch {
             print("Failed to save API key for quick provider: \(error)")
