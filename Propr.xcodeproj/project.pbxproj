@@ -201,6 +201,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		0DFD583C54C320F6DB5FFAEC /* Copy Debug build to stable location (for persistent Accessibility permission) */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -215,7 +216,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# This copies the built app to a fixed path so macOS TCC doesn't treat\n# every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).\nDEST=\"$SRCROOT/Build/Debug/Propr.app\"\n\necho \"→ Copying debug build to stable location...\"\nrm -rf \"$DEST\"\nmkdir -p \"$(dirname \"$DEST\")\"\ncp -R \"$TARGET_BUILD_DIR/Propr.app\" \"$DEST\"\n\n# Ad-hoc re-sign the copy (helps a bit with TCC stability)\ncodesign --force --deep --sign - \"$DEST\" 2>/dev/null || true\n\necho \"✅ Stable debug build available at:\"\necho \"   $DEST\"\necho \"\"\necho \"   → For development, launch from this location instead of running directly from Xcode:\"\necho \"     open \\\"$DEST\\\"\"\necho \"\"\necho \"   This prevents having to re-grant Accessibility permission after every build.\"\n";
+			shellScript = "set -eu\n\n# This copies the built app to a fixed path so macOS TCC doesn't treat\n# every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).\nSRC=\"$TARGET_BUILD_DIR/Propr.app\"\nDEST_DIR=\"$SRCROOT/Build/Debug\"\nDEST=\"$SRCROOT/Build/Debug/Propr.app\"\n\necho \"→ Copying debug build to stable location...\"\nmkdir -p \"$DEST_DIR\"\nif [ -e \"$DEST\" ]; then\n  chmod -R u+w \"$DEST\" 2>/dev/null || true\n  rm -rf \"$DEST\"\nfi\nditto \"$SRC\" \"$DEST\"\n\n# Ad-hoc re-sign the copy (helps a bit with TCC stability)\ncodesign --force --deep --sign - \"$DEST\" 2>/dev/null || true\n\necho \"✅ Stable debug build available at:\"\necho \"   $DEST\"\necho \"\"\necho \"   → For development, launch from this location instead of running directly from Xcode:\"\necho \"     open \\\"$DEST\\\"\"\necho \"\"\necho \"   This prevents having to re-grant Accessibility permission after every build.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -284,7 +285,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
@@ -353,7 +354,7 @@
 				DEVELOPMENT_TEAM = "";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				GCC_C_LANGUAGE_STANDARD = gnu11;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;

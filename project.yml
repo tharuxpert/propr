@@ -22,7 +22,9 @@ settings:
 
   # Modern build settings (accepted via Xcode's Perform Changes)
   DEAD_CODE_STRIPPING: YES
-  ENABLE_USER_SCRIPT_SANDBOXING: YES
+  # The post-build phase intentionally copies the built app into the repo's stable
+  # debug path so macOS Accessibility/TCC permission stays attached while developing.
+  ENABLE_USER_SCRIPT_SANDBOXING: NO
   ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
 
 targets:
@@ -67,14 +69,21 @@ targets:
     postBuildScripts:
       - name: "Copy Debug build to stable location (for persistent Accessibility permission)"
         script: |
+          set -eu
+
           # This copies the built app to a fixed path so macOS TCC doesn't treat
           # every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).
+          SRC="$TARGET_BUILD_DIR/Propr.app"
+          DEST_DIR="$SRCROOT/Build/Debug"
           DEST="$SRCROOT/Build/Debug/Propr.app"
 
           echo "→ Copying debug build to stable location..."
-          rm -rf "$DEST"
-          mkdir -p "$(dirname "$DEST")"
-          cp -R "$TARGET_BUILD_DIR/Propr.app" "$DEST"
+          mkdir -p "$DEST_DIR"
+          if [ -e "$DEST" ]; then
+            chmod -R u+w "$DEST" 2>/dev/null || true
+            rm -rf "$DEST"
+          fi
+          ditto "$SRC" "$DEST"
 
           # Ad-hoc re-sign the copy (helps a bit with TCC stability)
           codesign --force --deep --sign - "$DEST" 2>/dev/null || true
@@ -86,7 +95,7 @@ targets:
           echo "     open \"$DEST\""
           echo ""
           echo "   This prevents having to re-grant Accessibility permission after every build."
-        alwaysOutOfDate: true   # Force this script to run on every build (important for xcodebuild + stable permission copy)
+        basedOnDependencyAnalysis: false   # Run every build; the stable app copy is intentional side effect.
 
 schemes:
   Propr:
