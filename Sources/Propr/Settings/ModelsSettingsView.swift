@@ -70,7 +70,7 @@ struct ModelsSettingsView: View {
                             .font(.headline)
                         
                         if provider.requiresKey {
-                            SecureField("API Key", text: $quickAddAPIKey)
+                            SecureField(provider.apiKeyExample ?? "API Key", text: $quickAddAPIKey)
                                 .textFieldStyle(.roundedBorder)
                         } else {
                             Text("No API key required for local models.")
@@ -231,11 +231,21 @@ struct ModelsSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             TextField("Endpoint name", text: $endpointName)
                 .textFieldStyle(.roundedBorder)
+            if let error = endpointNameError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
             
             TextField("Endpoint URL (e.g. https://api.groq.com/openai/v1)", text: $endpointURL)
                 .textFieldStyle(.roundedBorder)
+            if let error = endpointURLError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
             
-            SecureField("API Key", text: $apiKey)
+            SecureField("API Key (e.g. sk-...)", text: $apiKey)
                 .textFieldStyle(.roundedBorder)
             
             Divider()
@@ -257,7 +267,14 @@ struct ModelsSettingsView: View {
                         .labelStyle(.titleAndIcon)
                 }
                 .buttonStyle(.bordered)
-                .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
+                .disabled(!canAddCurrentModel())
+
+                // Show duplicate error if user is trying to add something invalid
+                if !newModelName.trimmingCharacters(in: .whitespaces).isEmpty && !canAddCurrentModel() {
+                    Text("This model (or alias) is already in the list")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
             }
             
             if !addedModels.isEmpty {
@@ -314,22 +331,89 @@ struct ModelsSettingsView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
     
+    // MARK: - Validation Helpers
+
+    private func isValidEndpointURL(_ string: String) -> Bool {
+        let trimmed = string.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let url = URL(string: trimmed),
+              let scheme = url.scheme?.lowercased(),
+              (scheme == "http" || scheme == "https"),
+              url.host != nil else {
+            return false
+        }
+        return true
+    }
+
+    private var endpointNameError: String? {
+        let name = endpointName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            return "Endpoint name is required"
+        }
+        // Check for duplicate names (case insensitive)
+        if modelStore.customEndpoints.contains(where: { $0.name.caseInsensitiveCompare(name) == .orderedSame }) {
+            return "An endpoint with this name already exists"
+        }
+        return nil
+    }
+
+    private var endpointURLError: String? {
+        let url = endpointURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if url.isEmpty {
+            return "Endpoint URL is required"
+        }
+        if !isValidEndpointURL(url) {
+            return "Please enter a valid URL (e.g. https://api.openai.com/v1)"
+        }
+        return nil
+    }
+
+    private var apiKeyError: String? {
+        // API key is required for most providers, but some local setups allow empty
+        // For custom endpoints we treat it as required (user can leave empty for local if they want)
+        return nil // We'll let it be optional for maximum flexibility
+    }
+
     private var canAddEndpoint: Bool {
-        !endpointName.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !endpointURL.trimmingCharacters(in: .whitespaces).isEmpty &&
-        !apiKey.trimmingCharacters(in: .whitespaces).isEmpty &&
+        endpointNameError == nil &&
+        endpointURLError == nil &&
         !addedModels.isEmpty
     }
-    
+
+    private func canAddCurrentModel() -> Bool {
+        let name = newModelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return false }
+
+        // Check for duplicate model name within current list (case sensitive, as model IDs usually are)
+        if addedModels.contains(where: { $0.name == name }) {
+            return false
+        }
+
+        // Check alias doesn't conflict with existing display names in this list
+        let alias = newModelAlias.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !alias.isEmpty {
+            if addedModels.contains(where: { $0.displayName.caseInsensitiveCompare(alias) == .orderedSame }) {
+                return false
+            }
+            // Also don't let alias match another model's raw name
+            if addedModels.contains(where: { $0.name.caseInsensitiveCompare(alias) == .orderedSame }) {
+                return false
+            }
+        }
+
+        return true
+    }
+
+    // MARK: - Model Addition
+
     private func addModelToList() {
-        let trimmedName = newModelName.trimmingCharacters(in: .whitespaces)
-        guard !trimmedName.isEmpty else { return }
-        
-        let alias = newModelAlias.trimmingCharacters(in: .whitespaces).isEmpty ? nil : newModelAlias.trimmingCharacters(in: .whitespaces)
-        
+        guard canAddCurrentModel() else { return }
+
+        let trimmedName = newModelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let alias = newModelAlias.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : newModelAlias.trimmingCharacters(in: .whitespacesAndNewlines)
+
         let model = CustomModel(name: trimmedName, alias: alias)
         addedModels.append(model)
-        
+
         newModelName = ""
         newModelAlias = ""
     }
@@ -341,9 +425,15 @@ struct ModelsSettingsView: View {
     private func addEndpoint() {
         guard canAddEndpoint else { return }
         
+        // Normalize URL (remove trailing slashes)
+        var normalizedURL = endpointURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        while normalizedURL.hasSuffix("/") {
+            normalizedURL.removeLast()
+        }
+
         let endpoint = CustomEndpoint(
-            name: endpointName.trimmingCharacters(in: .whitespaces),
-            baseURL: endpointURL.trimmingCharacters(in: .whitespaces),
+            name: endpointName.trimmingCharacters(in: .whitespacesAndNewlines),
+            baseURL: normalizedURL,
             models: addedModels
         )
         

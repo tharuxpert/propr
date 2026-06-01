@@ -34,6 +34,12 @@ final class FloatingBarController {
     private var undoOriginalText: String?
     private var undoElement: AXUIElement?
 
+    // Latest closures from the current FloatingBarView instance for loading/error states
+    private var latestOnStopThinking: (() -> Void)?
+    private var latestStartTyping: (() -> Void)?
+    private var latestStopTyping: (() -> Void)?
+    private var latestShowError: ((String) -> Void)?
+
     // Used to force SwiftUI view recreation on every summon (resets @State)
     private var summonID = UUID()
 
@@ -118,7 +124,23 @@ final class FloatingBarController {
                 onClose: { [weak self] in
                     self?.hide()
                 },
-                onUndo: { [weak self] in self?.undoLastApply() }
+                onUndo: { [weak self] in self?.undoLastApply() },
+                onThinkingStarted: { [weak self] in
+                    // View already calls startThinking() on submit.
+                },
+                onStopThinking: { [weak self] in
+                    self?.latestOnStopThinking?()
+                    self?.latestOnStopThinking = nil
+                },
+                onError: { [weak self] message in
+                    self?.latestShowError?(message)
+                },
+                onTypingStarted: { [weak self] in
+                    self?.latestStartTyping?()
+                },
+                onTypingFinished: { [weak self] in
+                    self?.latestStopTyping?()
+                }
             )
             .id(summonID)
         )
@@ -167,7 +189,12 @@ final class FloatingBarController {
                     self?.performRefine(context: prompt, snapshot: snapshot)
                 },
                 onClose: { [weak self] in self?.hide() },
-                onUndo: { [weak self] in self?.undoLastApply() }
+                onUndo: { [weak self] in self?.undoLastApply() },
+                onThinkingStarted: {},
+                onStopThinking: {},
+                onError: { _ in },
+                onTypingStarted: { [weak self] in self?.latestStartTyping?() },
+                onTypingFinished: { [weak self] in self?.latestStopTyping?() }
             )
             .id(summonID)
         )
@@ -274,7 +301,12 @@ final class FloatingBarController {
             onQuickAction: { _ in },
             onRefine: { _ in },
             onClose: {},
-            onUndo: nil
+            onUndo: nil,
+            onThinkingStarted: {},
+            onStopThinking: {},
+            onError: { _ in },
+            onTypingStarted: { [weak self] in self?.latestStartTyping?() },
+            onTypingFinished: { [weak self] in self?.latestStopTyping?() }
         )))
         hosting.frame = contentRect
 
@@ -349,30 +381,75 @@ final class FloatingBarController {
         Task { @MainActor in
             do {
                 guard let selection = ModelStore.shared.selectedModel() else {
-                    let fallback = "[No model selected – please choose one in Settings]"
-                    await applyWithTypingAnimation(result: fallback, into: element)
+                    latestOnStopThinking?()
+                    latestStopTyping?()
+                    // Report error to the floating bar instead of polluting the text field
+                    // We need the onError closure to be wired from the view
+                    print("[Propr] No model selected")
                     return
                 }
 
-                guard let key = try ModelStore.shared.apiKey(for: selection.endpointID) else {
-                    let fallback = "[No API key found for selected model]"
-                    await applyWithTypingAnimation(result: fallback, into: element)
+                guard let key = ModelStore.shared.apiKey(for: selection.endpointID) else {
+                    latestOnStopThinking?()
+                    latestStopTyping?()
+                    latestShowError?("No API key found for the selected model. Please add it in Settings.")
                     return
                 }
 
-                let resultText = try await AIService.shared.refine(
+                // Streaming with live token-by-token typing ("typing as it thinks")
+                latestOnStopThinking = nil // reset
+
+                var fullResult = ""
+                var firstToken = true
+
+                for try await token in AIService.shared.refineStream(
                     original: originalText,
                     instruction: context,
                     selection: selection,
                     apiKey: key
-                )
+                ) {
+                    if firstToken {
+                        firstToken = false
 
-                await applyWithTypingAnimation(result: resultText, into: element)
+                        // Stop "Thinking…" and start "Typing…" indicator in the bar
+                        latestOnStopThinking?()
+                        latestStartTyping?()
+
+                        // On the very first token: clear the original text first
+                        var currentValue: AnyObject?
+                        if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &currentValue) == .success,
+                           let text = currentValue as? String, !text.isEmpty {
+                            let len = (text as NSString).length
+                            var range = CFRange(location: 0, length: len)
+                            if let rangeVal = AXValueCreate(.cfRange, &range) {
+                                AXUIElementSetAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, rangeVal)
+                            }
+                        }
+
+                        _ = AXUIElementSetAttributeValue(element, kAXSelectedTextAttribute as CFString, "" as CFString)
+
+                        // Small pause before live typing begins
+                        try? await Task.sleep(for: .milliseconds(25))
+                    }
+
+                    // Live incremental typing — the model types directly into the target field
+                    await appendTokenWithTyping(token, into: element)
+                    fullResult += token
+                }
+
+                // Streaming finished — hide the Typing… indicator
+                latestStopTyping?()
+
+                // Stream finished. fullResult now contains the complete output.
+                // (Undo state was already captured at the beginning of performRefine)
 
             } catch {
                 print("AI refinement failed: \(error)")
-                let errorText = "[Error: \(error.localizedDescription)]"
-                await applyWithTypingAnimation(result: errorText, into: element)
+                latestOnStopThinking?()
+                latestStopTyping?()
+
+                latestShowError?(error.localizedDescription)
+                // Never write error text into the target application
             }
         }
     }
@@ -450,8 +527,25 @@ final class FloatingBarController {
                 chunk as CFString
             )
 
-            // Visible typing speed for demo (adjust this number to taste)
-            try? await Task.sleep(for: .milliseconds(48))
+            // Faster typing speed (kept slightly slower than live streaming for the full-result fallback)
+            try? await Task.sleep(for: .milliseconds(28))
+        }
+    }
+
+    /// Appends a token (can be multiple characters) with the same per-character typing animation.
+    /// Used during live streaming so the model appears to "type as it thinks".
+    private func appendTokenWithTyping(_ token: String, into element: AXUIElement) async {
+        for character in token {
+            let chunk = String(character)
+
+            _ = AXUIElementSetAttributeValue(
+                element,
+                kAXSelectedTextAttribute as CFString,
+                chunk as CFString
+            )
+
+            // Faster typing speed for the live streaming "as it thinks" feel
+            try? await Task.sleep(for: .milliseconds(22))
         }
     }
 }

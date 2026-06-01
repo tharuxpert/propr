@@ -6,9 +6,6 @@ import SwiftUI
 final class ModelStore {
     static let shared = ModelStore()
     
-    private let endpointsKey = "customEndpoints"
-    private let selectedModelKey = "selectedModelID"
-    
     var customEndpoints: [CustomEndpoint] = [] {
         didSet {
             rebuildAvailableModels()
@@ -17,47 +14,29 @@ final class ModelStore {
     
     var selectedModelID: UUID? {
         didSet {
-            if let id = selectedModelID {
-                UserDefaults.standard.set(id.uuidString, forKey: selectedModelKey)
-            } else {
-                UserDefaults.standard.removeObject(forKey: selectedModelKey)
-            }
+            // Persisted via saveEndpoints() → ModelConfigStore (models.json)
+            saveEndpoints()
         }
     }
     
     private(set) var allAvailableModels: [ModelSelection] = []
     
     private init() {
-        loadEndpoints()
-        loadSelectedModel()
+        // Load everything from models.json (JSON is now the only storage)
+        let config = ModelConfigStore.shared.load()
+        customEndpoints = config.customEndpoints
+        selectedModelID = config.selectedModelID.flatMap { UUID(uuidString: $0) }
+        
         rebuildAvailableModels()
     }
     
-    // MARK: - Persistence
-    
-    private func loadEndpoints() {
-        guard let data = UserDefaults.standard.data(forKey: endpointsKey) else { return }
-        do {
-            customEndpoints = try JSONDecoder().decode([CustomEndpoint].self, from: data)
-        } catch {
-            print("Failed to load custom endpoints: \(error)")
-        }
-    }
+    // MARK: - Persistence (fully JSON via ModelConfigStore now)
     
     private func saveEndpoints() {
-        do {
-            let data = try JSONEncoder().encode(customEndpoints)
-            UserDefaults.standard.set(data, forKey: endpointsKey)
-        } catch {
-            print("Failed to save custom endpoints: \(error)")
-        }
-    }
-    
-    private func loadSelectedModel() {
-        if let uuidString = UserDefaults.standard.string(forKey: selectedModelKey),
-           let uuid = UUID(uuidString: uuidString) {
-            selectedModelID = uuid
-        }
+        var config = ModelConfigStore.shared.load()
+        config.customEndpoints = customEndpoints
+        config.selectedModelID = selectedModelID?.uuidString
+        ModelConfigStore.shared.save(config)
     }
     
     // MARK: - Public API
@@ -91,8 +70,10 @@ final class ModelStore {
     }
     
     func deleteEndpoint(id: UUID) {
-        // Also delete the API key from Keychain
-        KeychainManager.shared.deleteAPIKey(for: id)
+        // Remove the key from our JSON config
+        var config = ModelConfigStore.shared.load()
+        config.apiKeys.removeValue(forKey: id.uuidString)
+        ModelConfigStore.shared.save(config)
         
         customEndpoints.removeAll { $0.id == id }
         
@@ -116,12 +97,15 @@ final class ModelStore {
     }
     
     // Helper to get API key for an endpoint (from Keychain)
-    func apiKey(for endpointID: UUID) throws -> String? {
-        try KeychainManager.shared.apiKey(for: endpointID)
+    func apiKey(for endpointID: UUID) -> String? {
+        let config = ModelConfigStore.shared.load()
+        return config.apiKeys[endpointID.uuidString]
     }
     
-    func saveAPIKey(_ key: String, for endpointID: UUID) throws {
-        try KeychainManager.shared.saveAPIKey(key, for: endpointID)
+    func saveAPIKey(_ key: String, for endpointID: UUID) {
+        var config = ModelConfigStore.shared.load()
+        config.apiKeys[endpointID.uuidString] = key
+        ModelConfigStore.shared.save(config)
     }
 }
 

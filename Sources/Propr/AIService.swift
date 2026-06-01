@@ -82,6 +82,95 @@ final class AIService {
 
         return content.trimmingCharacters(in: .whitespacesAndNewlines)
     }
+
+    /// Streaming version. Yields incremental text deltas as they arrive from the model.
+    func refineStream(
+        original: String,
+        instruction: String,
+        selection: ModelSelection,
+        apiKey: String
+    ) -> AsyncThrowingStream<String, Error> {
+        AsyncThrowingStream { continuation in
+            Task {
+                do {
+                    guard !apiKey.isEmpty else {
+                        continuation.finish(throwing: AIError.missingAPIKey)
+                        return
+                    }
+
+                    let url = URL(string: selection.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/chat/completions")!
+
+                    var request = URLRequest(url: url)
+                    request.httpMethod = "POST"
+                    request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+                    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+
+                    let systemPrompt = """
+                    You are a helpful writing assistant. Follow the user's instruction precisely.
+                    Only return the rewritten text. Do not add explanations, quotes, or markdown unless the user asked for it.
+                    """
+
+                    let userPrompt = """
+                    Original text:
+                    \(original)
+
+                    Instruction:
+                    \(instruction)
+                    """
+
+                    let payload: [String: Any] = [
+                        "model": selection.modelName,
+                        "messages": [
+                            ["role": "system", "content": systemPrompt],
+                            ["role": "user", "content": userPrompt]
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 2048,
+                        "stream": true
+                    ]
+
+                    request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+                    let (bytes, response) = try await session.bytes(for: request)
+
+                    guard let httpResponse = response as? HTTPURLResponse else {
+                        continuation.finish(throwing: AIError.networkError)
+                        return
+                    }
+
+                    guard (200...299).contains(httpResponse.statusCode) else {
+                        // For streaming errors, try to read the body if possible (limited)
+                        continuation.finish(throwing: AIError.apiError(statusCode: httpResponse.statusCode, message: "Streaming request failed"))
+                        return
+                    }
+
+                    for try await line in bytes.lines {
+                        if line.hasPrefix("data: ") {
+                            let dataString = String(line.dropFirst(6))
+
+                            if dataString.trimmingCharacters(in: .whitespacesAndNewlines) == "[DONE]" {
+                                continuation.finish()
+                                return
+                            }
+
+                            if let data = dataString.data(using: .utf8),
+                               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                               let choices = json["choices"] as? [[String: Any]],
+                               let first = choices.first,
+                               let delta = first["delta"] as? [String: Any],
+                               let content = delta["content"] as? String {
+                                continuation.yield(content)
+                            }
+                        }
+                    }
+
+                    continuation.finish()
+                } catch {
+                    continuation.finish(throwing: error)
+                }
+            }
+        }
+    }
 }
 
 // MARK: - Errors
