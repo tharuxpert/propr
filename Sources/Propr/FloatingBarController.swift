@@ -22,8 +22,6 @@ final class FloatingBarController {
     private var hostingView: NSHostingView<AnyView>?
 
     private weak var detector: FocusedFieldDetector?
-    private var detectorObservation: AnyCancellable?
-
     /// The AX element we will write results back into. Captured when we first show the bar for a field.
     private var applyTargetElement: AXUIElement?
 
@@ -48,15 +46,6 @@ final class FloatingBarController {
 
     init(detector: FocusedFieldDetector) {
         self.detector = detector
-        setupObservation()
-    }
-
-    private func setupObservation() {
-        // We no longer auto-show the bar on focus changes.
-        // The bar is now summon-only (via hotkey or menu).
-        // We keep a no-op observation so the detector can still be used for manual capture on summon.
-        detectorObservation = detector?.$currentField
-            .sink { _ in }
     }
 
     // MARK: - Public API
@@ -549,4 +538,3 @@ final class FloatingBarController {
         }
     }
 }
-
