@@ -134,11 +134,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if settingsWindow == nil {
             let hostingController = NSHostingController(rootView: SettingsView())
 
-            // Tell the hosting controller to let Auto Layout fully control its size
-            // (prevents it from collapsing to the intrinsic size of the tab bar only).
+            // Tell the hosting controller to let Auto Layout fully control its size.
             hostingController.sizingOptions = []
 
-            let contentRect = NSRect(x: 0, y: 0, width: 620, height: 620)
+            // Wider initial + minimum size to accommodate the new left sidebar + content.
+            let contentRect = NSRect(x: 0, y: 0, width: 760, height: 620)
             let window = NSWindow(
                 contentRect: contentRect,
                 styleMask: [.titled, .closable, .miniaturizable, .resizable],
@@ -150,12 +150,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             hostingView.translatesAutoresizingMaskIntoConstraints = false
 
             window.contentView = hostingView
-            window.title = "Propr Settings"
+            window.title = "Settings"
             window.identifier = NSUserInterfaceItemIdentifier("settings")
             window.center()
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 560, height: 520)
+            window.minSize = NSSize(width: 680, height: 540)
             window.collectionBehavior = [.canJoinAllSpaces]
 
             // Pin the hosting view to all edges
@@ -418,7 +418,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         
         submenu.addItem(.separator())
         
-        let manage = NSMenuItem(title: "Manage Models...", action: #selector(openSettings), keyEquivalent: "")
+        let manage = NSMenuItem(title: "Manage Models...", action: #selector(openManageModels), keyEquivalent: "")
         manage.target = self
         submenu.addItem(manage)
         
@@ -445,6 +445,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     
     @objc private func openSettings() {
         NotificationCenter.default.post(name: .proprOpenSettings, object: nil)
+    }
+
+    @objc private func openManageModels() {
+        NotificationCenter.default.post(
+            name: .proprOpenSettings,
+            object: nil,
+            userInfo: ["selectSection": "models"]
+        )
     }
     
     @objc private func openPermissions() {
