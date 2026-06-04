@@ -13,11 +13,13 @@ struct FieldSnapshot: Equatable {
     let role: String?
 
     var characterCount: Int { fullText.count }
+    var contextText: String { selectedText?.isEmpty == false ? selectedText! : fullText }
 
     /// Heuristic: is this worth showing the floating bar for?
     var isWorthShowing: Bool {
-        // Ignore tiny/empty fields and our own windows
-        guard characterCount > 2 else { return false }
+        // Ignore tiny/empty fields and our own windows. Selected text counts even if
+        // the focused app does not expose a normal editable AX value.
+        guard contextText.count > 2 else { return false }
         guard pid != getpid() else { return false }
         return true
     }
@@ -229,22 +231,27 @@ final class FocusedFieldDetector: ObservableObject {
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef)
         let role = roleRef as? String
 
-        _ =
+        let isEditableTextRole =
             role == kAXTextFieldRole as String
             || role == kAXTextAreaRole as String
             || role == "AXSearchFieldRole"
             || role == kAXComboBoxRole as String
-            || role == "AXWebArea"  // Some web views expose this; we'll still try value
 
         // Get owning app info
         var pid: pid_t = 0
         AXUIElementGetPid(element, &pid)
         let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "Unknown App"
 
-        // Read value (this is the main content for most fields)
+        // Read value only for actual editable text controls. Container roles such as
+        // AXWebArea/AXGroup/AXWindow can expose huge app context or terminal history,
+        // which must not be treated as the user's input field. Some terminal apps
+        // (notably Warp) also expose their transcript as an editable value, so we
+        // sanitize suspiciously large or terminal-like values below.
         var valueRef: AnyObject?
-        _ = AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef)
-        let fullText = (valueRef as? String) ?? ""
+        if isEditableTextRole {
+            _ = AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef)
+        }
+        let rawFullText = (valueRef as? String) ?? ""
 
         // Selected range (optional but very useful)
         var selectedRange: NSRange?
@@ -268,13 +275,16 @@ final class FocusedFieldDetector: ObservableObject {
                 {
                     selectedText = sel
                 } else if let r = selectedRange, r.length > 0 {
-                    let nsText = fullText as NSString
+                    let nsText = rawFullText as NSString
                     if NSMaxRange(r) <= nsText.length {
                         selectedText = nsText.substring(with: r)
                     }
                 }
             }
         }
+
+        let fullText =
+            shouldTrustAXValue(rawFullText, appName: appName, role: role) ? rawFullText : ""
 
         // Read frame (position + size) and convert AX coords (bottom-left origin) to AppKit (top-left)
         let frame = readFrame(for: element)
@@ -296,6 +306,27 @@ final class FocusedFieldDetector: ObservableObject {
             // If we landed on something uninteresting (e.g. a button), hide after a tiny grace period
             scheduleHide()
         }
+    }
+
+    private func shouldTrustAXValue(_ value: String, appName: String, role: String?) -> Bool {
+        guard !value.isEmpty else { return true }
+        guard value.count <= 8_000 else { return false }
+        guard !isTerminalLikeApp(appName) else { return false }
+        return role == kAXTextFieldRole as String
+            || role == kAXTextAreaRole as String
+            || role == "AXSearchFieldRole"
+            || role == kAXComboBoxRole as String
+    }
+
+    private func isTerminalLikeApp(_ appName: String) -> Bool {
+        let lowered = appName.lowercased()
+        return lowered.contains("warp")
+            || lowered.contains("terminal")
+            || lowered.contains("iterm")
+            || lowered.contains("ghostty")
+            || lowered.contains("wezterm")
+            || lowered.contains("alacritty")
+            || lowered.contains("kitty")
     }
 
     private func readFrame(for element: AXUIElement) -> CGRect {

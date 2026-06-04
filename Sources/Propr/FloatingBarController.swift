@@ -9,6 +9,28 @@ final class FloatingPanel: NSPanel {
     override var canBecomeMain: Bool { false }
 }
 
+private enum TextApplyStrategy {
+    case accessibility
+    case clipboardPaste
+}
+
+private enum TextApplyError: LocalizedError {
+    case cannotWriteAX
+    case cannotPaste
+    case requestTimedOut
+
+    var errorDescription: String? {
+        switch self {
+        case .cannotWriteAX:
+            return "Could not update the focused text field directly."
+        case .cannotPaste:
+            return "Could not paste or type the generated text into the source app."
+        case .requestTimedOut:
+            return "The model request timed out. Try again or choose a faster model."
+        }
+    }
+}
+
 /// Controls the floating refinement bar (NSPanel + SwiftUI content).
 ///
 /// - Appears near a detected text field when the FocusedFieldDetector publishes a snapshot.
@@ -26,6 +48,8 @@ final class FloatingBarController {
 
     /// The AX element we will write results back into. Captured when we first show the bar for a field.
     private var applyTargetElement: AXUIElement?
+    private var applyTargetPID: pid_t = 0
+    private var applyStrategy: TextApplyStrategy = .clipboardPaste
 
     /// Snapshot we showed for (used for positioning + UI state).
     private var currentSnapshot: FieldSnapshot?
@@ -33,6 +57,7 @@ final class FloatingBarController {
     // Undo support
     private var undoOriginalText: String?
     private var undoElement: AXUIElement?
+    private var undoSourcePID: pid_t = 0
 
     // Used to force SwiftUI view recreation on every summon (resets @State)
     private var summonID = UUID()
@@ -53,12 +78,23 @@ final class FloatingBarController {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
 
-            // Always center when summoned, regardless of where the field is
-            if let snap = self.detector?.currentField, snap.isWorthShowing {
-                self.showCentered(for: snap)
-            } else {
-                // Even if no good field, still show the bar centered (user can still type instructions)
-                self.showCenteredEmpty()
+            Task { @MainActor in
+                // Always center when summoned, regardless of where the field is.
+                // For fallback targets like Warp, capture selected/current input *before*
+                // the Propr panel becomes key; after that the source app selection/focus
+                // can already be gone.
+                let baseSnapshot =
+                    self.detector?.currentField ?? self.snapshotForCurrentFocusedElement()
+                if let baseSnapshot {
+                    let prepared = await self.prepareSnapshotForSummon(baseSnapshot)
+                    if prepared.isWorthShowing {
+                        self.showCentered(for: prepared)
+                    } else {
+                        self.showCenteredEmpty()
+                    }
+                } else {
+                    self.showCenteredEmpty()
+                }
             }
         }
     }
@@ -80,9 +116,74 @@ final class FloatingBarController {
         // Clear undo state when the bar is dismissed
         undoOriginalText = nil
         undoElement = nil
+        undoSourcePID = 0
     }
 
     // MARK: - Show / Position
+
+    private func snapshotForCurrentFocusedElement() -> FieldSnapshot? {
+        guard let element = captureCurrentFocusedElement() else { return nil }
+
+        var pid: pid_t = 0
+        AXUIElementGetPid(element, &pid)
+        guard pid != 0, pid != getpid() else { return nil }
+
+        var roleRef: AnyObject?
+        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef)
+        let role = roleRef as? String
+        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "Unknown App"
+
+        return FieldSnapshot(
+            appName: appName,
+            pid: pid,
+            fullText: "",
+            selectedText: nil,
+            frame: .zero,
+            role: role
+        )
+    }
+
+    private func prepareSnapshotForSummon(_ snapshot: FieldSnapshot) async -> FieldSnapshot {
+        let element = captureCurrentFocusedElement()
+        let pid = targetPID(from: element, fallback: snapshot.pid)
+        let strategy = strategy(for: element, role: snapshot.role, appName: snapshot.appName)
+
+        guard strategy == .clipboardPaste, pid != 0 else {
+            return snapshot
+        }
+
+        if snapshot.selectedText?.isEmpty == false {
+            return snapshot
+        }
+
+        if let selectedText = await copySelectedTextFromSourceApp(pid: pid) {
+            print(
+                "[Propr Bar] summon fallback: captured selected text (\(selectedText.count) chars)")
+            return FieldSnapshot(
+                appName: snapshot.appName,
+                pid: snapshot.pid,
+                fullText: "",
+                selectedText: selectedText,
+                frame: snapshot.frame,
+                role: snapshot.role
+            )
+        }
+
+        if let currentInput = await copyCurrentInputFromSourceApp(pid: pid) {
+            print(
+                "[Propr Bar] summon fallback: captured current input (\(currentInput.count) chars)")
+            return FieldSnapshot(
+                appName: snapshot.appName,
+                pid: snapshot.pid,
+                fullText: currentInput,
+                selectedText: nil,
+                frame: snapshot.frame,
+                role: snapshot.role
+            )
+        }
+
+        return snapshot
+    }
 
     private func showCentered(for snapshot: FieldSnapshot) {
         print("[Propr Bar] summon — showing centered for \(snapshot.appName)")
@@ -92,6 +193,10 @@ final class FloatingBarController {
         sessionState = FloatingBarSessionState()
 
         applyTargetElement = captureCurrentFocusedElement()
+        applyTargetPID = targetPID(from: applyTargetElement, fallback: snapshot.pid)
+        applyStrategy = strategy(
+            for: applyTargetElement, role: snapshot.role, appName: snapshot.appName)
+        logTarget(snapshot: snapshot)
         currentSnapshot = snapshot
 
         ensurePanelExists()
@@ -135,6 +240,9 @@ final class FloatingBarController {
         sessionState = FloatingBarSessionState()
 
         applyTargetElement = captureCurrentFocusedElement()
+        applyTargetPID = targetPID(from: applyTargetElement, fallback: dummy.pid)
+        applyStrategy = strategy(for: applyTargetElement, role: dummy.role, appName: dummy.appName)
+        logTarget(snapshot: dummy)
         currentSnapshot = dummy
 
         ensurePanelExists()
@@ -260,20 +368,63 @@ final class FloatingBarController {
         return unsafeDowncast(ref, to: AXUIElement.self)
     }
 
+    private func targetPID(from element: AXUIElement?, fallback: pid_t) -> pid_t {
+        var pid = fallback
+        if let element {
+            AXUIElementGetPid(element, &pid)
+        }
+        return pid
+    }
+
+    private func strategy(for element: AXUIElement?, role: String?, appName: String)
+        -> TextApplyStrategy
+    {
+        // Terminal-style apps often claim AX text editability while exposing the
+        // transcript/window instead of the real prompt. Always use the fallback
+        // key-event path for them.
+        guard !isTerminalLikeApp(appName), let element, isEditableTextRole(role) else {
+            return .clipboardPaste
+        }
+
+        var settable = DarwinBoolean(false)
+        let status = AXUIElementIsAttributeSettable(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            &settable
+        )
+        return status == .success && settable.boolValue ? .accessibility : .clipboardPaste
+    }
+
+    private func isEditableTextRole(_ role: String?) -> Bool {
+        role == kAXTextFieldRole as String
+            || role == kAXTextAreaRole as String
+            || role == "AXSearchFieldRole"
+            || role == kAXComboBoxRole as String
+    }
+
+    private func isTerminalLikeApp(_ appName: String) -> Bool {
+        let lowered = appName.lowercased()
+        return lowered.contains("warp")
+            || lowered.contains("terminal")
+            || lowered.contains("iterm")
+            || lowered.contains("ghostty")
+            || lowered.contains("wezterm")
+            || lowered.contains("alacritty")
+            || lowered.contains("kitty")
+    }
+
+    private func logTarget(snapshot: FieldSnapshot) {
+        print(
+            "[Propr Bar] target app=\(snapshot.appName) pid=\(applyTargetPID) role=\(snapshot.role ?? "nil") strategy=\(applyStrategy) selected=\(snapshot.selectedText?.count ?? 0) value=\(snapshot.fullText.count)"
+        )
+    }
+
     // MARK: - Apply logic (smooth typing-style)
 
     private func performRefine(context: String, snapshot: FieldSnapshot) {
-        guard let element = applyTargetElement ?? captureCurrentFocusedElement() else {
-            sessionState.fail("No focused text field is available to update.")
-            hide()
-            return
-        }
-
-        // Save undo state *before* we mutate anything
-        let originalText =
-            snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
-        self.undoOriginalText = originalText
-        self.undoElement = element
+        let element = applyTargetElement ?? captureCurrentFocusedElement()
+        let targetPID = targetPID(from: element, fallback: applyTargetPID)
+        let strategy = element == nil ? .clipboardPaste : applyStrategy
 
         refineTask?.cancel()
         refineTask = Task { @MainActor in
@@ -292,57 +443,42 @@ final class FloatingBarController {
                     return
                 }
 
-                // Streaming with live token-by-token typing ("typing as it thinks")
-                var firstToken = true
+                let selectedText =
+                    snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : ""
+                let hasSelection = !selectedText.isEmpty
+                let originalText = sanitizedModelContext(
+                    hasSelection ? selectedText : snapshot.fullText)
 
-                for try await token in AIService.shared.refineStream(
-                    original: originalText,
-                    instruction: context,
-                    selection: selection,
-                    apiKey: key
-                ) {
-                    guard !Task.isCancelled else { return }
-
-                    if firstToken {
-                        firstToken = false
-
-                        sessionState.startTyping()
-
-                        // On the very first token: clear the original text first
-                        var currentValue: AnyObject?
-                        if AXUIElementCopyAttributeValue(
-                            element, kAXValueAttribute as CFString, &currentValue) == .success,
-                            let text = currentValue as? String, !text.isEmpty
-                        {
-                            let len = (text as NSString).length
-                            var range = CFRange(location: 0, length: len)
-                            if let rangeVal = AXValueCreate(.cfRange, &range) {
-                                AXUIElementSetAttributeValue(
-                                    element, kAXSelectedTextRangeAttribute as CFString, rangeVal)
-                            }
-                        }
-
-                        _ = AXUIElementSetAttributeValue(
-                            element, kAXSelectedTextAttribute as CFString, "" as CFString)
-
-                        // Small pause before live typing begins
-                        try? await Task.sleep(for: .milliseconds(25))
+                switch strategy {
+                case .accessibility:
+                    guard let element else {
+                        throw TextApplyError.cannotWriteAX
                     }
+                    self.undoOriginalText = originalText
+                    self.undoElement = element
+                    self.undoSourcePID = 0
+                    try await applyWithAccessibilityStreaming(
+                        originalText: originalText,
+                        instruction: context,
+                        selection: selection,
+                        apiKey: key,
+                        element: element,
+                        replaceSelectionOnly: hasSelection
+                    )
 
-                    // Live incremental typing — the model types directly into the target field
-                    await appendTokenWithTyping(token, into: element)
+                case .clipboardPaste:
+                    self.undoOriginalText = nil
+                    self.undoElement = nil
+                    self.undoSourcePID = targetPID
+                    try await applyWithClipboardPaste(
+                        originalText: originalText,
+                        instruction: context,
+                        selection: selection,
+                        apiKey: key,
+                        targetPID: targetPID,
+                        replaceExistingInput: !hasSelection && !originalText.isEmpty
+                    )
                 }
-
-                // Streaming finished — hide the activity indicator. If no tokens arrived,
-                // show an actionable error instead of leaving the bar stuck on “Thinking…”.
-                if firstToken {
-                    sessionState.fail("The model returned an empty response.")
-                } else {
-                    sessionState.finishRequest()
-                }
-
-                // Undo state was already captured at the beginning of performRefine.
-
             } catch {
                 print("AI refinement failed: \(error)")
                 sessionState.fail(error.localizedDescription)
@@ -351,7 +487,84 @@ final class FloatingBarController {
         }
     }
 
+    private func applyWithAccessibilityStreaming(
+        originalText: String,
+        instruction: String,
+        selection: ModelSelection,
+        apiKey: String,
+        element: AXUIElement,
+        replaceSelectionOnly: Bool
+    ) async throws {
+        var firstToken = true
+
+        for try await token in AIService.shared.refineStream(
+            original: originalText,
+            instruction: instruction,
+            selection: selection,
+            apiKey: apiKey
+        ) {
+            guard !Task.isCancelled else { return }
+
+            if firstToken {
+                firstToken = false
+                sessionState.startTyping()
+                try prepareAccessibilityTargetForReplacement(
+                    element,
+                    replaceWholeValue: !replaceSelectionOnly && !originalText.isEmpty
+                )
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+
+            try await appendTokenWithTyping(token, into: element)
+        }
+
+        if firstToken {
+            sessionState.fail("The model returned an empty response.")
+        } else {
+            sessionState.finishRequest()
+        }
+    }
+
+    private func applyWithClipboardPaste(
+        originalText: String,
+        instruction: String,
+        selection: ModelSelection,
+        apiKey: String,
+        targetPID: pid_t,
+        replaceExistingInput: Bool
+    ) async throws {
+        let result = try await withTimeout(seconds: 45) {
+            try await AIService.shared.refine(
+                original: originalText,
+                instruction: instruction,
+                selection: selection,
+                apiKey: apiKey
+            )
+        }
+        guard !Task.isCancelled else { return }
+        guard !result.isEmpty else {
+            sessionState.fail("The model returned an empty response.")
+            return
+        }
+
+        sessionState.startTyping()
+        let typed = await typeTextIntoSourceApp(
+            result,
+            pid: targetPID,
+            replaceExistingInput: replaceExistingInput
+        )
+        guard typed else { throw TextApplyError.cannotPaste }
+        sessionState.finishRequest()
+    }
+
     func undoLastApply() {
+        if undoElement == nil, undoSourcePID != 0 {
+            activateSourceApp(pid: undoSourcePID)
+            sendCommandKey(virtualKey: 0x06, pid: undoSourcePID)  // Z
+            hide()
+            return
+        }
+
         guard let element = undoElement,
             let originalText = undoOriginalText
         else {
@@ -389,20 +602,240 @@ final class FloatingBarController {
         }
     }
 
+    private func prepareAccessibilityTargetForReplacement(
+        _ element: AXUIElement,
+        replaceWholeValue: Bool
+    ) throws {
+        if replaceWholeValue {
+            var currentValue: AnyObject?
+            if AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &currentValue)
+                == .success,
+                let text = currentValue as? String,
+                !text.isEmpty
+            {
+                let len = (text as NSString).length
+                var range = CFRange(location: 0, length: len)
+                if let rangeVal = AXValueCreate(.cfRange, &range) {
+                    AXUIElementSetAttributeValue(
+                        element,
+                        kAXSelectedTextRangeAttribute as CFString,
+                        rangeVal
+                    )
+                }
+            }
+        }
+
+        let status = AXUIElementSetAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            "" as CFString
+        )
+        guard status == .success else {
+            throw TextApplyError.cannotWriteAX
+        }
+    }
+
     /// Appends a token (can be multiple characters) with the same per-character typing animation.
     /// Used during live streaming so the model appears to "type as it thinks".
-    private func appendTokenWithTyping(_ token: String, into element: AXUIElement) async {
+    private func appendTokenWithTyping(_ token: String, into element: AXUIElement) async throws {
         for character in token {
             let chunk = String(character)
 
-            _ = AXUIElementSetAttributeValue(
+            let status = AXUIElementSetAttributeValue(
                 element,
                 kAXSelectedTextAttribute as CFString,
                 chunk as CFString
             )
+            guard status == .success else {
+                throw TextApplyError.cannotWriteAX
+            }
 
             // Faster typing speed for the live streaming "as it thinks" feel
             try? await Task.sleep(for: .milliseconds(22))
         }
+    }
+
+    private func withTimeout<T: Sendable>(
+        seconds: Double,
+        operation: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw TextApplyError.requestTimedOut
+            }
+
+            guard let result = try await group.next() else {
+                throw TextApplyError.requestTimedOut
+            }
+            group.cancelAll()
+            return result
+        }
+    }
+
+    private func sanitizedModelContext(_ text: String) -> String {
+        let maxContextCharacters = 8_000
+        guard text.count > maxContextCharacters else { return text }
+        print("[Propr Bar] Dropping oversized context (\(text.count) chars)")
+        return ""
+    }
+
+    private func copySelectedTextFromSourceApp(pid: pid_t) async -> String? {
+        print("[Propr Bar] fallback: trying selected-text copy from pid=\(pid)")
+        guard pid != 0, pid != getpid() else { return nil }
+
+        let pasteboard = NSPasteboard.general
+        let savedItems = pasteboard.pasteboardItems ?? []
+        let oldString = pasteboard.string(forType: .string)
+        let oldChangeCount = pasteboard.changeCount
+
+        activateSourceApp(pid: pid)
+        try? await Task.sleep(for: .milliseconds(90))
+        guard sendCommandKey(virtualKey: 0x08, pid: pid) else { return nil }  // C
+        try? await Task.sleep(for: .milliseconds(140))
+
+        let copied = pasteboard.string(forType: .string)
+        let changed = pasteboard.changeCount != oldChangeCount || copied != oldString
+        restorePasteboardItems(savedItems)
+
+        guard changed,
+            let copied,
+            !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty,
+            copied.count <= 8_000
+        else { return nil }
+        return copied
+    }
+
+    private func copyCurrentInputFromSourceApp(pid: pid_t) async -> String? {
+        print("[Propr Bar] fallback: trying select-all copy from pid=\(pid)")
+        guard pid != 0, pid != getpid() else { return nil }
+
+        let pasteboard = NSPasteboard.general
+        let savedItems = pasteboard.pasteboardItems ?? []
+
+        activateSourceApp(pid: pid)
+        try? await Task.sleep(for: .milliseconds(90))
+        guard sendCommandKey(virtualKey: 0x00, pid: pid) else { return nil }  // A
+        try? await Task.sleep(for: .milliseconds(60))
+        guard sendCommandKey(virtualKey: 0x08, pid: pid) else {  // C
+            restorePasteboardItems(savedItems)
+            return nil
+        }
+        try? await Task.sleep(for: .milliseconds(140))
+
+        let copied = pasteboard.string(forType: .string)
+        restorePasteboardItems(savedItems)
+
+        guard let copied,
+            !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            sendPlainKey(virtualKey: 0x35, pid: pid)  // Escape clears many transient selections.
+            return nil
+        }
+
+        guard copied.count <= 8_000 else {
+            print("[Propr Bar] Ignoring oversized fallback input copy (\(copied.count) chars)")
+            sendPlainKey(virtualKey: 0x35, pid: pid)  // Escape clears many transient selections.
+            return nil
+        }
+
+        print("[Propr Bar] Captured fallback input via select-all copy (\(copied.count) chars)")
+        return copied
+    }
+
+    private func typeTextIntoSourceApp(
+        _ text: String,
+        pid: pid_t,
+        replaceExistingInput: Bool
+    ) async -> Bool {
+        guard pid != 0, pid != getpid(), !text.isEmpty else { return false }
+
+        activateSourceApp(pid: pid)
+        try? await Task.sleep(for: .milliseconds(130))
+
+        if replaceExistingInput {
+            print("[Propr Bar] fallback: selecting all before typing into pid=\(pid)")
+            guard sendCommandKey(virtualKey: 0x00, pid: pid) else { return false }  // A
+            try? await Task.sleep(for: .milliseconds(60))
+        }
+
+        for character in text {
+            guard !Task.isCancelled else { return false }
+            guard sendUnicodeText(String(character), pid: pid) else { return false }
+            try? await Task.sleep(for: .milliseconds(18))
+        }
+
+        return true
+    }
+
+    private func restorePasteboardItems(_ items: [NSPasteboardItem]) {
+        let pasteboard = NSPasteboard.general
+        pasteboard.clearContents()
+        if !items.isEmpty {
+            pasteboard.writeObjects(items)
+        }
+    }
+
+    private func activateSourceApp(pid: pid_t) {
+        NSRunningApplication(processIdentifier: pid)?.activate()
+    }
+
+    @discardableResult
+    private func sendUnicodeText(_ text: String, pid: pid_t) -> Bool {
+        let units = Array(text.utf16)
+        guard !units.isEmpty,
+            let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: true),
+            let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: 0, keyDown: false)
+        else {
+            return false
+        }
+
+        units.withUnsafeBufferPointer { buffer in
+            keyDown.keyboardSetUnicodeString(
+                stringLength: buffer.count,
+                unicodeString: buffer.baseAddress
+            )
+            keyUp.keyboardSetUnicodeString(
+                stringLength: buffer.count,
+                unicodeString: buffer.baseAddress
+            )
+        }
+
+        keyDown.postToPid(pid)
+        keyUp.postToPid(pid)
+        return true
+    }
+
+    @discardableResult
+    private func sendPlainKey(virtualKey: CGKeyCode, pid: pid_t) -> Bool {
+        guard
+            let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: true),
+            let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: false)
+        else {
+            return false
+        }
+
+        keyDown.postToPid(pid)
+        keyUp.postToPid(pid)
+        return true
+    }
+
+    @discardableResult
+    private func sendCommandKey(virtualKey: CGKeyCode, pid: pid_t) -> Bool {
+        guard
+            let keyDown = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: true),
+            let keyUp = CGEvent(keyboardEventSource: nil, virtualKey: virtualKey, keyDown: false)
+        else {
+            return false
+        }
+
+        keyDown.flags = .maskCommand
+        keyUp.flags = .maskCommand
+        keyDown.postToPid(pid)
+        keyUp.postToPid(pid)
+        return true
     }
 }

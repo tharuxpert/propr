@@ -202,6 +202,7 @@ struct FloatingBarView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.small)
+                    .keyboardShortcut(.defaultAction)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

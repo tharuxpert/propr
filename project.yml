@@ -65,6 +65,9 @@ targets:
     dependencies:
       - package: Permiso
         product: Permiso
+      # Xcode runs ExtractAppIntentsMetadata for Swift app targets. Linking the
+      # framework keeps that step quiet even though Propr defines no App Intents.
+      - sdk: AppIntents.framework
     preBuildScripts: []
     postBuildScripts:
       - name: "Copy Debug build to stable location (for persistent Accessibility permission)"

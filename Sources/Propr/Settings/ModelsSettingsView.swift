@@ -18,6 +18,15 @@ struct ModelsSettingsView: View {
     @State private var newModelAlias = ""
     @State private var addedModels: [CustomModel] = []
 
+    // Edit endpoint state
+    @State private var editingEndpointID: UUID?
+    @State private var editEndpointName = ""
+    @State private var editEndpointURL = ""
+    @State private var editAPIKey = ""
+    @State private var editModels: [CustomModel] = []
+    @State private var editNewModelName = ""
+    @State private var editNewModelAlias = ""
+
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 24) {
@@ -245,6 +254,12 @@ struct ModelsSettingsView: View {
 
                     ForEach(modelStore.customEndpoints) { endpoint in
                         endpointRow(endpoint)
+
+                        if editingEndpointID == endpoint.id {
+                            editEndpointForm(for: endpoint)
+                                .transition(
+                                    .opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+                        }
                     }
                 } else if !showingAddForm {
                     Spacer()
@@ -386,6 +401,112 @@ struct ModelsSettingsView: View {
         .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
+    private func editEndpointForm(for endpoint: CustomEndpoint) -> some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text("Edit \(endpoint.name)")
+                .font(.headline)
+
+            TextField("Endpoint name", text: $editEndpointName)
+                .textFieldStyle(.roundedBorder)
+            if let error = editEndpointNameError(for: endpoint) {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            TextField("Endpoint URL", text: $editEndpointURL)
+                .textFieldStyle(.roundedBorder)
+            if let error = editEndpointURLError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            SecureField("API Key", text: $editAPIKey)
+                .textFieldStyle(.roundedBorder)
+            if let error = editAPIKeyError {
+                Text(error)
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
+
+            Divider()
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Models")
+                    .font(.subheadline.weight(.medium))
+
+                ForEach(editModels) { model in
+                    HStack(alignment: .top, spacing: 8) {
+                        VStack(spacing: 6) {
+                            TextField("Model ID", text: editModelNameBinding(for: model.id))
+                                .textFieldStyle(.roundedBorder)
+
+                            TextField(
+                                "Alias (optional)", text: editModelAliasBinding(for: model.id)
+                            )
+                            .textFieldStyle(.roundedBorder)
+                        }
+
+                        Button(role: .destructive) {
+                            editModels.removeAll { $0.id == model.id }
+                        } label: {
+                            Image(systemName: "minus.circle.fill")
+                        }
+                        .buttonStyle(.plain)
+                        .foregroundStyle(.red)
+                        .padding(.top, 7)
+                    }
+                }
+
+                if !editModelsAreValid {
+                    Text("Each model needs a unique model ID.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+
+                HStack(spacing: 8) {
+                    TextField("New model ID", text: $editNewModelName)
+                        .textFieldStyle(.roundedBorder)
+                    TextField("Alias", text: $editNewModelAlias)
+                        .textFieldStyle(.roundedBorder)
+
+                    Button {
+                        addModelToEditedList()
+                    } label: {
+                        Label("Add", systemImage: "plus.circle.fill")
+                    }
+                    .buttonStyle(.bordered)
+                    .disabled(!canAddEditedModel)
+                }
+
+                if !editNewModelName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    && !canAddEditedModel
+                {
+                    Text("This model ID is already in the list.")
+                        .font(.caption)
+                        .foregroundStyle(.red)
+                }
+            }
+
+            HStack {
+                Button("Cancel") {
+                    cancelEditingEndpoint()
+                }
+
+                Spacer()
+
+                Button("Save Changes") {
+                    saveEditedEndpoint(endpoint)
+                }
+                .buttonStyle(.borderedProminent)
+                .disabled(!canSaveEditedEndpoint(for: endpoint))
+            }
+        }
+        .padding()
+        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 10))
+    }
+
     // MARK: - Validation Helpers
 
     private func normalizedEndpointURL(_ string: String) -> String? {
@@ -426,6 +547,64 @@ struct ModelsSettingsView: View {
         }
 
         return "API key is required for remote endpoints."
+    }
+
+    private func editEndpointNameError(for endpoint: CustomEndpoint) -> String? {
+        let name = editEndpointName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if name.isEmpty {
+            return "Endpoint name is required"
+        }
+        if modelStore.customEndpoints.contains(where: {
+            $0.id != endpoint.id && $0.name.caseInsensitiveCompare(name) == .orderedSame
+        }) {
+            return "An endpoint with this name already exists"
+        }
+        return nil
+    }
+
+    private var editEndpointURLError: String? {
+        let url = editEndpointURL.trimmingCharacters(in: .whitespacesAndNewlines)
+        if url.isEmpty {
+            return "Endpoint URL is required"
+        }
+        if normalizedEndpointURL(url) == nil {
+            return "Use HTTPS for remote providers, or HTTP for localhost."
+        }
+        return nil
+    }
+
+    private var editAPIKeyError: String? {
+        guard editEndpointURLError == nil,
+            EndpointURLValidator.requiresAPIKey(for: editEndpointURL),
+            editAPIKey.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
+            return nil
+        }
+
+        return "API key is required for remote endpoints."
+    }
+
+    private var editModelsAreValid: Bool {
+        let trimmedNames = editModels.map {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        guard !trimmedNames.isEmpty, trimmedNames.allSatisfy({ !$0.isEmpty }) else { return false }
+        return Set(trimmedNames).count == trimmedNames.count
+    }
+
+    private var canAddEditedModel: Bool {
+        let name = editNewModelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return false }
+        return !editModels.contains {
+            $0.name.trimmingCharacters(in: .whitespacesAndNewlines) == name
+        }
+    }
+
+    private func canSaveEditedEndpoint(for endpoint: CustomEndpoint) -> Bool {
+        editEndpointNameError(for: endpoint) == nil
+            && editEndpointURLError == nil
+            && editAPIKeyError == nil
+            && editModelsAreValid
     }
 
     private var canAddEndpoint: Bool {
@@ -594,6 +773,108 @@ struct ModelsSettingsView: View {
         quickAddBaseURL = ""
     }
 
+    private func startEditingEndpoint(_ endpoint: CustomEndpoint) {
+        withAnimation {
+            if editingEndpointID == endpoint.id {
+                cancelEditingEndpoint()
+                return
+            }
+
+            editingEndpointID = endpoint.id
+            editEndpointName = endpoint.name
+            editEndpointURL = endpoint.baseURL
+            editAPIKey = modelStore.apiKey(for: endpoint.id) ?? ""
+            editModels = endpoint.models
+            editNewModelName = ""
+            editNewModelAlias = ""
+        }
+    }
+
+    private func cancelEditingEndpoint() {
+        editingEndpointID = nil
+        editEndpointName = ""
+        editEndpointURL = ""
+        editAPIKey = ""
+        editModels = []
+        editNewModelName = ""
+        editNewModelAlias = ""
+    }
+
+    private func editModelNameBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: { editModels.first(where: { $0.id == id })?.name ?? "" },
+            set: { newValue in
+                guard let index = editModels.firstIndex(where: { $0.id == id }) else { return }
+                editModels[index].name = newValue
+            }
+        )
+    }
+
+    private func editModelAliasBinding(for id: UUID) -> Binding<String> {
+        Binding(
+            get: { editModels.first(where: { $0.id == id })?.alias ?? "" },
+            set: { newValue in
+                guard let index = editModels.firstIndex(where: { $0.id == id }) else { return }
+                editModels[index].alias = newValue.isEmpty ? nil : newValue
+            }
+        )
+    }
+
+    private func addModelToEditedList() {
+        guard canAddEditedModel else { return }
+
+        let name = editNewModelName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let alias = editNewModelAlias.trimmingCharacters(in: .whitespacesAndNewlines)
+        editModels.append(CustomModel(name: name, alias: alias.isEmpty ? nil : alias))
+        editNewModelName = ""
+        editNewModelAlias = ""
+    }
+
+    private func saveEditedEndpoint(_ endpoint: CustomEndpoint) {
+        guard canSaveEditedEndpoint(for: endpoint),
+            let normalizedURL = normalizedEndpointURL(editEndpointURL)
+        else { return }
+
+        let normalizedModels = editModels.map { model in
+            let alias = model.alias?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return CustomModel(
+                id: model.id,
+                name: model.name.trimmingCharacters(in: .whitespacesAndNewlines),
+                alias: alias.isEmpty ? nil : alias
+            )
+        }
+
+        let updated = CustomEndpoint(
+            id: endpoint.id,
+            name: editEndpointName.trimmingCharacters(in: .whitespacesAndNewlines),
+            baseURL: normalizedURL,
+            models: normalizedModels
+        )
+
+        do {
+            try modelStore.saveAPIKey(editAPIKey, for: endpoint.id)
+            modelStore.updateEndpoint(updated)
+
+            if modelStore.selectedModel() == nil, let first = updated.models.first {
+                modelStore.selectModel(
+                    ModelSelection(
+                        id: first.id,
+                        displayName: first.displayName,
+                        endpointID: updated.id,
+                        modelName: first.name,
+                        baseURL: updated.baseURL
+                    )
+                )
+            }
+
+            withAnimation {
+                cancelEditingEndpoint()
+            }
+        } catch {
+            print("Failed to save endpoint edits: \(error)")
+        }
+    }
+
     private func endpointRow(_ endpoint: CustomEndpoint) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack {
@@ -602,7 +883,18 @@ struct ModelsSettingsView: View {
 
                 Spacer()
 
+                Button {
+                    startEditingEndpoint(endpoint)
+                } label: {
+                    Image(systemName: "pencil")
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.blue)
+
                 Button(role: .destructive) {
+                    if editingEndpointID == endpoint.id {
+                        cancelEditingEndpoint()
+                    }
                     modelStore.deleteEndpoint(id: endpoint.id)
                 } label: {
                     Image(systemName: "trash")
