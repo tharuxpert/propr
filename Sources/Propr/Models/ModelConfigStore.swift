@@ -1,14 +1,11 @@
 import Foundation
 
-/// Simple file-based storage for model configuration (endpoints + API keys).
+/// File-based storage for model configuration.
 /// Stored at ~/Library/Application Support/Propr/models.json
-/// 
-/// This is an alternative to Keychain storage. Keys are stored in plaintext in the JSON.
-/// Use Keychain if you prefer maximum security and don't mind the permission prompts.
 struct ModelConfig: Codable {
     var customEndpoints: [CustomEndpoint] = []
-    var apiKeys: [String: String] = [:]   // endpointID (as string) -> API key
-    var selectedModelID: String?          // stored as string for JSON friendliness
+    var apiKeys: [String: String] = [:]  // endpointID (as string) -> API key
+    var selectedModelID: String?  // stored as string for JSON friendliness
 }
 
 @MainActor
@@ -18,9 +15,13 @@ final class ModelConfigStore {
     private(set) var fileURL: URL
 
     private init() {
-        let appSupport = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
+        let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory, in: .userDomainMask
+        ).first!
         let appDir = appSupport.appendingPathComponent("Propr", isDirectory: true)
         try? FileManager.default.createDirectory(at: appDir, withIntermediateDirectories: true)
+        try? FileManager.default.setAttributes(
+            [.posixPermissions: 0o700], ofItemAtPath: appDir.path)
         self.fileURL = appDir.appendingPathComponent("models.json")
     }
 
@@ -40,8 +41,11 @@ final class ModelConfigStore {
         do {
             let data = try JSONEncoder().encode(config)
             try data.write(to: fileURL, options: [.atomic])
+            try FileManager.default.setAttributes(
+                [.posixPermissions: 0o600], ofItemAtPath: fileURL.path)
         } catch {
             print("[Propr] Failed to save models.json: \(error)")
         }
     }
+
 }

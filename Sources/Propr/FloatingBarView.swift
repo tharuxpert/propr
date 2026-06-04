@@ -1,79 +1,18 @@
-import SwiftUI
 import AppKit
+import SwiftUI
 
-enum QuickAction: String, CaseIterable, Identifiable {
-    case shorter = "Shorter"
-    case professional = "Professional"
-    case casual = "Casual"
-    case fixGrammar = "Fix grammar"
-    case bullets = "Bullets"
+@MainActor
+final class FloatingBarSessionState: ObservableObject {
+    @Published var hasSubmitted = false
+    @Published var isThinking = false
+    @Published var isTyping = false
+    @Published var errorMessage: String?
 
-    var id: String { rawValue }
-
-    var defaultContext: String {
-        switch self {
-        case .shorter: "Make this shorter and more concise"
-        case .professional: "Rewrite this in a professional tone"
-        case .casual: "Make this sound casual and friendly"
-        case .fixGrammar: "Fix any grammar or spelling issues"
-        case .bullets: "Turn this into clear bullet points"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .shorter: "text.line.first.and.arrowtriangle.forward"
-        case .professional: "briefcase"
-        case .casual: "face.smiling"
-        case .fixGrammar: "checkmark.bubble"
-        case .bullets: "list.bullet"
-        }
-    }
-}
-
-/// The actual floating bar UI shown inside the NSPanel.
-/// Minimal summon-only design.
-struct FloatingBarView: View {
-    let snapshot: FieldSnapshot
-
-    let onQuickAction: (QuickAction) -> Void   // kept for signature compatibility (unused now)
-    let onRefine: (String) -> Void
-    let onClose: () -> Void
-    var onUndo: (() -> Void)? = nil
-
-    /// Called by the controller when it starts waiting for the model.
-    var onThinkingStarted: (() -> Void)? = nil
-    /// Called by the controller when the first token arrives (streaming).
-    var onFirstTokenReceived: (() -> Void)? = nil
-    /// Controller can call this to explicitly stop the thinking indicator.
-    var onStopThinking: (() -> Void)? = nil
-    /// Controller reports a user-facing error.
-    var onError: ((String) -> Void)? = nil
-
-    /// Called when live streaming starts typing into the target field.
-    var onTypingStarted: (() -> Void)? = nil
-    /// Called when live streaming typing finishes.
-    var onTypingFinished: (() -> Void)? = nil
-
-    @State private var prompt: String = ""
-    @FocusState private var isPromptFocused: Bool
-    @State private var hasApplied = false
-    @State private var lastPrompt: String = ""
-    @State private var isThinking = false
-    @State private var isTyping = false
-    @State private var errorMessage: String? = nil
-
-    func startThinking() {
-        errorMessage = nil
+    func startRequest() {
+        hasSubmitted = true
         isThinking = true
         isTyping = false
-        onThinkingStarted?()
-    }
-
-    func stopThinking() {
-        isThinking = false
-        onStopThinking?()
-        onFirstTokenReceived?()
+        errorMessage = nil
     }
 
     func startTyping() {
@@ -81,30 +20,43 @@ struct FloatingBarView: View {
         isTyping = true
     }
 
+    func finishRequest() {
+        isThinking = false
+        isTyping = false
+    }
+
     func stopTyping() {
         isTyping = false
-        onTypingFinished?()
     }
 
-    func startTypingIndicator() {
-        isThinking = false
-        isTyping = true
-        onTypingStarted?()
-    }
-
-    func showError(_ message: String) {
+    func fail(_ message: String) {
+        hasSubmitted = false
         isThinking = false
         isTyping = false
         errorMessage = message
-        onError?(message)
     }
 
     func clearError() {
         errorMessage = nil
     }
+}
+
+/// The actual floating bar UI shown inside the NSPanel.
+/// Minimal summon-only design.
+struct FloatingBarView: View {
+    let snapshot: FieldSnapshot
+    @ObservedObject var sessionState: FloatingBarSessionState
+
+    let onRefine: (String) -> Void
+    let onClose: () -> Void
+    var onUndo: (() -> Void)? = nil
+
+    @State private var prompt: String = ""
+    @FocusState private var isPromptFocused: Bool
 
     private var textPreview: String {
-        let text = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
+        let text =
+            snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
         let maxLength = 110
         if text.count > maxLength {
             return String(text.prefix(maxLength)) + "…"
@@ -177,17 +129,7 @@ struct FloatingBarView: View {
                 .onSubmit {
                     let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
-                        lastPrompt = trimmed
-                        hasApplied = true
-                        isThinking = true
-
-                        // For non-streaming: show thinking for a short time, then reveal Undo/Done
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                            if hasApplied {
-                                isThinking = false
-                            }
-                        }
-
+                        sessionState.startRequest()
                         onRefine(trimmed)
                     }
                 }
@@ -197,9 +139,9 @@ struct FloatingBarView: View {
                         isPromptFocused = true
                     }
                 }
-                .disabled(hasApplied)
+                .disabled(sessionState.hasSubmitted && sessionState.errorMessage == nil)
 
-            if isThinking {
+            if sessionState.isThinking {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
@@ -210,7 +152,7 @@ struct FloatingBarView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-            } else if isTyping {
+            } else if sessionState.isTyping {
                 HStack(spacing: 8) {
                     ProgressView()
                         .controlSize(.small)
@@ -223,7 +165,7 @@ struct FloatingBarView: View {
                 .padding(.vertical, 8)
             }
 
-            if let error = errorMessage {
+            if let error = sessionState.errorMessage {
                 HStack(spacing: 8) {
                     Image(systemName: "exclamationmark.triangle.fill")
                         .foregroundStyle(.orange)
@@ -233,7 +175,7 @@ struct FloatingBarView: View {
                         .lineLimit(2)
                     Spacer()
                     Button("Dismiss") {
-                        clearError()
+                        sessionState.clearError()
                     }
                     .buttonStyle(.bordered)
                     .controlSize(.mini)
@@ -243,7 +185,9 @@ struct FloatingBarView: View {
                 .background(Color.orange.opacity(0.1))
             }
 
-            if hasApplied && !isThinking && errorMessage == nil {
+            if sessionState.hasSubmitted && !sessionState.isThinking && !sessionState.isTyping
+                && sessionState.errorMessage == nil
+            {
                 HStack(spacing: 12) {
                     if let onUndo {
                         Button("Undo", action: onUndo)
@@ -288,12 +232,13 @@ struct FloatingBarView: View {
         snapshot: FieldSnapshot(
             appName: "Notes",
             pid: 1234,
-            fullText: "This is some text I wrote quickly and now I want to make it sound better for a blog post or an important email to my team.",
+            fullText:
+                "This is some text I wrote quickly and now I want to make it sound better for a blog post or an important email to my team.",
             selectedText: nil,
             frame: .zero,
             role: kAXTextAreaRole as String
         ),
-        onQuickAction: { _ in },
+        sessionState: FloatingBarSessionState(),
         onRefine: { _ in },
         onClose: {}
     )

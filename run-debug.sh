@@ -15,7 +15,7 @@
 #   ./run-debug.sh 2        # or --build            → Build (incremental) + launch (keeps existing Accessibility permission)
 #   ./run-debug.sh 3        # or --clean            → Clean + build + reset TCC + launch (fresh permission prompt)
 
-set -e
+set -eu
 
 MODE=${1:-1}
 APP_PATH="Build/Debug/Propr.app"
@@ -52,10 +52,10 @@ do_build() {
 
     if [[ "$clean" == "true" ]]; then
         echo "→ Cleaning and building (this may take a while)..."
-        xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug clean build
+        xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug -destination 'platform=macOS' clean build
     else
         echo "→ Building (incremental)..."
-        xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug build
+        xcodebuild -project Propr.xcodeproj -scheme Propr -configuration Debug -destination 'platform=macOS' build
     fi
 
     echo "→ Updating stable debug build at $APP_PATH ..."
@@ -69,8 +69,11 @@ do_build() {
     fi
 
     mkdir -p "$(dirname "$APP_PATH")"
-    rm -rf "$APP_PATH"
-    cp -R "$LATEST_BUILT" "$APP_PATH"
+    if [ -e "$APP_PATH" ]; then
+        chmod -R u+w "$APP_PATH" 2>/dev/null || true
+        rm -rf "$APP_PATH"
+    fi
+    ditto "$LATEST_BUILT" "$APP_PATH"
 
     # Re-sign the stable copy
     codesign --force --deep --sign - "$APP_PATH" 2>/dev/null || true

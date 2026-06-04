@@ -12,6 +12,7 @@
 		1ED66005BF837E2236B1D32A /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6EF88BB1DC3E553F6B94CA /* AIService.swift */; };
 		25CED71435B4452550DF3818 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */; };
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
+		3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */; };
 		45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBFA4D9B786404254155B7B /* SettingsView.swift */; };
 		50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */; };
 		96AF400F7D537677F4704E91 /* ModelsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */; };
@@ -28,6 +29,7 @@
 		073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarController.swift; sourceTree = "<group>"; };
 		20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		26088ADA097DE290EDA0A187 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
+		28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointURLValidator.swift; sourceTree = "<group>"; };
 		2BBFA4D9B786404254155B7B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarView.swift; sourceTree = "<group>"; };
@@ -88,6 +90,7 @@
 			children = (
 				657DF8869C06BB014548EC7C /* BuiltInProvider.swift */,
 				D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */,
+				28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */,
 				DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */,
 				20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */,
 			);
@@ -229,6 +232,7 @@
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */,
+				3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */,
 				2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */,

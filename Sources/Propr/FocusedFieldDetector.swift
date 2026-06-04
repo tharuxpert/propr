@@ -1,6 +1,6 @@
-@preconcurrency import Foundation
-@preconcurrency import ApplicationServices
 import AppKit
+@preconcurrency import ApplicationServices
+@preconcurrency import Foundation
 
 /// Lightweight snapshot of a focused text field we care about.
 /// Does not hold the live AXUIElement (the detector and controller do that internally).
@@ -9,7 +9,7 @@ struct FieldSnapshot: Equatable {
     let pid: pid_t
     let fullText: String
     let selectedText: String?
-    let frame: CGRect          // Screen coordinates (AppKit origin: top-left of main screen)
+    let frame: CGRect  // Screen coordinates (AppKit origin: top-left of main screen)
     let role: String?
 
     var characterCount: Int { fullText.count }
@@ -45,12 +45,16 @@ final class FocusedFieldDetector: ObservableObject {
     /// Safe to call multiple times; does nothing if already running or permission is missing.
     func start() {
         guard AXIsProcessTrusted() else {
-            print("[Propr Detector] start() called but AXIsProcessTrusted() == false — observer not created")
+            print(
+                "[Propr Detector] start() called but AXIsProcessTrusted() == false — observer not created"
+            )
             return
         }
         guard observer == nil else { return }
 
-        print("[Propr Detector] Permission OK — creating system-wide AXObserver for focused UI element changes")
+        print(
+            "[Propr Detector] Permission OK — creating system-wide AXObserver for focused UI element changes"
+        )
 
         let sys = AXUIElementCreateSystemWide()
         self.systemWide = sys
@@ -95,7 +99,9 @@ final class FocusedFieldDetector: ObservableObject {
         if appChangedResult == .success {
             addedAnything = true
         } else {
-            print("[Propr Detector] Failed to add app-changed notification: \(appChangedResult.rawValue)")
+            print(
+                "[Propr Detector] Failed to add app-changed notification: \(appChangedResult.rawValue)"
+            )
         }
 
         let uiElementResult = AXObserverAddNotification(
@@ -107,7 +113,9 @@ final class FocusedFieldDetector: ObservableObject {
         if uiElementResult == .success {
             addedAnything = true
         } else {
-            print("[Propr Detector] Could not add direct focused-UI notification (\(uiElementResult.rawValue)) — this is expected on many macOS versions; using application-activated + re-query instead.")
+            print(
+                "[Propr Detector] Could not add direct focused-UI notification (\(uiElementResult.rawValue)) — this is expected on many macOS versions; using application-activated + re-query instead."
+            )
         }
 
         let source = AXObserverGetRunLoopSource(created)
@@ -117,7 +125,9 @@ final class FocusedFieldDetector: ObservableObject {
         if addedAnything {
             print("[Propr Detector] AXObserver registered for some notifications.")
         } else {
-            print("[Propr Detector] AXObserverAddNotification failed for both (common in some dev setups). Using AppKit fallback + direct queries.")
+            print(
+                "[Propr Detector] AXObserverAddNotification failed for both (common in some dev setups). Using AppKit fallback + direct queries."
+            )
         }
 
         // Reliable AppKit-level fallback. This fires whenever any app becomes frontmost.
@@ -169,10 +179,9 @@ final class FocusedFieldDetector: ObservableObject {
         }
 
         var focused: AnyObject?
-        let result = AXUIElementCopyAttributeValue(sys, kAXFocusedUIElementAttribute as CFString, &focused)
-        if result == .success, let axRef = focused {
-            // AXUIElement from AX API — unsafeDowncast is the recommended form here
-            let element = unsafeDowncast(axRef, to: AXUIElement.self)
+        let result = AXUIElementCopyAttributeValue(
+            sys, kAXFocusedUIElementAttribute as CFString, &focused)
+        if result == .success, let axRef = focused, let element = axElement(from: axRef) {
             handleFocusChanged(element: element, notification: "manual-refresh")
         }
     }
@@ -192,14 +201,18 @@ final class FocusedFieldDetector: ObservableObject {
         }
 
         var focusedRef: AnyObject?
-        let copyResult = AXUIElementCopyAttributeValue(sys, kAXFocusedUIElementAttribute as CFString, &focusedRef)
+        let copyResult = AXUIElementCopyAttributeValue(
+            sys, kAXFocusedUIElementAttribute as CFString, &focusedRef)
 
         guard copyResult == .success, let axRef = focusedRef else {
             scheduleHide()
             return
         }
 
-        let actualFocused = unsafeDowncast(axRef, to: AXUIElement.self)
+        guard let actualFocused = axElement(from: axRef) else {
+            scheduleHide()
+            return
+        }
 
         // Small debounce to ignore rapid focus dance inside the same app (e.g. label -> field)
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) { [weak self] in
@@ -216,11 +229,12 @@ final class FocusedFieldDetector: ObservableObject {
         AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef)
         let role = roleRef as? String
 
-        _ = role == kAXTextFieldRole as String
+        _ =
+            role == kAXTextFieldRole as String
             || role == kAXTextAreaRole as String
             || role == "AXSearchFieldRole"
             || role == kAXComboBoxRole as String
-            || role == "AXWebArea" // Some web views expose this; we'll still try value
+            || role == "AXWebArea"  // Some web views expose this; we'll still try value
 
         // Get owning app info
         var pid: pid_t = 0
@@ -237,22 +251,27 @@ final class FocusedFieldDetector: ObservableObject {
         var selectedText: String?
 
         var rangeRef: AnyObject?
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
-           let axRange = rangeRef as! AXValue?,
-           AXValueGetType(axRange) == .cfRange {
+        if AXUIElementCopyAttributeValue(
+            element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+            let axRange = axValue(from: rangeRef),
+            AXValueGetType(axRange) == .cfRange
+        {
             var cfRange = CFRange()
             if AXValueGetValue(axRange, .cfRange, &cfRange) {
                 selectedRange = NSRange(location: cfRange.location, length: cfRange.length)
 
                 // Try to also grab the selected substring directly when available
                 var selTextRef: AnyObject?
-                if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selTextRef) == .success,
-                   let sel = selTextRef as? String, !sel.isEmpty {
+                if AXUIElementCopyAttributeValue(
+                    element, kAXSelectedTextAttribute as CFString, &selTextRef) == .success,
+                    let sel = selTextRef as? String, !sel.isEmpty
+                {
                     selectedText = sel
-                } else if let r = selectedRange, r.length > 0, r.location + r.length <= fullText.count {
-                    let start = fullText.index(fullText.startIndex, offsetBy: r.location)
-                    let end = fullText.index(start, offsetBy: r.length)
-                    selectedText = String(fullText[start..<end])
+                } else if let r = selectedRange, r.length > 0 {
+                    let nsText = fullText as NSString
+                    if NSMaxRange(r) <= nsText.length {
+                        selectedText = nsText.substring(with: r)
+                    }
                 }
             }
         }
@@ -286,15 +305,19 @@ final class FocusedFieldDetector: ObservableObject {
         var origin = CGPoint.zero
         var size = CGSize.zero
 
-        if AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posRef) == .success,
-           let axPos = posRef as! AXValue?,
-           AXValueGetType(axPos) == .cgPoint {
+        if AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &posRef)
+            == .success,
+            let axPos = axValue(from: posRef),
+            AXValueGetType(axPos) == .cgPoint
+        {
             AXValueGetValue(axPos, .cgPoint, &origin)
         }
 
-        if AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success,
-           let axSize = sizeRef as! AXValue?,
-           AXValueGetType(axSize) == .cgSize {
+        if AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef)
+            == .success,
+            let axSize = axValue(from: sizeRef),
+            AXValueGetType(axSize) == .cgSize
+        {
             AXValueGetValue(axSize, .cgSize, &size)
         }
 
@@ -323,6 +346,20 @@ final class FocusedFieldDetector: ObservableObject {
     private func cancelPendingHide() {
         hideWorkItem?.cancel()
         hideWorkItem = nil
+    }
+
+    private func axElement(from ref: AnyObject) -> AXUIElement? {
+        guard CFGetTypeID(ref) == AXUIElementGetTypeID() else {
+            return nil
+        }
+        return unsafeDowncast(ref, to: AXUIElement.self)
+    }
+
+    private func axValue(from ref: AnyObject?) -> AXValue? {
+        guard let ref, CFGetTypeID(ref) == AXValueGetTypeID() else {
+            return nil
+        }
+        return unsafeDowncast(ref, to: AXValue.self)
     }
 
     deinit {

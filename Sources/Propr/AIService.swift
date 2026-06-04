@@ -22,16 +22,16 @@ final class AIService {
         selection: ModelSelection,
         apiKey: String
     ) async throws -> String {
-        guard !apiKey.isEmpty else {
-            throw AIError.missingAPIKey
+        guard let url = EndpointURLValidator.chatCompletionsURL(from: selection.baseURL) else {
+            throw AIError.invalidEndpoint
         }
-
-        let url = URL(string: selection.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/chat/completions")!
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        if !apiKey.isEmpty {
+            request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+        }
 
         let systemPrompt = """
         You are a helpful writing assistant. Follow the user's instruction precisely.
@@ -66,7 +66,7 @@ final class AIService {
 
         guard (200...299).contains(httpResponse.statusCode) else {
             let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw AIError.apiError(statusCode: httpResponse.statusCode, message: errorMessage)
+            throw AIError.apiError(statusCode: httpResponse.statusCode, message: Self.trimmedErrorMessage(errorMessage))
         }
 
         // Parse OpenAI-compatible response
@@ -93,17 +93,17 @@ final class AIService {
         AsyncThrowingStream { continuation in
             Task {
                 do {
-                    guard !apiKey.isEmpty else {
-                        continuation.finish(throwing: AIError.missingAPIKey)
+                    guard let url = EndpointURLValidator.chatCompletionsURL(from: selection.baseURL) else {
+                        continuation.finish(throwing: AIError.invalidEndpoint)
                         return
                     }
-
-                    let url = URL(string: selection.baseURL.trimmingCharacters(in: .whitespacesAndNewlines).trimmingCharacters(in: CharacterSet(charactersIn: "/")) + "/chat/completions")!
 
                     var request = URLRequest(url: url)
                     request.httpMethod = "POST"
                     request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                    request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+                    if !apiKey.isEmpty {
+                        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
+                    }
 
                     let systemPrompt = """
                     You are a helpful writing assistant. Follow the user's instruction precisely.
@@ -171,12 +171,19 @@ final class AIService {
             }
         }
     }
+
+    private static func trimmedErrorMessage(_ message: String) -> String {
+        let trimmed = message.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard trimmed.count > 500 else { return trimmed }
+        return String(trimmed.prefix(500)) + "..."
+    }
 }
 
 // MARK: - Errors
 
 enum AIError: Error, LocalizedError {
     case missingAPIKey
+    case invalidEndpoint
     case networkError
     case apiError(statusCode: Int, message: String)
     case invalidResponse
@@ -185,6 +192,8 @@ enum AIError: Error, LocalizedError {
         switch self {
         case .missingAPIKey:
             return "No API key found for the selected model."
+        case .invalidEndpoint:
+            return "The selected endpoint URL is invalid. Use HTTPS for remote providers or HTTP for localhost."
         case .networkError:
             return "Network request failed."
         case .apiError(let statusCode, let message):
