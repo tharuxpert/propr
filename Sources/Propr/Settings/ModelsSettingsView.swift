@@ -28,266 +28,308 @@ struct ModelsSettingsView: View {
     @State private var editNewModelAlias = ""
 
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 24) {
-                // Removed the "Models" title here — the TabView tab already labels this section,
-                // and having it caused ugly double-labeling + truncation near the window title bar.
+        ScrollViewReader { scrollProxy in
+            ScrollView {
+                VStack(alignment: .leading, spacing: 24) {
+                    // Removed the "Models" title here — the TabView tab already labels this section,
+                    // and having it caused ugly double-labeling + truncation near the window title bar.
 
-                // Quick Start (Built-in providers)
-                // Non-lazy grid to avoid cells disappearing during fast scroll when the
-                // quick-add form below is open (LazyVGrid + dynamic content height change
-                // below it is a known source of recycling glitches).
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Quick Start")
-                        .font(.headline)
+                    // Quick Start (Built-in providers)
+                    // Non-lazy grid to avoid cells disappearing during fast scroll when the
+                    // quick-add form below is open (LazyVGrid + dynamic content height change
+                    // below it is a known source of recycling glitches).
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Quick Start")
+                            .font(.headline)
 
-                    Text("Popular providers — just paste your API key.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        Text("Popular providers — just paste your API key.")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
 
-                    // Stable non-lazy rows (8 providers → max 3 per row). Eliminates the
-                    // fast-scroll disappearance bug while the quick-add form is visible.
-                    let providers = BuiltInProvider.all
-                    VStack(alignment: .leading, spacing: 10) {
-                        ForEach(Array(stride(from: 0, to: providers.count, by: 3)), id: \.self) {
-                            start in
-                            HStack(spacing: 10) {
-                                ForEach(0..<3, id: \.self) { offset in
-                                    let index = start + offset
-                                    if index < providers.count {
-                                        quickStartCard(for: providers[index])
-                                    } else {
-                                        Spacer()
-                                            .frame(maxWidth: .infinity)
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-                .padding()
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                .animation(nil, value: showingAddForm)
-                .animation(nil, value: quickAddProvider != nil)
-
-                // Quick Add Form (appears when a provider is selected)
-                // We wrap it so we can scope the smooth expand/collapse animation
-                // (same treatment as the BYOK custom form).
-                VStack {
-                    if let provider = quickAddProvider {
-                        VStack(alignment: .leading, spacing: 12) {
-                            Text("Add \(provider.name)")
-                                .font(.headline)
-
-                            if provider.requiresKey {
-                                SecureField(
-                                    provider.apiKeyExample ?? "API Key", text: $quickAddAPIKey
-                                )
-                                .textFieldStyle(.roundedBorder)
-                            } else {
-                                // For Local providers the base URL is critical and frequently customized
-                                // (different ports for LM Studio, OLLAMA_HOST changes, LAN, Docker, WSL, etc.)
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Base URL")
-                                        .font(.subheadline.weight(.medium))
-
-                                    TextField("http://127.0.0.1:11434/v1", text: $quickAddBaseURL)
-                                        .textFieldStyle(.roundedBorder)
-
-                                    Text(
-                                        "Ollama default is 11434. LM Studio default is 1234. Use 127.0.0.1 for best compatibility with Docker/WSL. Change the port or host if you modified OLLAMA_HOST or the LM Studio server settings."
-                                    )
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .fixedSize(horizontal: false, vertical: true)
-                                }
-                            }
-
-                            // Same model + alias picker as custom BYOK
-                            Divider()
-
-                            Text("Models to include")
-                                .font(.subheadline.weight(.medium))
-
-                            VStack(alignment: .leading, spacing: 6) {
-                                let isLocal = !(quickAddProvider?.requiresKey ?? true)
-
-                                TextField(
-                                    isLocal
-                                        ? "Model name (e.g. llama3.1 or qwen2.5:14b)"
-                                        : "Model ID (exact string sent to the API)",
-                                    text: $newModelName
-                                )
-                                .textFieldStyle(.roundedBorder)
-
-                                if isLocal {
-                                    Text(
-                                        "Must match exactly what you see in `ollama list` or LM Studio"
-                                    )
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                }
-
-                                TextField(
-                                    "Alias (optional – what shows in Propr’s menu)",
-                                    text: $newModelAlias
-                                )
-                                .textFieldStyle(.roundedBorder)
-
-                                Button {
-                                    addModelToList()
-                                } label: {
-                                    Label("Add model", systemImage: "plus.circle.fill")
-                                }
-                                .buttonStyle(.bordered)
-                                .disabled(newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
-                            }
-
-                            if !addedModels.isEmpty {
-                                VStack(alignment: .leading, spacing: 6) {
-                                    Text("Models to add")
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-
-                                    ForEach(addedModels) { model in
-                                        HStack {
-                                            VStack(alignment: .leading, spacing: 1) {
-                                                Text(model.displayName)
-                                                    .fontWeight(
-                                                        model.alias != nil ? .medium : .regular)
-
-                                                if model.alias != nil {
-                                                    Text(model.name)
-                                                        .font(.caption2)
-                                                        .foregroundStyle(.secondary)
-                                                }
-                                            }
+                        // Stable non-lazy rows (8 providers → max 3 per row). Eliminates the
+                        // fast-scroll disappearance bug while the quick-add form is visible.
+                        let providers = BuiltInProvider.all
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(Array(stride(from: 0, to: providers.count, by: 3)), id: \.self)
+                            {
+                                start in
+                                HStack(spacing: 10) {
+                                    ForEach(0..<3, id: \.self) { offset in
+                                        let index = start + offset
+                                        if index < providers.count {
+                                            quickStartCard(for: providers[index])
+                                        } else {
                                             Spacer()
-
-                                            Button {
-                                                removeModelFromList(model)
-                                            } label: {
-                                                Image(systemName: "minus.circle.fill")
-                                                    .foregroundStyle(.red)
-                                            }
-                                            .buttonStyle(.plain)
+                                                .frame(maxWidth: .infinity)
                                         }
                                     }
                                 }
-                                .padding(8)
-                                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                             }
+                        }
+                    }
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .animation(nil, value: showingAddForm)
+                    .animation(nil, value: quickAddProvider != nil)
 
-                            HStack {
-                                Button("Cancel") {
-                                    quickAddProvider = nil
-                                    quickAddAPIKey = ""
-                                    quickAddBaseURL = ""
-                                    addedModels = []
-                                    newModelName = ""
-                                    newModelAlias = ""
+                    // Quick Add Form (appears when a provider is selected)
+                    // We wrap it so we can scope the smooth expand/collapse animation
+                    // (same treatment as the BYOK custom form).
+                    VStack {
+                        if let provider = quickAddProvider {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("Add \(provider.name)")
+                                    .font(.headline)
+
+                                if provider.requiresKey {
+                                    SecureField(
+                                        provider.apiKeyExample ?? "API Key", text: $quickAddAPIKey
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+                                } else {
+                                    // For Local providers the base URL is critical and frequently customized
+                                    // (different ports for LM Studio, OLLAMA_HOST changes, LAN, Docker, WSL, etc.)
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Base URL")
+                                            .font(.subheadline.weight(.medium))
+
+                                        TextField(
+                                            "http://127.0.0.1:11434/v1", text: $quickAddBaseURL
+                                        )
+                                        .textFieldStyle(.roundedBorder)
+
+                                        Text(
+                                            "Ollama default is 11434. LM Studio default is 1234. Use 127.0.0.1 for best compatibility with Docker/WSL. Change the port or host if you modified OLLAMA_HOST or the LM Studio server settings."
+                                        )
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .fixedSize(horizontal: false, vertical: true)
+                                    }
                                 }
 
-                                Spacer()
+                                // Same model + alias picker as custom BYOK
+                                Divider()
 
-                                Button("Add \(provider.name)") {
-                                    addQuickProvider()
+                                Text("Models to include")
+                                    .font(.subheadline.weight(.medium))
+
+                                VStack(alignment: .leading, spacing: 6) {
+                                    let isLocal = !(quickAddProvider?.requiresKey ?? true)
+
+                                    TextField(
+                                        isLocal
+                                            ? "Model name (e.g. llama3.1 or qwen2.5:14b)"
+                                            : "Model ID (exact string sent to the API)",
+                                        text: $newModelName
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+
+                                    if isLocal {
+                                        Text(
+                                            "Must match exactly what you see in `ollama list` or LM Studio"
+                                        )
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    }
+
+                                    TextField(
+                                        "Alias (optional – what shows in Propr’s menu)",
+                                        text: $newModelAlias
+                                    )
+                                    .textFieldStyle(.roundedBorder)
+
+                                    Button {
+                                        addModelToList()
+                                    } label: {
+                                        Label("Add model", systemImage: "plus.circle.fill")
+                                    }
+                                    .buttonStyle(.bordered)
+                                    .disabled(
+                                        newModelName.trimmingCharacters(in: .whitespaces).isEmpty)
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .disabled(
-                                    (provider.requiresKey
-                                        && quickAddAPIKey.trimmingCharacters(
-                                            in: .whitespacesAndNewlines
-                                        ).isEmpty)
-                                        || (!provider.requiresKey
-                                            && (quickAddBaseURL.trimmingCharacters(
+
+                                if !addedModels.isEmpty {
+                                    VStack(alignment: .leading, spacing: 6) {
+                                        Text("Models to add")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+
+                                        ForEach(addedModels) { model in
+                                            HStack {
+                                                VStack(alignment: .leading, spacing: 1) {
+                                                    Text(model.displayName)
+                                                        .fontWeight(
+                                                            model.alias != nil ? .medium : .regular)
+
+                                                    if model.alias != nil {
+                                                        Text(model.name)
+                                                            .font(.caption2)
+                                                            .foregroundStyle(.secondary)
+                                                    }
+                                                }
+                                                Spacer()
+
+                                                Button {
+                                                    removeModelFromList(model)
+                                                } label: {
+                                                    Image(systemName: "minus.circle.fill")
+                                                        .foregroundStyle(.red)
+                                                }
+                                                .buttonStyle(.plain)
+                                            }
+                                        }
+                                    }
+                                    .padding(8)
+                                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                                }
+
+                                HStack {
+                                    Button("Cancel") {
+                                        quickAddProvider = nil
+                                        quickAddAPIKey = ""
+                                        quickAddBaseURL = ""
+                                        addedModels = []
+                                        newModelName = ""
+                                        newModelAlias = ""
+                                    }
+
+                                    Spacer()
+
+                                    Button("Add \(provider.name)") {
+                                        addQuickProvider()
+                                    }
+                                    .buttonStyle(.borderedProminent)
+                                    .disabled(
+                                        (provider.requiresKey
+                                            && quickAddAPIKey.trimmingCharacters(
                                                 in: .whitespacesAndNewlines
-                                            ).isEmpty
-                                                || normalizedEndpointURL(quickAddBaseURL) == nil))
-                                        || addedModels.isEmpty
-                                )
+                                            ).isEmpty)
+                                            || (!provider.requiresKey
+                                                && (quickAddBaseURL.trimmingCharacters(
+                                                    in: .whitespacesAndNewlines
+                                                ).isEmpty
+                                                    || normalizedEndpointURL(quickAddBaseURL) == nil))
+                                            || addedModels.isEmpty
+                                    )
+                                }
                             }
-                        }
-                        .padding()
-                        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                        .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-                    }
-                }
-                .animation(
-                    .spring(response: 0.3, dampingFraction: 0.8), value: quickAddProvider != nil)
-
-                // Custom Endpoint (BYOK)
-                VStack(alignment: .leading, spacing: 12) {
-                    Text("Bring Your Own Key (BYOK)")
-                        .font(.headline)
-
-                    Button {
-                        showingAddForm.toggle()
-                        if !showingAddForm {
-                            resetAddForm()
-                        }
-                    } label: {
-                        Label("Add custom endpoint", systemImage: "plus")
-                    }
-                    .buttonStyle(.bordered)
-
-                    // Inline add form (smoothly appears)
-                    // We scope the animation to *this* VStack only so the Quick Start
-                    // cards above don't get unwanted layout animation when the form expands.
-                    if showingAddForm {
-                        addEndpointForm
-                            // Use scale from the top instead of .move(edge: .top) so the form
-                            // expands downward in place and never visually flies in from above
-                            // the BYOK section (avoiding overlap on Quick Start cards).
+                            .padding()
+                            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
                             .transition(.opacity.combined(with: .scale(scale: 0.96, anchor: .top)))
-                            .padding(.top, 8)
-                    }
-                }
-                .padding()
-                .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
-                .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingAddForm)
-
-                // Existing custom endpoints
-                if !modelStore.customEndpoints.isEmpty {
-                    Text("Your Endpoints")
-                        .font(.headline)
-
-                    ForEach(modelStore.customEndpoints) { endpoint in
-                        endpointRow(endpoint)
-
-                        if editingEndpointID == endpoint.id {
-                            editEndpointForm(for: endpoint)
-                                .transition(
-                                    .opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
                         }
                     }
-                } else if !showingAddForm {
-                    Spacer()
+                    .animation(
+                        .spring(response: 0.3, dampingFraction: 0.8), value: quickAddProvider != nil
+                    )
 
-                    VStack(spacing: 16) {
-                        Image(systemName: "network")
-                            .font(.largeTitle)
-                            .foregroundStyle(.secondary)
-
-                        Text("No custom endpoints yet")
+                    // Custom Endpoint (BYOK)
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text("Bring Your Own Key (BYOK)")
                             .font(.headline)
 
-                        Text("Add your first OpenAI-compatible endpoint above.")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .frame(maxWidth: .infinity)
+                        Button {
+                            showingAddForm.toggle()
+                            if !showingAddForm {
+                                resetAddForm()
+                            }
+                        } label: {
+                            Label("Add custom endpoint", systemImage: "plus")
+                        }
+                        .buttonStyle(.bordered)
 
-                    Spacer()
+                        // Inline add form (smoothly appears)
+                        // We scope the animation to *this* VStack only so the Quick Start
+                        // cards above don't get unwanted layout animation when the form expands.
+                        if showingAddForm {
+                            addEndpointForm
+                                // Use scale from the top instead of .move(edge: .top) so the form
+                                // expands downward in place and never visually flies in from above
+                                // the BYOK section (avoiding overlap on Quick Start cards).
+                                .transition(
+                                    .opacity.combined(with: .scale(scale: 0.96, anchor: .top))
+                                )
+                                .padding(.top, 8)
+                        }
+                    }
+                    .padding()
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
+                    .animation(.spring(response: 0.3, dampingFraction: 0.8), value: showingAddForm)
+
+                    // Existing custom endpoints
+                    if !modelStore.customEndpoints.isEmpty {
+                        Text("Your Endpoints")
+                            .font(.headline)
+
+                        ForEach(modelStore.customEndpoints) { endpoint in
+                            endpointRow(endpoint)
+
+                            if editingEndpointID == endpoint.id {
+                                editEndpointForm(for: endpoint)
+                                    .transition(
+                                        .opacity.combined(with: .scale(scale: 0.98, anchor: .top)))
+
+                                Color.clear
+                                    .frame(height: 1)
+                                    .id(editFormID(for: endpoint.id))
+                                    .onAppear {
+                                        scrollToEditForm(endpoint.id, with: scrollProxy)
+                                    }
+                            }
+                        }
+                    } else if !showingAddForm {
+                        Spacer()
+
+                        VStack(spacing: 16) {
+                            Image(systemName: "network")
+                                .font(.largeTitle)
+                                .foregroundStyle(.secondary)
+
+                            Text("No custom endpoints yet")
+                                .font(.headline)
+
+                            Text("Add your first OpenAI-compatible endpoint above.")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                        }
+                        .frame(maxWidth: .infinity)
+
+                        Spacer()
+                    }
                 }
+                .padding(.top, 12)
+                .padding(.horizontal, 24)
+                .padding(.bottom, 24)
             }
-            .padding(.top, 12)
-            .padding(.horizontal, 24)
-            .padding(.bottom, 24)
+            .onChange(of: editingEndpointID) { _, endpointID in
+                guard let endpointID else { return }
+                scrollToEditForm(endpointID, with: scrollProxy)
+            }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .frame(minWidth: 520)
+    }
+
+    private func editFormID(for endpointID: UUID) -> String {
+        "edit-endpoint-\(endpointID.uuidString)"
+    }
+
+    private func scrollToEditForm(_ endpointID: UUID, with proxy: ScrollViewProxy) {
+        // Scroll to a marker after the edit form so opening near the bottom visibly
+        // moves the viewport down to reveal the newly inserted controls.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                proxy.scrollTo(editFormID(for: endpointID), anchor: .bottom)
+            }
+        }
+
+        // Run once more after the transition/layout settles; this makes the scroll
+        // reliable for taller forms and smaller settings windows.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                proxy.scrollTo(editFormID(for: endpointID), anchor: .bottom)
+            }
+        }
     }
 
     private var addEndpointForm: some View {
