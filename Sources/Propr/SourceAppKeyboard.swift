@@ -27,6 +27,35 @@ struct SourceAppKeyboard {
     /// Text longer than this is refused rather than sent to a model.
     private static let maxCapturedCharacters = 8_000
 
+    /// Pacing for synthesised keystrokes.
+    ///
+    /// Some delay is genuinely required: posting CGEvents faster than the target app
+    /// drains its event queue drops characters. But a flat delay makes long text
+    /// unusable — 3,000 characters at 18ms is nearly a minute of the user watching
+    /// their editor type by itself.
+    private enum Pacing {
+        /// Comfortable spacing, used when the text is short enough to afford it.
+        static let relaxed = Duration.milliseconds(18)
+        /// Never go below this; apps start dropping events.
+        static let floor = Duration.milliseconds(3)
+        /// Roughly how long a whole run should take before pacing is compressed.
+        static let budget = Duration.seconds(4)
+    }
+
+    /// The delay to use between keystrokes for a run of `count` characters.
+    ///
+    /// Short text keeps the relaxed spacing. Longer text is compressed so the run fits
+    /// the budget, down to the floor — past that, length simply costs time.
+    static func keystrokeDelay(forCharacterCount count: Int) -> Duration {
+        guard count > 1 else { return Pacing.relaxed }
+
+        let budgetNanos = Pacing.budget.nanoseconds / Int64(count)
+        let relaxedNanos = Pacing.relaxed.nanoseconds
+        let floorNanos = Pacing.floor.nanoseconds
+
+        return .nanoseconds(max(floorNanos, min(relaxedNanos, budgetNanos)))
+    }
+
     /// Virtual key codes, which are positional rather than character-based.
     private enum Key {
         static let a: CGKeyCode = 0x00
@@ -131,10 +160,11 @@ struct SourceAppKeyboard {
             try? await Task.sleep(for: .milliseconds(60))
         }
 
+        let delay = Self.keystrokeDelay(forCharacterCount: text.count)
         for character in text {
             guard !Task.isCancelled else { return false }
             guard sendUnicodeText(String(character)) else { return false }
-            try? await Task.sleep(for: .milliseconds(18))
+            try? await Task.sleep(for: delay)
         }
 
         return true
@@ -213,5 +243,13 @@ struct SourceAppKeyboard {
         keyDown.postToPid(pid)
         keyUp.postToPid(pid)
         return true
+    }
+}
+
+extension Duration {
+    /// Whole nanoseconds, for arithmetic on delays.
+    var nanoseconds: Int64 {
+        let (seconds, attoseconds) = components
+        return seconds * 1_000_000_000 + attoseconds / 1_000_000_000
     }
 }

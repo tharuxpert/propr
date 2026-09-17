@@ -8,14 +8,11 @@ import AppKit
 /// field being written to. It only works where the app exposes a settable
 /// `kAXSelectedText`, which `FloatingBarController.strategy(for:role:appName:)` checks.
 ///
-/// Text is written a character at a time to produce the typing animation, which also
-/// means a failure part-way leaves partial text rather than nothing.
+/// Text is written one streamed token at a time, so a failure part-way leaves partial
+/// text rather than nothing.
 @MainActor
 struct AXTextWriter {
     let element: AXUIElement
-
-    /// Delay between characters. Fast enough to read as typing, slow enough to see.
-    static let characterDelay = Duration.milliseconds(22)
 
     /// Clears the insertion point ready for generated text.
     ///
@@ -36,19 +33,23 @@ struct AXTextWriter {
         }
     }
 
-    /// Appends a token, one character at a time, so the model appears to type.
+    /// Appends a streamed token.
+    ///
+    /// Written whole rather than character by character with an artificial delay.
+    /// The model emits tokens every 20–50ms, so the stream already paces itself; the
+    /// old per-character delay was slower than the model produced text, which meant
+    /// the animation fell behind and the total time was dominated by our own sleeps
+    /// rather than the request. A 500-character reply took about eleven seconds.
     func append(_ token: String) async throws {
-        for character in token {
-            let status = AXUIElementSetAttributeValue(
-                element,
-                kAXSelectedTextAttribute as CFString,
-                String(character) as CFString
-            )
-            guard status == .success else {
-                throw TextApplyError.cannotWriteAX
-            }
+        guard !token.isEmpty else { return }
 
-            try? await Task.sleep(for: Self.characterDelay)
+        let status = AXUIElementSetAttributeValue(
+            element,
+            kAXSelectedTextAttribute as CFString,
+            token as CFString
+        )
+        guard status == .success else {
+            throw TextApplyError.cannotWriteAX
         }
     }
 
