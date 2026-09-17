@@ -346,7 +346,8 @@ final class FloatingBarController {
     private func ensurePanelExists() {
         guard panel == nil else { return }
 
-        let contentRect = NSRect(x: 0, y: 0, width: 420, height: 140)
+        // Provisional; sizePanelToFitContent settles the real size once content exists.
+        let contentRect = NSRect(origin: .zero, size: baseContentSize)
 
         let newPanel = FloatingPanel(
             contentRect: contentRect,
@@ -390,7 +391,7 @@ final class FloatingBarController {
     /// The bar's resting size: comfortable enough for the header, context field and
     /// the status/action row. `sizePanelToFitContent` grows past this when needed
     /// (a wrapped error message) but never below it.
-    private var baseContentSize: NSSize { NSSize(width: 460, height: 168) }
+    private var baseContentSize: NSSize { NSSize(width: 510, height: 196) }
 
     private func viewSize(for snapshot: FieldSnapshot) -> NSSize {
         baseContentSize
