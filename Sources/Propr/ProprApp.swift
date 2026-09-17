@@ -157,8 +157,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let flags = event.modifierFlags
             guard AppDelegate.isPureCommand(flags) else { return }
 
-            Task { @MainActor [weak self] in
-                self?.handlePureCommandPress()
+            // Deliberately capture nothing and start no Task. The crash was in this
+            // closure's prologue, inspecting its captured context — so the closure is
+            // kept non-capturing (a thin function with no context object at all), and
+            // the delegate is reached through the existing static instead.
+            //
+            // GCD rather than `Task { @MainActor }` for the same reason: it hands the
+            // work to the main queue without asking the concurrency runtime which
+            // executor we are currently on.
+            DispatchQueue.main.async {
+                MainActor.assumeIsolated {
+                    AppDelegate.shared?.handlePureCommandPress()
+                }
             }
         }
     }
