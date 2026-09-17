@@ -6,14 +6,15 @@ import AppKit
 /// text directly — most often terminals, which expose their whole transcript as an
 /// editable value rather than the prompt the user is typing into.
 ///
-/// Reading context is limited to ⌘C, which is inert when nothing is selected. It
-/// deliberately never sends ⌘A to capture: selecting the user's whole document and
-/// then failing to copy it would leave that selection live, one keystroke away from
-/// destroying their work. No selection simply means no context — the user can still
-/// ask for text to be generated at the cursor.
+/// Context is read in priority order: the user's own selection first (⌘C, inert when
+/// nothing is selected), then the whole field (⌘A then ⌘C). If neither yields
+/// anything there is simply no context, and the user can still ask for text to be
+/// generated at the cursor.
 ///
-/// Writing still types character by character. The pasteboard is saved and restored,
-/// captured text is size-capped, and Propr refuses to target itself or pid 0.
+/// Selecting someone's whole document is the dangerous step, so the selection is
+/// collapsed again on *every* exit path — see `copyCurrentInput`. Beyond that the
+/// pasteboard is saved and restored, captured text is size-capped, and Propr refuses
+/// to target itself or pid 0.
 ///
 /// The waits between steps are unavoidable: there is no completion callback for a
 /// synthetic keystroke, so we can only give the target app a moment to react. They are
@@ -30,6 +31,7 @@ struct SourceAppKeyboard {
     private enum Key {
         static let a: CGKeyCode = 0x00
         static let c: CGKeyCode = 0x08
+        static let rightArrow: CGKeyCode = 0x7C
     }
 
     /// Whether this is a process we are willing to drive.
@@ -61,6 +63,55 @@ struct SourceAppKeyboard {
         restorePasteboard(savedItems)
 
         guard changed, let copied, isUsable(copied) else { return nil }
+        return copied
+    }
+
+    /// Selects the whole field and copies it, to use as context when the user has not
+    /// selected anything themselves.
+    ///
+    /// Returns nil when the field is empty or its contents exceed the size cap; both
+    /// mean "no context" rather than partial context, because a capture taken here
+    /// implies the apply will select-all and replace — so rewriting from a truncated
+    /// copy would overwrite the full text with a partial answer.
+    func copyCurrentInput() async -> String? {
+        print("[Propr Bar] fallback: trying select-all copy from pid=\(pid)")
+        guard isTargetable else { return nil }
+
+        let pasteboard = NSPasteboard.general
+        let savedItems = pasteboard.pasteboardItems ?? []
+
+        activate()
+        try? await Task.sleep(for: .milliseconds(90))
+        guard sendCommandKey(Key.a) else { return nil }
+
+        // Everything in the field is now selected, which is one keystroke away from
+        // destroying the user's work. Collapse it again however this function exits.
+        // An arrow key does that reliably in text controls; Escape, which this used to
+        // send, is not a deselect key on macOS and frequently left the selection live.
+        defer { sendPlainKey(Key.rightArrow) }
+
+        try? await Task.sleep(for: .milliseconds(60))
+        guard sendCommandKey(Key.c) else {
+            restorePasteboard(savedItems)
+            return nil
+        }
+        try? await Task.sleep(for: .milliseconds(140))
+
+        let copied = pasteboard.string(forType: .string)
+        restorePasteboard(savedItems)
+
+        guard let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return nil
+        }
+
+        guard copied.count <= Self.maxCapturedCharacters else {
+            print(
+                "[Propr Bar] select-all copy too large (\(copied.count) chars) — treating as no context"
+            )
+            return nil
+        }
+
+        print("[Propr Bar] Captured field contents via select-all copy (\(copied.count) chars)")
         return copied
     }
 

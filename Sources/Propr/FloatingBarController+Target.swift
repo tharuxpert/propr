@@ -41,9 +41,10 @@ extension FloatingBarController {
             return snapshot
         }
 
-        // Only ⌘C. If nothing is selected there is simply no context, and the user
-        // can still ask for text to be generated at the cursor.
-
+        // Context in priority order:
+        //   1. the user's own selection (⌘C alone, inert when nothing is selected)
+        //   2. the whole field (⌘A then ⌘C)
+        //   3. nothing — the bar still opens, ready to generate at the cursor
         if let selectedText = await SourceAppKeyboard(pid: pid).copySelectedText() {
             print(
                 "[Propr Bar] summon fallback: captured selected text (\(selectedText.count) chars)")
@@ -52,6 +53,18 @@ extension FloatingBarController {
                 pid: snapshot.pid,
                 fullText: "",
                 selectedText: selectedText,
+                role: snapshot.role
+            )
+        }
+
+        if let currentInput = await SourceAppKeyboard(pid: pid).copyCurrentInput() {
+            print(
+                "[Propr Bar] summon fallback: captured current input (\(currentInput.count) chars)")
+            return FieldSnapshot(
+                appName: snapshot.appName,
+                pid: snapshot.pid,
+                fullText: currentInput,
+                selectedText: nil,
                 role: snapshot.role
             )
         }
