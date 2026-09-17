@@ -1,46 +1,6 @@
 import AppKit
 import SwiftUI
 
-@MainActor
-final class FloatingBarSessionState: ObservableObject {
-    @Published var hasSubmitted = false
-    @Published var isThinking = false
-    @Published var isTyping = false
-    @Published var errorMessage: String?
-
-    func startRequest() {
-        hasSubmitted = true
-        isThinking = true
-        isTyping = false
-        errorMessage = nil
-    }
-
-    func startTyping() {
-        isThinking = false
-        isTyping = true
-    }
-
-    func finishRequest() {
-        isThinking = false
-        isTyping = false
-    }
-
-    func stopTyping() {
-        isTyping = false
-    }
-
-    func fail(_ message: String) {
-        hasSubmitted = false
-        isThinking = false
-        isTyping = false
-        errorMessage = message
-    }
-
-    func clearError() {
-        errorMessage = nil
-    }
-}
-
 /// The actual floating bar UI shown inside the NSPanel.
 /// Minimal summon-only design.
 struct FloatingBarView: View {
@@ -142,69 +102,13 @@ struct FloatingBarView: View {
                 .disabled(sessionState.hasSubmitted && sessionState.errorMessage == nil)
 
             if sessionState.isThinking {
-                HStack(spacing: 10) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Thinking…")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                RefineStatusRow(label: "Thinking…")
             } else if sessionState.isTyping {
-                HStack(spacing: 10) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Typing…")
-                        .font(.body)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
+                RefineStatusRow(label: "Typing…")
             }
 
             if let error = sessionState.errorMessage {
-                // The message wraps instead of truncating: a provider error is the
-                // one thing here the user cannot act on without reading it in full.
-                // It is selectable so it can be copied into a search or bug report.
-                VStack(alignment: .leading, spacing: 10) {
-                    HStack(alignment: .top, spacing: 10) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.body)
-                            .foregroundStyle(.orange)
-
-                        Text(error)
-                            .font(.body)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(8)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .textSelection(.enabled)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-
-                    HStack(spacing: 8) {
-                        Spacer()
-
-                        Button("Copy") {
-                            NSPasteboard.general.clearContents()
-                            NSPasteboard.general.setString(error, forType: .string)
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-
-                        Button("Dismiss") {
-                            sessionState.clearError()
-                        }
-                        .buttonStyle(.bordered)
-                        .controlSize(.small)
-                    }
-                }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 10)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(Color.orange.opacity(0.1))
+                RefineErrorBanner(message: error) { sessionState.clearError() }
             }
 
             if sessionState.hasSubmitted && !sessionState.isThinking && !sessionState.isTyping
