@@ -295,21 +295,27 @@ final class FloatingBarController {
 
         hosting.layoutSubtreeIfNeeded()
 
-        var size = hosting.fittingSize
-        // Fall back to the previous fixed size if SwiftUI reports nothing usable.
-        if size.width < 1 || size.height < 1 {
-            size = NSSize(width: 460, height: 168)
-        }
+        // The panel only ever grows past its base size. fittingSize under-reports
+        // immediately after rootView is swapped — SwiftUI has not laid the content
+        // out yet — and trusting it there collapses the bar onto its text field.
+        let base = baseContentSize
+        let size = NSSize(
+            width: base.width,
+            height: max(base.height, ceil(hosting.fittingSize.height))
+        )
+
+        guard size != panel.frame.size || recenter else { return }
 
         if recenter {
             centerPanel(size: size)
-            return
+        } else {
+            // Grow downward: keep the top edge put. AppKit origins are bottom-left.
+            let current = panel.frame
+            let origin = CGPoint(x: current.origin.x, y: current.maxY - size.height)
+            panel.setFrame(NSRect(origin: origin, size: size), display: true)
         }
 
-        // Keep the top edge where it is; AppKit origins are bottom-left.
-        let current = panel.frame
-        let origin = CGPoint(x: current.origin.x, y: current.maxY - size.height)
-        panel.setFrame(NSRect(origin: origin, size: size), display: true)
+        hosting.setFrameSize(size)
     }
 
     /// Watches the session state so the panel can grow/shrink as content changes.
@@ -384,10 +390,13 @@ final class FloatingBarController {
         self.hostingView = hosting
     }
 
+    /// The bar's resting size: comfortable enough for the header, context field and
+    /// the status/action row. `sizePanelToFitContent` grows past this when needed
+    /// (a wrapped error message) but never below it.
+    private var baseContentSize: NSSize { NSSize(width: 460, height: 168) }
+
     private func viewSize(for snapshot: FieldSnapshot) -> NSSize {
-        // Dynamic-ish height based on content; start generous and let SwiftUI compress.
-        // For v1 we use a fixed comfortable size that fits the chips + context field.
-        NSSize(width: 460, height: 168)
+        baseContentSize
     }
 
     // MARK: - AX Target Capture
