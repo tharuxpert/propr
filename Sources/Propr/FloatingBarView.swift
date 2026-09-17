@@ -14,6 +14,15 @@ struct FloatingBarView: View {
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
 
+    /// Asking "what do you want to do with this text?" when no text was captured
+    /// points at nothing. With an empty context the bar writes at the cursor instead,
+    /// so the prompt asks for that.
+    private var promptPlaceholder: String {
+        snapshot.contextText.isEmpty
+            ? "What do you want to write?"
+            : "What do you want to do with this text?"
+    }
+
     private var textPreview: String {
         let text =
             snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
@@ -80,7 +89,7 @@ struct FloatingBarView: View {
             }
 
             // Main instruction input
-            TextField("What do you want to do with this text?", text: $prompt)
+            TextField(promptPlaceholder, text: $prompt)
                 .textFieldStyle(.plain)
                 .font(.title3)
                 .padding(.horizontal, 14)
