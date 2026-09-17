@@ -47,6 +47,9 @@ final class FloatingBarController {
     private var sessionState = FloatingBarSessionState()
     private var refineTask: Task<Void, Never>?
 
+    /// Incremented per refine request so a superseded task cannot publish its result.
+    private var refineGeneration = 0
+
     /// Keeps the panel sized to its content. The bar grows when a wrapped error
     /// message appears, which a fixed panel height would otherwise clip.
     private var sessionStateCancellable: AnyCancellable?
@@ -482,6 +485,13 @@ final class FloatingBarController {
         let strategy = element == nil ? .clipboardPaste : applyStrategy
 
         refineTask?.cancel()
+
+        // Identifies this request so a task that finishes late — usually because it
+        // was cancelled by a newer one — cannot write its outcome over the current
+        // request's state.
+        refineGeneration &+= 1
+        let generation = refineGeneration
+
         refineTask = Task { @MainActor in
             do {
                 guard let selection = ModelStore.shared.selectedModel() else {
@@ -534,9 +544,19 @@ final class FloatingBarController {
                         replaceExistingInput: !hasSelection && !originalText.isEmpty
                     )
                 }
+            } catch is CancellationError {
+                // Cancelled by a newer request or by the bar closing. Only the newest
+                // request may clear the spinner, otherwise a superseded task would
+                // reset the UI out from under the request that replaced it.
+                print("[Propr Bar] refine cancelled (generation \(generation))")
+                if generation == refineGeneration {
+                    sessionState.finishRequest()
+                }
             } catch {
                 print("AI refinement failed: \(error)")
-                sessionState.fail(error.localizedDescription)
+                if generation == refineGeneration {
+                    sessionState.fail(error.localizedDescription)
+                }
                 // Never write error text into the target application
             }
         }
@@ -558,7 +578,9 @@ final class FloatingBarController {
             selection: selection,
             apiKey: apiKey
         ) {
-            guard !Task.isCancelled else { return }
+            // Throws rather than returning: a bare return here would leave the bar
+            // showing "Thinking…" forever with its input disabled.
+            try Task.checkCancellation()
 
             if firstToken {
                 firstToken = false
@@ -596,7 +618,7 @@ final class FloatingBarController {
                 apiKey: apiKey
             )
         }
-        guard !Task.isCancelled else { return }
+        try Task.checkCancellation()
         guard !result.isEmpty else {
             sessionState.fail("The model returned an empty response.")
             return
