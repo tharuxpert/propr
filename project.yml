@@ -17,7 +17,9 @@ packages:
 settings:
   SWIFT_VERSION: 6
   SWIFT_STRICT_CONCURRENCY: complete
-  CODE_SIGN_STYLE: Automatic
+  # CODE_SIGN_STYLE / CODE_SIGN_IDENTITY for Debug come from Configs/Signing.xcconfig.
+  # They are deliberately not set here: build settings defined on the target take
+  # precedence over an xcconfig, which would silently override the local identity.
   DEVELOPMENT_TEAM: ""  # Set this in Xcode if you have a paid Apple Developer account (not needed for local testing)
 
   # Modern build settings (accepted via Xcode's Perform Changes)
@@ -37,6 +39,10 @@ targets:
         createIntermediateGroups: true
       - path: Resources
         createIntermediateGroups: true
+    configFiles:
+      # Gives Debug builds a stable code signing identity so Accessibility and
+      # Keychain grants survive rebuilds. Release is left on Xcode's defaults.
+      Debug: Configs/Signing.xcconfig
     settings:
       PRODUCT_BUNDLE_IDENTIFIER: com.tharuxpert.Propr
       PRODUCT_NAME: Propr
@@ -80,16 +86,21 @@ targets:
           DEST_DIR="$SRCROOT/Build/Debug"
           DEST="$SRCROOT/Build/Debug/Propr.app"
 
+          # Sign the actual build product FIRST, not just the copy. Xcode signs
+          # ad-hoc when no development team is set, which makes the app's
+          # designated requirement its own cdhash — that changes every build and
+          # invalidates the Accessibility grant and any Keychain ACLs. Signing
+          # the product here means it does not matter which copy gets launched.
+          "$SRCROOT/scripts/sign-app.sh" "$SRC"
+
           echo "→ Copying debug build to stable location..."
           mkdir -p "$DEST_DIR"
           if [ -e "$DEST" ]; then
             chmod -R u+w "$DEST" 2>/dev/null || true
             rm -rf "$DEST"
           fi
+          # ditto preserves the signature, so the copy inherits the stable one.
           ditto "$SRC" "$DEST"
-
-          # Ad-hoc re-sign the copy (helps a bit with TCC stability)
-          codesign --force --deep --sign - "$DEST" 2>/dev/null || true
 
           echo "✅ Stable debug build available at:"
           echo "   $DEST"

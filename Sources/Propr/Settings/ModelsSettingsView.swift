@@ -27,6 +27,10 @@ struct ModelsSettingsView: View {
     @State private var editNewModelName = ""
     @State private var editNewModelAlias = ""
 
+    /// Set when a Keychain write fails, so the user is told instead of the
+    /// failure being swallowed into a console log.
+    @State private var keychainErrorMessage: String?
+
     var body: some View {
         ScrollViewReader { scrollProxy in
             ScrollView {
@@ -308,6 +312,20 @@ struct ModelsSettingsView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .frame(minWidth: 520)
+        .alert(
+            "Could not save the API key",
+            isPresented: Binding(
+                get: { keychainErrorMessage != nil },
+                set: { if !$0 { keychainErrorMessage = nil } }
+            )
+        ) {
+            Button("OK", role: .cancel) { keychainErrorMessage = nil }
+        } message: {
+            // Keys go to the Keychain, where a save can genuinely fail (locked
+            // keychain, denied access). Failing silently would leave the endpoint
+            // looking configured while refining reports a missing key.
+            Text(keychainErrorMessage ?? "")
+        }
     }
 
     private func editFormID(for endpointID: UUID) -> String {
@@ -736,8 +754,8 @@ struct ModelsSettingsView: View {
                 modelStore.selectModel(selection)
             }
         } catch {
-            // In real app, show proper error
             print("Failed to save API key: \(error)")
+            keychainErrorMessage = error.localizedDescription
         }
     }
 
@@ -802,6 +820,7 @@ struct ModelsSettingsView: View {
 
         } catch {
             print("Failed to save API key for quick provider: \(error)")
+            keychainErrorMessage = error.localizedDescription
         }
     }
 
@@ -914,6 +933,7 @@ struct ModelsSettingsView: View {
             }
         } catch {
             print("Failed to save endpoint edits: \(error)")
+            keychainErrorMessage = error.localizedDescription
         }
     }
 

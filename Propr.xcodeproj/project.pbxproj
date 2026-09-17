@@ -16,6 +16,7 @@
 		3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */; };
 		45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBFA4D9B786404254155B7B /* SettingsView.swift */; };
 		50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */; };
+		7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */; };
 		96AF400F7D537677F4704E91 /* ModelsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */; };
 		A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */; };
 		D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */; };
@@ -28,6 +29,7 @@
 
 /* Begin PBXFileReference section */
 		073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarController.swift; sourceTree = "<group>"; };
+		0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		26088ADA097DE290EDA0A187 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointURLValidator.swift; sourceTree = "<group>"; };
@@ -46,6 +48,7 @@
 		D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpoint.swift; sourceTree = "<group>"; };
 		DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelConfigStore.swift; sourceTree = "<group>"; };
 		F23611B0B693E2FD16EFCB4B /* ProprApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProprApp.swift; sourceTree = "<group>"; };
+		F5B1B3109E53D4520B221BB5 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -73,6 +76,7 @@
 				26088ADA097DE290EDA0A187 /* OnboardingView.swift */,
 				52389F30283FC8DEAE46A772 /* Propr.entitlements */,
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
+				D932FEE812426D968D6F3071 /* Keychain */,
 				495DDBFED28ADED25BA23672 /* Models */,
 				426872CF918B31D596AEBECE /* Settings */,
 			);
@@ -127,11 +131,28 @@
 		D3AC9D58EBE9BA704B84FF8E = {
 			isa = PBXGroup;
 			children = (
+				DE7F22E250CCB5477A54CBF9 /* Configs */,
 				744962624219903161B42389 /* Resources */,
 				9DDD2B11F2FFC0206CEECEF3 /* Sources */,
 				E2D8DD3DC3F925868F6381E3 /* Frameworks */,
 				C9A4BF0A8D139C3B444C9D9D /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		D932FEE812426D968D6F3071 /* Keychain */ = {
+			isa = PBXGroup;
+			children = (
+				0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */,
+			);
+			path = Keychain;
+			sourceTree = "<group>";
+		};
+		DE7F22E250CCB5477A54CBF9 /* Configs */ = {
+			isa = PBXGroup;
+			children = (
+				F5B1B3109E53D4520B221BB5 /* Signing.xcconfig */,
+			);
+			path = Configs;
 			sourceTree = "<group>";
 		};
 		E2D8DD3DC3F925868F6381E3 /* Frameworks */ = {
@@ -177,7 +198,6 @@
 				TargetAttributes = {
 					114591B25D084EC6B23FBF4B = {
 						DevelopmentTeam = "";
-						ProvisioningStyle = Automatic;
 					};
 				};
 			};
@@ -231,7 +251,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "set -eu\n\n# This copies the built app to a fixed path so macOS TCC doesn't treat\n# every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).\nSRC=\"$TARGET_BUILD_DIR/Propr.app\"\nDEST_DIR=\"$SRCROOT/Build/Debug\"\nDEST=\"$SRCROOT/Build/Debug/Propr.app\"\n\necho \"→ Copying debug build to stable location...\"\nmkdir -p \"$DEST_DIR\"\nif [ -e \"$DEST\" ]; then\n  chmod -R u+w \"$DEST\" 2>/dev/null || true\n  rm -rf \"$DEST\"\nfi\nditto \"$SRC\" \"$DEST\"\n\n# Ad-hoc re-sign the copy (helps a bit with TCC stability)\ncodesign --force --deep --sign - \"$DEST\" 2>/dev/null || true\n\necho \"✅ Stable debug build available at:\"\necho \"   $DEST\"\necho \"\"\necho \"   → For development, launch from this location instead of running directly from Xcode:\"\necho \"     open \\\"$DEST\\\"\"\necho \"\"\necho \"   This prevents having to re-grant Accessibility permission after every build.\"\n";
+			shellScript = "set -eu\n\n# This copies the built app to a fixed path so macOS TCC doesn't treat\n# every Xcode build as a new app (common problem with DerivedData + ad-hoc signing).\nSRC=\"$TARGET_BUILD_DIR/Propr.app\"\nDEST_DIR=\"$SRCROOT/Build/Debug\"\nDEST=\"$SRCROOT/Build/Debug/Propr.app\"\n\n# Sign the actual build product FIRST, not just the copy. Xcode signs\n# ad-hoc when no development team is set, which makes the app's\n# designated requirement its own cdhash — that changes every build and\n# invalidates the Accessibility grant and any Keychain ACLs. Signing\n# the product here means it does not matter which copy gets launched.\n\"$SRCROOT/scripts/sign-app.sh\" \"$SRC\"\n\necho \"→ Copying debug build to stable location...\"\nmkdir -p \"$DEST_DIR\"\nif [ -e \"$DEST\" ]; then\n  chmod -R u+w \"$DEST\" 2>/dev/null || true\n  rm -rf \"$DEST\"\nfi\n# ditto preserves the signature, so the copy inherits the stable one.\nditto \"$SRC\" \"$DEST\"\n\necho \"✅ Stable debug build available at:\"\necho \"   $DEST\"\necho \"\"\necho \"   → For development, launch from this location instead of running directly from Xcode:\"\necho \"     open \\\"$DEST\\\"\"\necho \"\"\necho \"   This prevents having to re-grant Accessibility permission after every build.\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -248,6 +268,7 @@
 				2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */,
+				7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */,
 				50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */,
 				D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */,
 				96AF400F7D537677F4704E91 /* ModelsSettingsView.swift in Sources */,
@@ -294,7 +315,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = dwarf;
@@ -363,7 +383,6 @@
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				CODE_SIGN_STYLE = Automatic;
 				COPY_PHASE_STRIP = NO;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
@@ -415,6 +434,7 @@
 		};
 		ADB940318F10F80470064104 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = F5B1B3109E53D4520B221BB5 /* Signing.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
