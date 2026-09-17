@@ -2,9 +2,10 @@ import Foundation
 
 /// File-based storage for model configuration.
 /// Stored at ~/Library/Application Support/Propr/models.json
+/// Non-secret model configuration. API keys are never stored here — they live in
+/// the Keychain (see `KeychainManager`).
 struct ModelConfig: Codable {
     var customEndpoints: [CustomEndpoint] = []
-    var apiKeys: [String: String] = [:]  // endpointID (as string) -> API key
     var selectedModelID: String?  // stored as string for JSON friendliness
 }
 

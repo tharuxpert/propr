@@ -1,0 +1,36 @@
+// Code signing for local development builds.
+//
+// macOS binds Accessibility (TCC) grants and Keychain item ACLs to an app's
+// designated requirement, not to its path. Ad-hoc signing has no identity, so
+// codesign makes the DR the cdhash itself:
+//
+//     designated => cdhash H"554b8d3f..."
+//
+// That hash changes on every build, so macOS treats each build as a different
+// app and every grant is invalidated. Signing with a real certificate produces
+// an identity-based DR that is identical across rebuilds, so grants persist.
+//
+// No paid Apple Developer account is required. Apple TN2206: signature
+// stability "is determined through the designated requirement (DR) mechanism,
+// and does not depend on the nature of the certificate authority used. The
+// keychain system and parental controls are examples of such usage.
+// Self-signed identities and homemade certificate authorities (CA) work by
+// default for this case."
+//
+// To set your identity, create Configs/Signing.local.xcconfig (gitignored):
+//
+//     CODE_SIGN_IDENTITY = Apple Development: Your Name (TEAMID)
+//
+// List candidates with:
+//
+//     security find-identity -v -p codesigning
+//
+// Without that file the build falls back to ad-hoc signing and still works —
+// you will just have to re-grant Accessibility after every rebuild.
+
+CODE_SIGN_IDENTITY = -
+CODE_SIGN_STYLE = Manual
+PROVISIONING_PROFILE_SPECIFIER =
+
+// Optional per-machine override. The "?" means no error if it is absent.
+#include? "Signing.local.xcconfig"

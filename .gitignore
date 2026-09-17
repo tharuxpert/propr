@@ -49,3 +49,6 @@ Build/
 *.log
 *.tmp
 *.bak
+
+# Per-machine code signing identity (see Configs/Signing.xcconfig)
+Configs/Signing.local.xcconfig

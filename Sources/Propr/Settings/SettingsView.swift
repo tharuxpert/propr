@@ -1,5 +1,5 @@
-import SwiftUI
 import ServiceManagement
+import SwiftUI
 
 enum SettingsSection: String, CaseIterable {
     case general
@@ -43,15 +43,17 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color(NSColor.windowBackgroundColor))
         }
-        .onChange(of: selectedSection) { newSection in
+        .onChange(of: selectedSection) { _, newSection in
             updateWindowTitle(to: newSection)
         }
         .onAppear {
             updateWindowTitle(to: selectedSection)
         }
-        .onReceive(NotificationCenter.default.publisher(for: Notification.Name.proprOpenSettings)) { note in
+        .onReceive(NotificationCenter.default.publisher(for: Notification.Name.proprOpenSettings)) {
+            note in
             if let target = note.userInfo?["selectSection"] as? String,
-               target == "models" {
+                target == "models"
+            {
                 selectedSection = .models
             }
         }
@@ -182,7 +184,9 @@ struct GeneralSettingsView: View {
                 try SMAppService.mainApp.unregister()
             }
         } catch {
-            print("[Propr] Failed to \(enabled ? "register" : "unregister") launch at login: \(error)")
+            print(
+                "[Propr] Failed to \(enabled ? "register" : "unregister") launch at login: \(error)"
+            )
             // Toggle state is left as-is; user can flip it again to retry.
         }
     }

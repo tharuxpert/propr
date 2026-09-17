@@ -27,7 +27,7 @@ final class ModelStore {
     private(set) var allAvailableModels: [ModelSelection] = []
 
     private init() {
-        // Load everything from models.json (JSON is the only storage)
+        // Endpoints and selection live in models.json; API keys live in the Keychain.
         let config = ModelConfigStore.shared.load()
         customEndpoints = config.customEndpoints
         selectedModelID = config.selectedModelID.flatMap { UUID(uuidString: $0) }
@@ -77,10 +77,7 @@ final class ModelStore {
     }
 
     func deleteEndpoint(id: UUID) {
-        // Remove the key from our JSON config
-        var config = ModelConfigStore.shared.load()
-        config.apiKeys.removeValue(forKey: id.uuidString)
-        ModelConfigStore.shared.save(config)
+        KeychainManager.shared.deleteAPIKey(for: id)
 
         customEndpoints.removeAll { $0.id == id }
 
@@ -104,19 +101,22 @@ final class ModelStore {
     }
 
     func apiKey(for endpointID: UUID) -> String? {
-        let config = ModelConfigStore.shared.load()
-        return config.apiKeys[endpointID.uuidString]
+        do {
+            return try KeychainManager.shared.apiKey(for: endpointID)
+        } catch {
+            print("[Propr] Keychain read failed for endpoint \(endpointID): \(error)")
+            return nil
+        }
     }
 
     func saveAPIKey(_ key: String, for endpointID: UUID) throws {
-        var config = ModelConfigStore.shared.load()
         let trimmed = key.trimmingCharacters(in: .whitespacesAndNewlines)
+
         if trimmed.isEmpty {
-            config.apiKeys.removeValue(forKey: endpointID.uuidString)
+            KeychainManager.shared.deleteAPIKey(for: endpointID)
         } else {
-            config.apiKeys[endpointID.uuidString] = trimmed
+            try KeychainManager.shared.saveAPIKey(trimmed, for: endpointID)
         }
-        ModelConfigStore.shared.save(config)
     }
 
     private func notifyChanged() {

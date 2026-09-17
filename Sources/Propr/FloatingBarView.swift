@@ -1,46 +1,6 @@
 import AppKit
 import SwiftUI
 
-@MainActor
-final class FloatingBarSessionState: ObservableObject {
-    @Published var hasSubmitted = false
-    @Published var isThinking = false
-    @Published var isTyping = false
-    @Published var errorMessage: String?
-
-    func startRequest() {
-        hasSubmitted = true
-        isThinking = true
-        isTyping = false
-        errorMessage = nil
-    }
-
-    func startTyping() {
-        isThinking = false
-        isTyping = true
-    }
-
-    func finishRequest() {
-        isThinking = false
-        isTyping = false
-    }
-
-    func stopTyping() {
-        isTyping = false
-    }
-
-    func fail(_ message: String) {
-        hasSubmitted = false
-        isThinking = false
-        isTyping = false
-        errorMessage = message
-    }
-
-    func clearError() {
-        errorMessage = nil
-    }
-}
-
 /// The actual floating bar UI shown inside the NSPanel.
 /// Minimal summon-only design.
 struct FloatingBarView: View {
@@ -53,6 +13,15 @@ struct FloatingBarView: View {
 
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
+
+    /// Asking "what do you want to do with this text?" when no text was captured
+    /// points at nothing. With an empty context the bar writes at the cursor instead,
+    /// so the prompt asks for that.
+    private var promptPlaceholder: String {
+        snapshot.contextText.isEmpty
+            ? "What do you want to write?"
+            : "What do you want to do with this text?"
+    }
 
     private var textPreview: String {
         let text =
@@ -68,15 +37,15 @@ struct FloatingBarView: View {
         VStack(spacing: 0) {
             // Minimal top bar
             HStack(spacing: 8) {
-                HStack(spacing: 6) {
+                HStack(spacing: 8) {
                     Image(nsImage: appIcon(for: snapshot.pid))
                         .resizable()
-                        .frame(width: 15, height: 15)
-                        .clipShape(RoundedRectangle(cornerRadius: 3, style: .continuous))
+                        .frame(width: 20, height: 20)
+                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
 
                     if snapshot.appName != "—" {
                         Text(snapshot.appName)
-                            .font(.caption.weight(.medium))
+                            .font(.subheadline.weight(.medium))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -85,21 +54,21 @@ struct FloatingBarView: View {
 
                 if snapshot.characterCount > 0 {
                     Text("\(snapshot.characterCount)")
-                        .font(.caption2.monospacedDigit())
+                        .font(.caption.monospacedDigit())
                         .foregroundStyle(.tertiary)
                 }
 
                 Button(action: onClose) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 10, weight: .medium))
+                        .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.secondary)
-                        .frame(width: 18, height: 18)
+                        .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
                 .keyboardShortcut(.escape, modifiers: [])
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
 
             Divider()
                 .opacity(0.25)
@@ -107,12 +76,12 @@ struct FloatingBarView: View {
             // Truncated preview of the text being refined (not the whole thing)
             if !textPreview.isEmpty {
                 Text(textPreview)
-                    .font(.caption)
+                    .font(.callout)
                     .foregroundStyle(.secondary.opacity(0.85))
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 8)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                 Divider()
@@ -120,11 +89,11 @@ struct FloatingBarView: View {
             }
 
             // Main instruction input
-            TextField("What do you want to do with this text?", text: $prompt)
+            TextField(promptPlaceholder, text: $prompt)
                 .textFieldStyle(.plain)
-                .font(.callout)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 10)
+                .font(.title3)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 13)
                 .focused($isPromptFocused)
                 .onSubmit {
                     let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -142,47 +111,13 @@ struct FloatingBarView: View {
                 .disabled(sessionState.hasSubmitted && sessionState.errorMessage == nil)
 
             if sessionState.isThinking {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Thinking…")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                RefineStatusRow(label: "Thinking…")
             } else if sessionState.isTyping {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .controlSize(.small)
-                    Text("Typing…")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                RefineStatusRow(label: "Typing…")
             }
 
             if let error = sessionState.errorMessage {
-                HStack(spacing: 8) {
-                    Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
-                    Text(error)
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(2)
-                    Spacer()
-                    Button("Dismiss") {
-                        sessionState.clearError()
-                    }
-                    .buttonStyle(.bordered)
-                    .controlSize(.mini)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(Color.orange.opacity(0.1))
+                RefineErrorBanner(message: error) { sessionState.clearError() }
             }
 
             if sessionState.hasSubmitted && !sessionState.isThinking && !sessionState.isTyping
@@ -192,7 +127,7 @@ struct FloatingBarView: View {
                     if let onUndo {
                         Button("Undo", action: onUndo)
                             .buttonStyle(.bordered)
-                            .controlSize(.small)
+                            .controlSize(.regular)
                     }
 
                     Spacer()
@@ -201,20 +136,21 @@ struct FloatingBarView: View {
                         onClose()
                     }
                     .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                    .controlSize(.regular)
+                    .keyboardShortcut(.defaultAction)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
             }
         }
-        .frame(width: 420)
+        .frame(width: 470)
         .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .fill(.ultraThinMaterial)
                 .shadow(color: .black.opacity(0.2), radius: 14, x: 0, y: 5)
         )
         .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(.white.opacity(0.06), lineWidth: 0.5)
         )
     }
@@ -235,7 +171,6 @@ struct FloatingBarView: View {
             fullText:
                 "This is some text I wrote quickly and now I want to make it sound better for a blog post or an important email to my team.",
             selectedText: nil,
-            frame: .zero,
             role: kAXTextAreaRole as String
         ),
         sessionState: FloatingBarSessionState(),
