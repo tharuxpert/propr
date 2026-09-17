@@ -34,7 +34,7 @@ private enum TextApplyError: LocalizedError {
 
 /// Controls the floating refinement bar (NSPanel + SwiftUI content).
 ///
-/// - Appears near a detected text field when the FocusedFieldDetector publishes a snapshot.
+/// - Shown centered on screen when the user summons it; it never appears on its own.
 /// - Non-activating where possible so it doesn't steal focus from the source app.
 /// - Captures the live AX element at show time for later "apply with typing" operations.
 /// - All AX element mutation for apply happens here.
@@ -56,7 +56,7 @@ final class FloatingBarController {
     private var applyTargetPID: pid_t = 0
     private var applyStrategy: TextApplyStrategy = .clipboardPaste
 
-    /// Snapshot we showed for (used for positioning + UI state).
+    /// Snapshot the bar is currently showing for (drives the header + preview).
     private var currentSnapshot: FieldSnapshot?
 
     // Undo support
@@ -144,7 +144,6 @@ final class FloatingBarController {
             pid: pid,
             fullText: "",
             selectedText: nil,
-            frame: .zero,
             role: role
         )
     }
@@ -170,7 +169,6 @@ final class FloatingBarController {
                 pid: snapshot.pid,
                 fullText: "",
                 selectedText: selectedText,
-                frame: snapshot.frame,
                 role: snapshot.role
             )
         }
@@ -183,7 +181,6 @@ final class FloatingBarController {
                 pid: snapshot.pid,
                 fullText: currentInput,
                 selectedText: nil,
-                frame: snapshot.frame,
                 role: snapshot.role
             )
         }
@@ -241,7 +238,7 @@ final class FloatingBarController {
     private func showCenteredEmpty() {
         // Show even without a strong field (user can still give instructions)
         let dummy = FieldSnapshot(
-            appName: "—", pid: 0, fullText: "", selectedText: nil, frame: .zero, role: nil)
+            appName: "—", pid: 0, fullText: "", selectedText: nil, role: nil)
 
         summonID = UUID()
         sessionState = FloatingBarSessionState()
@@ -375,7 +372,7 @@ final class FloatingBarController {
             rootView: AnyView(
                 FloatingBarView(
                     snapshot: FieldSnapshot(
-                        appName: "—", pid: 0, fullText: "", selectedText: nil, frame: .zero,
+                        appName: "—", pid: 0, fullText: "", selectedText: nil,
                         role: nil),
                     sessionState: sessionState,
                     onRefine: { _ in },

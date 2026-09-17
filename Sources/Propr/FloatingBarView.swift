@@ -257,7 +257,6 @@ struct FloatingBarView: View {
             fullText:
                 "This is some text I wrote quickly and now I want to make it sound better for a blog post or an important email to my team.",
             selectedText: nil,
-            frame: .zero,
             role: kAXTextAreaRole as String
         ),
         sessionState: FloatingBarSessionState(),

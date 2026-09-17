@@ -2,12 +2,13 @@
 
 Lightweight native macOS menu bar app for instant AI text refinement anywhere.
 
-Propr lives in your menu bar. When you focus a text field in any app, a clean floating bar appears, letting you refine or rewrite your text with AI. Apply the improved version back to the original field with a smooth, character-by-character typing animation.
+Propr lives in your menu bar. Double-tap the **Command** key in any app and a floating bar appears, letting you refine or rewrite the text you're working on with AI. The improved version is applied back to the original field with a smooth, character-by-character typing animation.
 
 ## Features
 
 - Menu bar only (no Dock icon)
-- System-wide focused text field detection via the Accessibility API
+- Summon from anywhere with a double-tap of the Command key
+- Reads the focused text field (or your current selection) via the Accessibility API
 - Beautiful first-run onboarding with proper permission handling
 - Floating refinement panel with editable context
 - Direct "Open System Settings" flow for Accessibility permission
@@ -45,7 +46,14 @@ On first launch, macOS will request Accessibility permission. This is required f
 
 ## Usage
 
-After launching, Propr appears as an icon in the menu bar. Focus any text field in any app and the refinement interface should appear near it.
+After launching, Propr appears as an icon in the menu bar. It stays out of the way until you ask for it.
+
+1. Put the cursor in any text field, or select some text.
+2. **Double-tap the Command key.** The bar appears in the centre of the screen. (You can also use *Show Floating Bar* from the menu bar icon.)
+3. Type what you want done — "make this more concise", "fix the grammar", "rewrite as a polite reply" — and press Return.
+4. The result is typed back into the field you came from. Use **Undo** in the bar if you don't like it.
+
+Propr only reads your text at the moment you summon it. It does not watch what you type.
 
 ## Where your API keys are stored
 
