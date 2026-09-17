@@ -83,7 +83,13 @@ IDENTITY="$(resolve_identity)"
 # --deep for signing; it does not sign nested code the way a correct
 # inside-out pass does.)
 sign_one() {
-    codesign --force --timestamp=none --sign "$IDENTITY" "$1" >/dev/null 2>&1
+    # Keep codesign's own message: it is the only thing that says *why* a sign failed.
+    local output
+    if ! output=$(codesign --force --timestamp=none --sign "$IDENTITY" "$1" 2>&1); then
+        echo "$output" >&2
+        return 1
+    fi
+    return 0
 }
 
 if [ "$IDENTITY" = "-" ]; then
