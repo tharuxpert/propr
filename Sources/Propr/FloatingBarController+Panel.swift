@@ -22,7 +22,7 @@ extension FloatingBarController {
         sessionState = FloatingBarSessionState()
 
         applyTargetElement = captureCurrentFocusedElement()
-        applyTargetPID = targetPID(from: applyTargetElement, fallback: snapshot.pid)
+        applyTargetPID = resolveTargetPID(from: applyTargetElement, fallback: snapshot.pid)
         applyStrategy = strategy(
             for: applyTargetElement, role: snapshot.role, appName: snapshot.appName)
         logTarget(snapshot: snapshot)
@@ -62,15 +62,20 @@ extension FloatingBarController {
     }
 
     func showCenteredEmpty() {
-        // Show even without a strong field (user can still give instructions)
-        let dummy = FieldSnapshot(
-            appName: "—", pid: 0, fullText: "", selectedText: nil, role: nil)
-
         summonID = UUID()
         sessionState = FloatingBarSessionState()
 
+        // Resolve the target first: the snapshot is built from it, and without a real
+        // pid the bar would open but be unable to write anything back.
         applyTargetElement = captureCurrentFocusedElement()
-        applyTargetPID = targetPID(from: applyTargetElement, fallback: dummy.pid)
+        applyTargetPID = resolveTargetPID(from: applyTargetElement, fallback: 0)
+
+        // Name the app we resolved to, rather than showing a placeholder dash.
+        let appName =
+            NSRunningApplication(processIdentifier: applyTargetPID)?.localizedName ?? "—"
+        let dummy = FieldSnapshot(
+            appName: appName, pid: applyTargetPID, fullText: "", selectedText: nil, role: nil)
+
         applyStrategy = strategy(for: applyTargetElement, role: dummy.role, appName: dummy.appName)
         logTarget(snapshot: dummy)
         currentSnapshot = dummy

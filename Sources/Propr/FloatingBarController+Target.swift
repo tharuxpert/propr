@@ -106,6 +106,32 @@ extension FloatingBarController {
         return pid
     }
 
+    /// The process generated text should be written back into.
+    ///
+    /// Prefers the owner of the focused accessibility element. When AX gives us
+    /// nothing — the same situation that makes the bar fall back to its placeholder
+    /// snapshot — it uses the frontmost application instead. Without this the pid
+    /// stays 0, `SourceAppKeyboard` refuses to drive it, and asking for text to be
+    /// generated at the cursor fails at the last step with "could not type".
+    ///
+    /// Must be called before the panel takes key focus, so the frontmost application
+    /// is still the user's and not Propr. Propr's own pid is never returned.
+    func resolveTargetPID(from element: AXUIElement?, fallback: pid_t) -> pid_t {
+        let fromElement = targetPID(from: element, fallback: fallback)
+        if fromElement != 0, fromElement != getpid() {
+            return fromElement
+        }
+
+        if let frontmost = NSWorkspace.shared.frontmostApplication?.processIdentifier,
+            frontmost != 0, frontmost != getpid()
+        {
+            print("[Propr Bar] no AX element — falling back to frontmost app pid=\(frontmost)")
+            return frontmost
+        }
+
+        return fromElement
+    }
+
     func strategy(for element: AXUIElement?, role: String?, appName: String)
         -> TextApplyStrategy
     {
