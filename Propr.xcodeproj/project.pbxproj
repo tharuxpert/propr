@@ -22,6 +22,8 @@
 		57C76851D5104F40ABAEDC47 /* ModelsSettingsView+EditForm.swift in Sources */ = {isa = PBXBuildFile; fileRef = B31C054EF312A1FEA6272184 /* ModelsSettingsView+EditForm.swift */; };
 		7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */; };
 		72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91026A33DABF3EF4F433F52A /* ChatCompletionRequest.swift */; };
+		885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */; };
+		918CD164A944F2CEF224EBFA /* StatusItemController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D57AACF05D72BA774AF70D00 /* StatusItemController.swift */; };
 		96AF400F7D537677F4704E91 /* ModelsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */; };
 		9D14AF33C64F4E3A386D55FA /* QuickStartCard.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA788610F5C366E12B295A59 /* QuickStartCard.swift */; };
 		A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */; };
@@ -69,6 +71,7 @@
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
 		68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormState.swift; sourceTree = "<group>"; };
 		71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Windows.swift"; sourceTree = "<group>"; };
 		91026A33DABF3EF4F433F52A /* ChatCompletionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCompletionRequest.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		B31C054EF312A1FEA6272184 /* ModelsSettingsView+EditForm.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModelsSettingsView+EditForm.swift"; sourceTree = "<group>"; };
@@ -77,6 +80,7 @@
 		BC3CFE06765D24588F37A915 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Propr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FocusedFieldDetector.swift; sourceTree = "<group>"; };
+		D57AACF05D72BA774AF70D00 /* StatusItemController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StatusItemController.swift; sourceTree = "<group>"; };
 		D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomEndpoint.swift; sourceTree = "<group>"; };
 		DA788610F5C366E12B295A59 /* QuickStartCard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickStartCard.swift; sourceTree = "<group>"; };
 		DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelConfigStore.swift; sourceTree = "<group>"; };
@@ -104,6 +108,7 @@
 			children = (
 				A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */,
 				2F6EF88BB1DC3E553F6B94CA /* AIService.swift */,
+				7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */,
 				073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */,
 				5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */,
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
@@ -113,6 +118,7 @@
 				26088ADA097DE290EDA0A187 /* OnboardingView.swift */,
 				52389F30283FC8DEAE46A772 /* Propr.entitlements */,
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
+				D57AACF05D72BA774AF70D00 /* StatusItemController.swift */,
 				D932FEE812426D968D6F3071 /* Keychain */,
 				495DDBFED28ADED25BA23672 /* Models */,
 				426872CF918B31D596AEBECE /* Settings */,
@@ -336,6 +342,7 @@
 				AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */,
 				1ED66005BF837E2236B1D32A /* AIService.swift in Sources */,
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,
+				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */,
 				01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */,
@@ -358,6 +365,7 @@
 				E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */,
 				9D14AF33C64F4E3A386D55FA /* QuickStartCard.swift in Sources */,
 				45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */,
+				918CD164A944F2CEF224EBFA /* StatusItemController.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
