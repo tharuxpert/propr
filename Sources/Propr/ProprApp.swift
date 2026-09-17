@@ -120,33 +120,61 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
+    func applicationWillTerminate(_ notification: Notification) {
+        if let commandKeyMonitor {
+            NSEvent.removeMonitor(commandKeyMonitor)
+        }
+        commandKeyMonitor = nil
+    }
+
+    /// How close two Command taps must be to count as a double tap.
+    /// Nonisolated: an immutable constant, read from the non-isolated event monitor.
+    nonisolated static let doubleCommandWindow: TimeInterval = 0.45
+
+    /// Whether these modifiers are Command and nothing else.
+    ///
+    /// Keeps Command+Shift, Command+Option and friends from registering as Command
+    /// presses, so ordinary shortcuts never summon the bar.
+    nonisolated static func isPureCommand(_ flags: NSEvent.ModifierFlags) -> Bool {
+        flags.contains(.command)
+            && !flags.contains(.shift)
+            && !flags.contains(.option)
+            && !flags.contains(.control)
+            && !flags.contains(.function)
+    }
+
     private func setupDoubleCommandHotkey() {
-        commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { [weak self] event in
-            guard let self else { return }
-
+        // NSEvent.h declares this handler as a plain block with no actor isolation, so
+        // the closure body is NOT main-actor isolated. Touching @MainActor state inside
+        // it made Swift fall back to a *runtime* isolation check, and that check was
+        // segfaulting on first run — six crash reports, all in this closure, all
+        // EXC_BAD_ACCESS inside swift_task_isCurrentExecutor.
+        //
+        // So: read only the modifier flags here (an OptionSet, safe to pass across an
+        // isolation boundary) and hop to the main actor explicitly for everything else.
+        // The NSEvent itself is deliberately not captured — it is not Sendable.
+        commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { event in
             let flags = event.modifierFlags
+            guard AppDelegate.isPureCommand(flags) else { return }
 
-            // Only trigger on *pure* Command (no Shift, Option, Control, etc.)
-            // This prevents Command+Shift, Command+Option, etc. from counting as Command presses.
-            let isPureCommand = flags.contains(.command) &&
-                                !flags.contains(.shift) &&
-                                !flags.contains(.option) &&
-                                !flags.contains(.control) &&
-                                !flags.contains(.function)
-
-            if isPureCommand {
-                let now = Date()
-                if let last = self.lastCommandPressTime,
-                   now.timeIntervalSince(last) < 0.45 {
-                    // Double pure Command tap detected
-                    self.lastCommandPressTime = nil
-                    DispatchQueue.main.async {
-                        self.summonFloatingBar()
-                    }
-                } else {
-                    self.lastCommandPressTime = now
-                }
+            Task { @MainActor [weak self] in
+                self?.handlePureCommandPress()
             }
+        }
+    }
+
+    /// Records a Command tap, summoning the bar when it completes a double tap.
+    @MainActor
+    private func handlePureCommandPress() {
+        let now = Date()
+
+        if let last = lastCommandPressTime,
+            now.timeIntervalSince(last) < Self.doubleCommandWindow
+        {
+            lastCommandPressTime = nil
+            summonFloatingBar()
+        } else {
+            lastCommandPressTime = now
         }
     }
 
