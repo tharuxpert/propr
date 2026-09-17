@@ -67,6 +67,8 @@ Your text and keys go directly from your Mac to whichever provider you configure
 
 Grant Accessibility permission to the stable build at `Build/Debug/Propr.app` and use `./run-debug.sh` rather than Xcode's Run button.
 
+`./run-debug.sh` is what refreshes that stable copy — a bare `xcodebuild` or an Xcode build updates only the product in DerivedData, so `Build/Debug/Propr.app` will silently still be the previous build.
+
 macOS ties both Accessibility grants and Keychain access to an app's code signature, so the debug build is signed with a stable identity — otherwise every rebuild looks like a different app and you re-grant permission each time. No paid Apple Developer account is needed; any code signing certificate works, including a self-signed one.
 
 Set yours once:

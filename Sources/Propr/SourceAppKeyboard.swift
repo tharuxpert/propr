@@ -245,11 +245,3 @@ struct SourceAppKeyboard {
         return true
     }
 }
-
-extension Duration {
-    /// Whole nanoseconds, for arithmetic on delays.
-    var nanoseconds: Int64 {
-        let (seconds, attoseconds) = components
-        return seconds * 1_000_000_000 + attoseconds / 1_000_000_000
-    }
-}

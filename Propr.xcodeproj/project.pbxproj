@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */; };
 		0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39D6C1C202E14BE0422D6C8C /* AppIntents.framework */; };
+		12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */; };
 		126530E8DEE7708B39A76F2F /* ChatCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */; };
 		19E2D649F328046473EC1B12 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26088ADA097DE290EDA0A187 /* OnboardingView.swift */; };
 		1ED66005BF837E2236B1D32A /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6EF88BB1DC3E553F6B94CA /* AIService.swift */; };
@@ -61,6 +62,7 @@
 /* Begin PBXFileReference section */
 		051988735931571C55E220DD /* KeystrokePacingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokePacingTests.swift; sourceTree = "<group>"; };
 		073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarController.swift; sourceTree = "<group>"; };
+		078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Duration+Nanoseconds.swift"; sourceTree = "<group>"; };
 		0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppKeyboard.swift; sourceTree = "<group>"; };
 		0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Target.swift"; sourceTree = "<group>"; };
@@ -124,6 +126,7 @@
 				2F6EF88BB1DC3E553F6B94CA /* AIService.swift */,
 				7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */,
 				4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */,
+				078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */,
 				073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */,
 				DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */,
 				C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */,
@@ -370,6 +373,7 @@
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */,
 				01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */,
+				12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */,
 				C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */,
 				C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */,
 				3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */,
