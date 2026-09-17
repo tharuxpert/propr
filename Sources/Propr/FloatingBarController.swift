@@ -1,5 +1,6 @@
 import AppKit
 @preconcurrency import ApplicationServices
+import Combine
 import SwiftUI
 
 /// Custom panel that can become key so SwiftUI TextFields inside can receive keyboard input.
@@ -45,6 +46,10 @@ final class FloatingBarController {
     private weak var detector: FocusedFieldDetector?
     private var sessionState = FloatingBarSessionState()
     private var refineTask: Task<Void, Never>?
+
+    /// Keeps the panel sized to its content. The bar grows when a wrapped error
+    /// message appears, which a fixed panel height would otherwise clip.
+    private var sessionStateCancellable: AnyCancellable?
 
     /// The AX element we will write results back into. Captured when we first show the bar for a field.
     private var applyTargetElement: AXUIElement?
@@ -109,6 +114,7 @@ final class FloatingBarController {
         guard isVisible else { return }
         refineTask?.cancel()
         refineTask = nil
+        sessionStateCancellable = nil
         panel?.orderOut(nil)
         isVisible = false
         currentSnapshot = nil
@@ -218,7 +224,8 @@ final class FloatingBarController {
         hosting.rootView = view
         hosting.setFrameSize(viewSize(for: snapshot))
 
-        centerPanel(size: hosting.frame.size)
+        sizePanelToFitContent(recenter: true)
+        observeSessionStateForResizing()
 
         panel.alphaValue = 0
         panel.orderFront(nil)
@@ -264,7 +271,8 @@ final class FloatingBarController {
         hosting.rootView = view
         hosting.setFrameSize(viewSize(for: dummy))
 
-        centerPanel(size: hosting.frame.size)
+        sizePanelToFitContent(recenter: true)
+        observeSessionStateForResizing()
 
         panel.alphaValue = 0
         panel.orderFront(nil)
@@ -275,6 +283,46 @@ final class FloatingBarController {
         }
 
         isVisible = true
+    }
+
+    /// Resizes the panel to whatever height its SwiftUI content currently needs.
+    ///
+    /// - Parameter recenter: `true` on first show. On later updates the top edge is
+    ///   pinned instead, so the bar grows downward rather than jumping under the
+    ///   cursor when an error appears.
+    private func sizePanelToFitContent(recenter: Bool) {
+        guard let panel, let hosting = hostingView else { return }
+
+        hosting.layoutSubtreeIfNeeded()
+
+        var size = hosting.fittingSize
+        // Fall back to the previous fixed size if SwiftUI reports nothing usable.
+        if size.width < 1 || size.height < 1 {
+            size = NSSize(width: 460, height: 168)
+        }
+
+        if recenter {
+            centerPanel(size: size)
+            return
+        }
+
+        // Keep the top edge where it is; AppKit origins are bottom-left.
+        let current = panel.frame
+        let origin = CGPoint(x: current.origin.x, y: current.maxY - size.height)
+        panel.setFrame(NSRect(origin: origin, size: size), display: true)
+    }
+
+    /// Watches the session state so the panel can grow/shrink as content changes.
+    private func observeSessionStateForResizing() {
+        sessionStateCancellable = sessionState.objectWillChange
+            .receive(on: RunLoop.main)
+            .sink { [weak self] _ in
+                // objectWillChange fires before the value is applied, so resize on
+                // the next runloop pass once SwiftUI has rendered the new content.
+                DispatchQueue.main.async {
+                    self?.sizePanelToFitContent(recenter: false)
+                }
+            }
     }
 
     private func centerPanel(size: NSSize) {

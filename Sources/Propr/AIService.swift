@@ -65,8 +65,10 @@ final class AIService {
         }
 
         guard (200...299).contains(httpResponse.statusCode) else {
-            let errorMessage = String(data: data, encoding: .utf8) ?? "Unknown error"
-            throw AIError.apiError(statusCode: httpResponse.statusCode, message: Self.trimmedErrorMessage(errorMessage))
+            throw AIError.apiError(
+                statusCode: httpResponse.statusCode,
+                message: Self.humanReadableErrorMessage(from: data)
+            )
         }
 
         // Parse OpenAI-compatible response
@@ -139,8 +141,20 @@ final class AIService {
                     }
 
                     guard (200...299).contains(httpResponse.statusCode) else {
-                        // For streaming errors, try to read the body if possible (limited)
-                        continuation.finish(throwing: AIError.apiError(statusCode: httpResponse.statusCode, message: "Streaming request failed"))
+                        // Read the error body so the user sees the provider's actual
+                        // message rather than a generic failure. Capped so a runaway
+                        // response cannot be drained into memory.
+                        var body = Data()
+                        for try await byte in bytes {
+                            body.append(byte)
+                            if body.count >= 8_192 { break }
+                        }
+                        continuation.finish(
+                            throwing: AIError.apiError(
+                                statusCode: httpResponse.statusCode,
+                                message: Self.humanReadableErrorMessage(from: body)
+                            )
+                        )
                         return
                     }
 
@@ -170,6 +184,38 @@ final class AIService {
                 }
             }
         }
+    }
+
+    /// Pulls the readable message out of an error body instead of showing raw JSON.
+    ///
+    /// OpenAI-compatible providers return `{"error": {"message": "..."}}`, but some
+    /// use `{"error": "..."}` or `{"message": "..."}`. Anything unrecognised falls
+    /// back to the raw body so information is never lost.
+    private static func humanReadableErrorMessage(from data: Data) -> String {
+        let raw = String(data: data, encoding: .utf8) ?? "Unknown error"
+
+        guard let json = try? JSONSerialization.jsonObject(with: data),
+              let object = json as? [String: Any]
+        else {
+            return trimmedErrorMessage(raw)
+        }
+
+        if let error = object["error"] as? [String: Any],
+           let message = error["message"] as? String,
+           !message.isEmpty
+        {
+            return trimmedErrorMessage(message)
+        }
+
+        if let error = object["error"] as? String, !error.isEmpty {
+            return trimmedErrorMessage(error)
+        }
+
+        if let message = object["message"] as? String, !message.isEmpty {
+            return trimmedErrorMessage(message)
+        }
+
+        return trimmedErrorMessage(raw)
     }
 
     private static func trimmedErrorMessage(_ message: String) -> String {
