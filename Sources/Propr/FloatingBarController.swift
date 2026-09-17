@@ -88,12 +88,12 @@ final class FloatingBarController {
                 let baseSnapshot =
                     self.detector?.currentField ?? self.snapshotForCurrentFocusedElement()
                 if let baseSnapshot {
+                    // Show the real target even with no text to work on: the user asked
+                    // for the bar, and an empty context is a valid way to use it (ask
+                    // for something to be written at the cursor). Falling back to the
+                    // placeholder here would drop the app's name and icon.
                     let prepared = await self.prepareSnapshotForSummon(baseSnapshot)
-                    if prepared.isWorthShowing {
-                        self.showCentered(for: prepared)
-                    } else {
-                        self.showCenteredEmpty()
-                    }
+                    self.showCentered(for: prepared)
                 } else {
                     self.showCenteredEmpty()
                 }

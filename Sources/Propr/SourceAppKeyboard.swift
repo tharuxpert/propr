@@ -6,9 +6,13 @@ import AppKit
 /// text directly — most often terminals, which expose their whole transcript as an
 /// editable value rather than the prompt the user is typing into.
 ///
-/// It is the most invasive thing Propr does: reading context means sending ⌘A/⌘C to
-/// an app Propr does not own, and writing means typing into it character by character.
-/// Every step is therefore conservative — the pasteboard is saved and restored, the
+/// Reading context is limited to ⌘C, which is inert when nothing is selected. It
+/// deliberately never sends ⌘A to capture: selecting the user's whole document and
+/// then failing to copy it would leave that selection live, one keystroke away from
+/// destroying their work. No selection simply means no context — the user can still
+/// ask for text to be generated at the cursor.
+///
+/// Writing still types character by character. The pasteboard is saved and restored,
 /// captured text is size-capped, and Propr refuses to target itself or pid 0.
 ///
 /// The waits between steps are unavoidable: there is no completion callback for a
@@ -26,7 +30,6 @@ struct SourceAppKeyboard {
     private enum Key {
         static let a: CGKeyCode = 0x00
         static let c: CGKeyCode = 0x08
-        static let escape: CGKeyCode = 0x35
     }
 
     /// Whether this is a process we are willing to drive.
@@ -58,43 +61,6 @@ struct SourceAppKeyboard {
         restorePasteboard(savedItems)
 
         guard changed, let copied, isUsable(copied) else { return nil }
-        return copied
-    }
-
-    /// Selects all and copies, to capture what the user has typed so far.
-    /// Sends Escape on failure, which clears the selection in most apps.
-    func copyCurrentInput() async -> String? {
-        print("[Propr Bar] fallback: trying select-all copy from pid=\(pid)")
-        guard isTargetable else { return nil }
-
-        let pasteboard = NSPasteboard.general
-        let savedItems = pasteboard.pasteboardItems ?? []
-
-        activate()
-        try? await Task.sleep(for: .milliseconds(90))
-        guard sendCommandKey(Key.a) else { return nil }
-        try? await Task.sleep(for: .milliseconds(60))
-        guard sendCommandKey(Key.c) else {
-            restorePasteboard(savedItems)
-            return nil
-        }
-        try? await Task.sleep(for: .milliseconds(140))
-
-        let copied = pasteboard.string(forType: .string)
-        restorePasteboard(savedItems)
-
-        guard let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            sendPlainKey(Key.escape)
-            return nil
-        }
-
-        guard copied.count <= Self.maxCapturedCharacters else {
-            print("[Propr Bar] Ignoring oversized fallback input copy (\(copied.count) chars)")
-            sendPlainKey(Key.escape)
-            return nil
-        }
-
-        print("[Propr Bar] Captured fallback input via select-all copy (\(copied.count) chars)")
         return copied
     }
 

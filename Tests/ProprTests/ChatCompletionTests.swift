@@ -92,6 +92,41 @@ struct ChatCompletionTests {
         #expect(try streamValue(false) == nil)
     }
 
+    // MARK: - Generating with no original text
+
+    /// The cursor-in-a-terminal case: nothing selected, the user asks for a command.
+    /// Sending an empty "Original text:" block to a prompt that says "only return the
+    /// rewritten text" asks a rewriter to rewrite nothing.
+    @Test("With no original text the user prompt is the bare instruction")
+    func generateUserPrompt() {
+        let generate = request(original: "", instruction: "command to kill a process on mac")
+        #expect(generate.hasOriginalText == false)
+        #expect(generate.userPrompt == "command to kill a process on mac")
+        #expect(generate.userPrompt.contains("Original text:") == false)
+    }
+
+    @Test("Whitespace-only original text still counts as nothing to rewrite")
+    func blankOriginalIsGenerate() {
+        #expect(request(original: "   \n  ").hasOriginalText == false)
+    }
+
+    @Test("The system prompt switches between rewriting and writing")
+    func systemPromptSwitches() {
+        #expect(request(original: "some text").systemPrompt == ChatCompletionRequest.refineSystemPrompt)
+        #expect(request(original: "").systemPrompt == ChatCompletionRequest.generateSystemPrompt)
+    }
+
+    @Test("The generate prompt actually reaches the payload")
+    func generatePayload() throws {
+        let built = try request(original: "", instruction: "list open ports").makeURLRequest()
+        let body = try #require(built.httpBody)
+        let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
+        let messages = try #require(json["messages"] as? [[String: String]])
+
+        #expect(messages[0]["content"] == ChatCompletionRequest.generateSystemPrompt)
+        #expect(messages[1]["content"] == "list open ports")
+    }
+
     // MARK: - Non-streaming response
 
     @Test("Message content is extracted and trimmed")

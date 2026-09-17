@@ -16,26 +16,49 @@ struct ChatCompletionRequest {
     let apiKey: String
     let stream: Bool
 
-    static let systemPrompt = """
+    /// Whether there is existing text to work on, as opposed to a request to write
+    /// something from scratch.
+    var hasOriginalText: Bool {
+        !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// Used when the user has selected text, or the field's contents were readable.
+    static let refineSystemPrompt = """
         You are a helpful writing assistant. Follow the user's instruction precisely.
         Only return the rewritten text. Do not add explanations, quotes, or markdown unless the user asked for it.
         """
 
-    var userPrompt: String {
+    /// Used when there is nothing to rewrite — the user summoned the bar at an empty
+    /// cursor and is asking for text to be produced, such as a shell command.
+    /// Telling a "writing assistant" to rewrite nothing produces worse answers than
+    /// simply asking for what they want.
+    static let generateSystemPrompt = """
+        You write text that will be typed directly into whatever the user is working in.
+        Answer with exactly the text they asked for and nothing else. Do not add explanations, \
+        preamble, quotes, or markdown fences unless the user asked for them.
         """
-        Original text:
-        \(original)
 
-        Instruction:
-        \(instruction)
-        """
+    var systemPrompt: String {
+        hasOriginalText ? Self.refineSystemPrompt : Self.generateSystemPrompt
+    }
+
+    var userPrompt: String {
+        guard hasOriginalText else { return instruction }
+
+        return """
+            Original text:
+            \(original)
+
+            Instruction:
+            \(instruction)
+            """
     }
 
     var payload: [String: Any] {
         var payload: [String: Any] = [
             "model": selection.modelName,
             "messages": [
-                ["role": "system", "content": Self.systemPrompt],
+                ["role": "system", "content": systemPrompt],
                 ["role": "user", "content": userPrompt],
             ],
             "temperature": 0.7,
