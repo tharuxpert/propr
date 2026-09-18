@@ -16,18 +16,6 @@ enum TerminalApps {
         return nameFragments.contains { lowered.contains($0) }
     }
 
-    /// Whether the prompt is the terminal's own multi-line editor, so a typed newline
-    /// adds a line to the input instead of running the command.
-    ///
-    /// True of Warp, whose shell prompt is its own editor — observed directly: after
-    /// typing a multi-line answer, every line was still sitting on the prompt. Not true
-    /// of terminals that hand keystrokes to the shell's line editor: zsh and bash both
-    /// bind a typed newline (`^J`) to `accept-line`, exactly like Return, so each line
-    /// runs as it is typed.
-    static func keepsTypedNewlines(appName: String) -> Bool {
-        appName.lowercased().contains("warp")
-    }
-
     /// Whether ⌘A + ⌘C can be used to capture "what the user has typed" as context.
     ///
     /// Not in a terminal. There, ⌘A does not select the prompt you are typing in:

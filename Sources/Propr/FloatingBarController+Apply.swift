@@ -150,16 +150,37 @@ extension FloatingBarController {
         }
 
         sessionState.startTyping()
-        let typed = await SourceAppKeyboard(pid: targetPID)
-            .type(result, replacingExistingInput: replaceExistingInput)
-        guard typed else { throw TextApplyError.cannotPaste }
+        let keyboard = SourceAppKeyboard(pid: targetPID)
+
+        // Terminals get a paste, not typing: a typed newline is Return in a shell and
+        // would run each line of a multi-line answer as it was typed. Terminal applies
+        // never replace anything (Propr never selects-all there), so a paste at the
+        // cursor is the whole job.
+        let inserted: String
+        let delivered: Bool
+        if TerminalApps.isTerminal(appName: appName) {
+            inserted = Self.normalizingLineEndings(result)
+            delivered = await keyboard.paste(inserted)
+        } else {
+            inserted = result
+            delivered = await keyboard.type(result, replacingExistingInput: replaceExistingInput)
+        }
+        guard delivered else { throw TextApplyError.cannotPaste }
 
         lastApplyUndo = .keystrokes(
             pid: targetPID,
             KeystrokeUndo.plan(
-                appName: appName, typedText: result, replacedExisting: replaceExistingInput)
+                appName: appName, insertedText: inserted, replacedExisting: replaceExistingInput)
         )
         sessionState.finishRequest()
+    }
+
+    /// `\r\n` and bare `\r` become `\n`. A shell treats a carriage return as Return, and
+    /// Undo counts what was inserted — so the pasted text must contain exactly one
+    /// character per line break, the same one the Backspace count assumes.
+    static func normalizingLineEndings(_ text: String) -> String {
+        text.replacingOccurrences(of: "\r\n", with: "\n")
+            .replacingOccurrences(of: "\r", with: "\n")
     }
 
     func undoLastApply() {
