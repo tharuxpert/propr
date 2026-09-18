@@ -39,7 +39,7 @@ extension AppDelegate {
             window.center()
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 680, height: 540)
+            window.minSize = NSSize(width: 720, height: 520)
             // Do not use .canJoinAllSpaces — we want the settings window to stay on the current Space
             // like a normal utility window, not follow the user across all desktops.
             window.collectionBehavior = []
@@ -125,7 +125,7 @@ extension AppDelegate {
                 }
             ))
 
-            let contentRect = NSRect(x: 0, y: 0, width: 460, height: 540)
+            let contentRect = NSRect(x: 0, y: 0, width: 460, height: 460)
             hosting.frame = contentRect
 
             let window = NSWindow(
@@ -134,7 +134,7 @@ extension AppDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Welcome to Propr"
+            window.title = "Propr Setup"
             window.identifier = NSUserInterfaceItemIdentifier("onboarding")
             window.contentView = hosting
             window.center()

@@ -1,198 +1,136 @@
-import SwiftUI
 import Permiso
+import SwiftUI
 
-/// Beautiful first-run / permission setup screen.
-/// 
-/// Style goals: clean, modern, dark-mode friendly, feels native but premium.
-/// Different visual language from similar tools (more macOS-native, less "app" chrome).
+/// First run, and the recovery screen when Accessibility permission goes missing.
+///
+/// Laid out like a Mac setup window: icon, title, explanation, a `GroupBox` for the
+/// one thing being asked for, and a single prominent action at the bottom. The
+/// previous version nested material cards inside material cards and used a rounded
+/// display face, neither of which is a macOS idiom.
 struct OnboardingView: View {
     @ObservedObject var accessibility: AccessibilityManager
 
-    /// Optional closure to call when the user finishes onboarding.
-    /// Used when we present the view manually (e.g. from AppDelegate on first launch).
-    /// If nil, we fall back to the declarative dismissWindow.
-    var onComplete: (() -> Void)? = nil
+    /// Called when the user finishes onboarding. Set when presented manually from the
+    /// AppDelegate, which is the path used on a cold launch.
+    var onComplete: (() -> Void)?
 
-    /// Called when the permission status changes to granted while this view is visible.
-    /// Used to bring the manual panel back to front after the user grants in System Settings.
-    var onPermissionGranted: (() -> Void)? = nil
+    /// Called when permission flips to granted while this view is visible, so the
+    /// presenter can bring the window back to the front.
+    var onPermissionGranted: (() -> Void)?
 
     @Environment(\.dismissWindow) private var dismissWindow
-
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top icon + header
-            // For returning users (already completed onboarding before), we show a
-            // much more minimal header so it feels like a permission recovery flow
-            // rather than being re-marketed the whole app.
-            VStack(spacing: 12) {
-                if !hasCompletedOnboarding {
-                    Image("BrandIcon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 72, height: 72)
-                        .padding(.top, 32)
+            header
 
-                    Text("Welcome to Propr")
-                        .font(.system(size: 28, weight: .semibold, design: .rounded))
-
-                    Text("Refine your writing instantly, anywhere on your Mac.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                } else {
-                    // Recovery / re-permission case for returning users
-                    Image("BrandIcon")
-                        .resizable()
-                        .scaledToFit()
-                        .frame(width: 48, height: 48)
-                        .padding(.top, 24)
-
-                    Text("Accessibility Access Needed")
-                        .font(.title3.weight(.semibold))
-
-                    Text("Propr needs Accessibility permission to detect and edit text fields.")
-                        .font(.callout)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal, 24)
-                }
+            GroupBox {
+                permissionStatus
+            } label: {
+                Label("Accessibility Access", systemImage: "accessibility")
             }
-            .padding(.bottom, 28)
+            .padding(.horizontal, 28)
 
-            // Accessibility permission section — the core of this screen
-            VStack(alignment: .leading, spacing: 12) {
-                Text("One permission needed")
-                    .font(.headline)
-                    .padding(.leading, 4)
+            Spacer(minLength: 20)
 
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top, spacing: 12) {
-                        Image(systemName: "accessibility")
-                            .font(.title2)
-                            .foregroundStyle(.secondary)
-                            .frame(width: 28, alignment: .leading)
-                            .padding(.top, 2)
+            actions
+                .padding(.horizontal, 28)
+                .padding(.bottom, 24)
+        }
+        .frame(width: 460, height: 460)
+        .onAppear { accessibility.startMonitoring() }
+        .onDisappear { accessibility.stopMonitoring() }
+        .onChange(of: accessibility.hasPermission) { _, granted in
+            if granted { onPermissionGranted?() }
+        }
+    }
 
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text("Accessibility Access")
-                                .font(.subheadline.weight(.medium))
+    // MARK: - Pieces
 
-                            Text("Propr needs this to detect text fields and read what you're typing — across every app.")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                                .fixedSize(horizontal: false, vertical: true)
+    private var header: some View {
+        VStack(spacing: 10) {
+            Image("BrandIcon")
+                .resizable()
+                .scaledToFit()
+                .frame(width: hasCompletedOnboarding ? 56 : 72, height: hasCompletedOnboarding ? 56 : 72)
 
-                            Text("Tip: If it’s already enabled, remove the entry in System Settings and try again.")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .padding(.top, 2)
-                        }
-                    }
+            // Returning users are recovering a permission, not being sold the app
+            // again, so they get the shorter version.
+            Text(hasCompletedOnboarding ? "Accessibility Access Needed" : "Welcome to Propr")
+                .font(.largeTitle.weight(.semibold))
+                .multilineTextAlignment(.center)
 
-                    // Live permission status
-                    HStack(spacing: 10) {
-                        Circle()
-                            .fill(accessibility.hasPermission ? Color.green : Color.orange)
-                            .frame(width: 9, height: 9)
+            Text(
+                hasCompletedOnboarding
+                    ? "Propr needs Accessibility permission to read and edit text in other apps."
+                    : "Refine your writing anywhere on your Mac. Double-tap ⌘ to summon Propr in any app."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.top, 32)
+        .padding(.horizontal, 32)
+        .padding(.bottom, 24)
+    }
 
-                        Text(accessibility.hasPermission ? "Permission granted" : "Not granted yet")
-                            .font(.callout.weight(.medium))
-                            .foregroundStyle(accessibility.hasPermission ? .green : .secondary)
+    private var permissionStatus: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(
+                "Propr reads the text field you have focused, and types the result back in. It only looks when you summon it."
+            )
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .fixedSize(horizontal: false, vertical: true)
 
-                        if accessibility.isChecking {
-                            ProgressView()
-                                .controlSize(.small)
-                                .padding(.leading, 4)
-                        }
+            Divider()
 
-                        Spacer()
-
-                        if !accessibility.hasPermission {
-                            Button("Open System Settings") {
-                                PermisoAssistant.shared.present(panel: .accessibility)
-                            }
-                            .buttonStyle(.bordered)
-                            .controlSize(.small)
-                        }
-                    }
-                    .padding(12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10, style: .continuous)
-                            .fill(.quaternary.opacity(0.6))
-                    )
-                }
-                .padding(16)
-                .background(
-                    RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(.regularMaterial)
+            HStack(spacing: 8) {
+                Image(
+                    systemName: accessibility.hasPermission
+                        ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
                 )
-            }
-            .padding(.horizontal, 32)
+                .foregroundStyle(accessibility.hasPermission ? .green : .orange)
 
-            Spacer(minLength: 28)
+                Text(accessibility.hasPermission ? "Granted" : "Not granted yet")
+                    .font(.callout)
 
-            // Bottom action area
-            VStack(spacing: 12) {
-                if accessibility.hasPermission {
-                    // Success state — smooth transition happens automatically
-                    VStack(spacing: 6) {
-                        Label("You're all set", systemImage: "checkmark.circle.fill")
-                            .font(.callout.weight(.semibold))
-                            .foregroundStyle(.green)
-                            .labelStyle(.titleAndIcon)
-
-                        Text("Propr can now see focused text fields and help you write better.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .multilineTextAlignment(.center)
-                    }
-                    .transition(.opacity.combined(with: .scale))
+                if accessibility.isChecking {
+                    ProgressView().controlSize(.small)
                 }
 
-                if accessibility.hasPermission {
-                    Button {
-                        completeOnboarding()
-                    } label: {
-                        Text("Start using Propr")
-                            .fontWeight(.semibold)
-                            .frame(maxWidth: .infinity)
-                    }
+                Spacer()
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(6)
+    }
+
+    @ViewBuilder
+    private var actions: some View {
+        if accessibility.hasPermission {
+            VStack(spacing: 10) {
+                Text("You're all set — focus any text field and double-tap ⌘.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+
+                Button("Start Using Propr", action: completeOnboarding)
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
-                    .tint(.green)
-                    .padding(.horizontal, 32)
-                } else {
-                    Button {
-                        // Use Permiso for a much better guided experience when directing users
-                        // to grant Accessibility in System Settings.
-                        PermisoAssistant.shared.present(panel: .accessibility)
-                    } label: {
-                        Text("Open System Settings")
-                            .frame(maxWidth: .infinity)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.large)
-                    .padding(.horizontal, 32)
-                }
+                    .keyboardShortcut(.defaultAction)
             }
-            .padding(.bottom, 32)
-        }
-        .frame(width: 460, height: 540)
-        .background(.ultraThinMaterial)
-        .onAppear {
-            accessibility.startMonitoring()
-        }
-        .onDisappear {
-            accessibility.stopMonitoring()
-        }
-        .onChange(of: accessibility.hasPermission) { _, isGranted in
-            if isGranted {
-                onPermissionGranted?()
+        } else {
+            Button("Open System Settings…") {
+                // Permiso walks the user to the exact row in System Settings, which
+                // is otherwise a surprisingly hard place to find.
+                PermisoAssistant.shared.present(panel: .accessibility)
             }
+            .buttonStyle(.borderedProminent)
+            .controlSize(.large)
+            .keyboardShortcut(.defaultAction)
         }
     }
 
@@ -200,14 +138,12 @@ struct OnboardingView: View {
         hasCompletedOnboarding = true
 
         if let onComplete {
-            // Manual presentation path (used on first cold launch from AppDelegate)
             onComplete()
         } else {
-            // Declarative Window path (used when clicking "Permissions & Setup..." from menu)
             dismissWindow(id: "onboarding")
         }
 
-        // Small delay so the window closes cleanly before any other UI
+        // Let the window close before anything else takes focus.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
             NSApp.activate(ignoringOtherApps: true)
         }
