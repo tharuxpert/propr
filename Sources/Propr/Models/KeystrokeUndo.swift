@@ -21,15 +21,20 @@ enum KeystrokeUndo: Equatable {
         guard TerminalApps.isTerminal(appName: appName), !replacedExisting else {
             return .undoShortcut
         }
-        return .deleteTyped(characterCount: editableCharacterCount(of: typedText))
+        let count =
+            TerminalApps.keepsTypedNewlines(appName: appName)
+            ? typedText.count
+            : editableCharacterCount(of: typedText)
+        return .deleteTyped(characterCount: count)
     }
 
-    /// How many typed characters are still sitting on the prompt.
+    /// How many typed characters are still on the prompt, for a terminal whose shell
+    /// runs each line as a newline is typed (see `TerminalApps.keepsTypedNewlines`).
     ///
-    /// Typing a newline into a terminal presses Return and runs the line; nothing can
-    /// undo that, and it is no longer on the prompt to delete. Only what follows the
-    /// last newline is still there, so only that is counted — deleting further would
-    /// just ring the bell at an empty prompt.
+    /// There, a typed newline behaves like Return: the line runs, nothing can undo that,
+    /// and it is no longer on the prompt to delete. Only what follows the last newline
+    /// is still there, so only that is counted — deleting further would just ring the
+    /// bell at an empty prompt. Terminals that keep typed newlines count everything.
     ///
     /// Counts `Character`s, the unit Propr types in. A line editor may treat a
     /// combined character as several, in which case this deletes slightly too little

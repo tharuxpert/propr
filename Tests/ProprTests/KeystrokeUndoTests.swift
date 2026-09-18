@@ -43,6 +43,25 @@ struct KeystrokeUndoTests {
         #expect(KeystrokeUndo.editableCharacterCount(of: typed) == remaining)
     }
 
+    /// The reported bug: in Warp's prompt a typed newline adds a line instead of
+    /// running the command, so every line stays — and Undo only removed the last one.
+    @Test("In Warp every typed line is deleted, not just the last")
+    func warpKeepsAllLines() {
+        let typed = "git add .\ngit commit -m \"wip\""
+        let plan = KeystrokeUndo.plan(appName: "Warp", typedText: typed, replacedExisting: false)
+        #expect(plan == .deleteTyped(characterCount: typed.count))
+    }
+
+    /// zsh and bash run a line when a newline is typed, so only the last is left.
+    @Test("Where the shell runs each line, only the last line is deleted", arguments: [
+        "Terminal", "iTerm2", "Ghostty",
+    ])
+    func shellRunsLines(_ app: String) {
+        let plan = KeystrokeUndo.plan(
+            appName: app, typedText: "git add .\ngit status", replacedExisting: false)
+        #expect(plan == .deleteTyped(characterCount: 10))
+    }
+
     @Test("Counts characters, not bytes, so non-ASCII text is not over-deleted")
     func nonASCII() {
         #expect(KeystrokeUndo.editableCharacterCount(of: "café") == 4)

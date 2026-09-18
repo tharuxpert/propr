@@ -36,4 +36,11 @@ struct TerminalAppsTests {
     func selectAllElsewhere(_ name: String) {
         #expect(TerminalApps.allowsSelectAllCapture(appName: name))
     }
+
+    @Test("Only Warp keeps typed newlines on the prompt", arguments: [
+        ("Warp", true), ("Terminal", false), ("iTerm2", false), ("Ghostty", false),
+    ])
+    func keepsTypedNewlines(_ app: String, _ keeps: Bool) {
+        #expect(TerminalApps.keepsTypedNewlines(appName: app) == keeps)
+    }
 }
