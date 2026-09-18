@@ -46,9 +46,7 @@ extension FloatingBarController {
                     guard let element else {
                         throw TextApplyError.cannotWriteAX
                     }
-                    self.undoOriginalText = originalText
-                    self.undoElement = element
-                    self.undoSourcePID = 0
+                    self.lastApplyUndo = .restoreField(element: element, originalText: originalText)
                     try await applyWithAccessibilityStreaming(
                         originalText: originalText,
                         instruction: context,
@@ -59,15 +57,15 @@ extension FloatingBarController {
                     )
 
                 case .clipboardPaste:
-                    self.undoOriginalText = nil
-                    self.undoElement = nil
-                    self.undoSourcePID = targetPID
+                    // Recorded after typing, once we know what was actually typed.
+                    self.lastApplyUndo = nil
                     try await applyWithClipboardPaste(
                         originalText: originalText,
                         instruction: context,
                         selection: selection,
                         apiKey: key,
                         targetPID: targetPID,
+                        appName: snapshot.appName,
                         replaceExistingInput: !hasSelection && !originalText.isEmpty
                     )
                 }
@@ -134,6 +132,7 @@ extension FloatingBarController {
         selection: ModelSelection,
         apiKey: String,
         targetPID: pid_t,
+        appName: String,
         replaceExistingInput: Bool
     ) async throws {
         let result = try await withTimeout(seconds: 45) {
@@ -154,33 +153,42 @@ extension FloatingBarController {
         let typed = await SourceAppKeyboard(pid: targetPID)
             .type(result, replacingExistingInput: replaceExistingInput)
         guard typed else { throw TextApplyError.cannotPaste }
+
+        lastApplyUndo = .keystrokes(
+            pid: targetPID,
+            KeystrokeUndo.plan(
+                appName: appName, typedText: result, replacedExisting: replaceExistingInput)
+        )
         sessionState.finishRequest()
     }
 
     func undoLastApply() {
-        if undoElement == nil, undoSourcePID != 0 {
-            SourceAppKeyboard(pid: undoSourcePID).sendUndo()
+        guard let undo = lastApplyUndo else {
             hide()
             return
         }
+        lastApplyUndo = nil
 
-        guard let element = undoElement,
-            let originalText = undoOriginalText
-        else {
+        switch undo {
+        case .restoreField(let element, let originalText):
+            AXTextWriter(element: element).replaceAll(with: originalText)
+            // Hide after a moment so the user sees the restoration happen.
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(250))
+                hide()
+            }
+
+        case .keystrokes(let pid, .undoShortcut):
+            SourceAppKeyboard(pid: pid).sendUndo()
             hide()
-            return
-        }
 
-        AXTextWriter(element: element).replaceAll(with: originalText)
-
-        // Clear undo state
-        undoOriginalText = nil
-        undoElement = nil
-
-        // Hide after a short moment so the user sees the restoration
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(250))
+        case .keystrokes(let pid, .deleteTyped(let count)):
+            // Get the bar out of the way first; deleting reactivates the source app
+            // and the user watches their prompt return to how it was.
             hide()
+            Task { @MainActor in
+                await SourceAppKeyboard(pid: pid).deleteBackward(count)
+            }
         }
     }
 

@@ -61,6 +61,7 @@ struct SourceAppKeyboard {
         static let a: CGKeyCode = 0x00
         static let c: CGKeyCode = 0x08
         static let rightArrow: CGKeyCode = 0x7C
+        static let backspace: CGKeyCode = 0x33
     }
 
     /// Whether this is a process we are willing to drive.
@@ -170,6 +171,23 @@ struct SourceAppKeyboard {
         }
 
         return true
+    }
+
+    /// Presses Backspace `count` times — the undo for text typed into a terminal, where
+    /// ⌘Z does not work. Paced like typing, since Backspace keystrokes are just as
+    /// easy for a busy app to drop.
+    func deleteBackward(_ count: Int) async {
+        guard isTargetable, count > 0 else { return }
+
+        activate()
+        try? await Task.sleep(for: .milliseconds(130))
+
+        let delay = Self.keystrokeDelay(forCharacterCount: count)
+        for _ in 0..<count {
+            guard !Task.isCancelled else { return }
+            guard sendPlainKey(Key.backspace) else { return }
+            try? await Task.sleep(for: delay)
+        }
     }
 
     /// Sends ⌘Z, used to undo an applied refinement in apps written to via keystrokes.
