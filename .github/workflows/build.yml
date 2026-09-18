@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    name: Build macOS
+    name: Build & test macOS
     runs-on: macos-latest
     timeout-minutes: 20
 
@@ -27,12 +27,25 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
-      - name: Build Propr
+      # Signing is left enabled, unlike a plain build. The unit tests are hosted in
+      # Propr.app, so the app has to actually launch — and on Apple Silicon an
+      # unsigned binary will not execute at all. Configs/Signing.xcconfig supplies
+      # an ad-hoc identity, which is enough to run; the per-machine
+      # Signing.local.xcconfig is gitignored and absent here, as intended.
+      - name: Build for testing
         run: |
           xcodebuild \
             -project Propr.xcodeproj \
             -scheme Propr \
             -destination 'platform=macOS,arch=arm64' \
-            CODE_SIGNING_ALLOWED=NO \
             COMPILER_INDEX_STORE_ENABLE=NO \
-            build
+            build-for-testing
+
+      - name: Run tests
+        run: |
+          xcodebuild \
+            -project Propr.xcodeproj \
+            -scheme Propr \
+            -destination 'platform=macOS,arch=arm64' \
+            COMPILER_INDEX_STORE_ENABLE=NO \
+            test-without-building
