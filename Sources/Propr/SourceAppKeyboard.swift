@@ -61,6 +61,7 @@ struct SourceAppKeyboard {
         static let a: CGKeyCode = 0x00
         static let c: CGKeyCode = 0x08
         static let rightArrow: CGKeyCode = 0x7C
+        static let backspace: CGKeyCode = 0x33
     }
 
     /// Whether this is a process we are willing to drive.
@@ -77,7 +78,8 @@ struct SourceAppKeyboard {
         guard isTargetable else { return nil }
 
         let pasteboard = NSPasteboard.general
-        let savedItems = pasteboard.pasteboardItems ?? []
+        // A copy of the data, not the item objects — see PasteboardSnapshot.
+        let saved = PasteboardSnapshot(of: pasteboard)
         let oldString = pasteboard.string(forType: .string)
         let oldChangeCount = pasteboard.changeCount
 
@@ -89,7 +91,7 @@ struct SourceAppKeyboard {
         let copied = pasteboard.string(forType: .string)
         // A changeCount bump alone is not proof: some apps rewrite identical contents.
         let changed = pasteboard.changeCount != oldChangeCount || copied != oldString
-        restorePasteboard(savedItems)
+        saved.restore(to: pasteboard)
 
         guard changed, let copied, isUsable(copied) else { return nil }
         return copied
@@ -107,7 +109,8 @@ struct SourceAppKeyboard {
         guard isTargetable else { return nil }
 
         let pasteboard = NSPasteboard.general
-        let savedItems = pasteboard.pasteboardItems ?? []
+        // A copy of the data, not the item objects — see PasteboardSnapshot.
+        let saved = PasteboardSnapshot(of: pasteboard)
 
         activate()
         try? await Task.sleep(for: .milliseconds(90))
@@ -121,13 +124,13 @@ struct SourceAppKeyboard {
 
         try? await Task.sleep(for: .milliseconds(60))
         guard sendCommandKey(Key.c) else {
-            restorePasteboard(savedItems)
+            saved.restore(to: pasteboard)
             return nil
         }
         try? await Task.sleep(for: .milliseconds(140))
 
         let copied = pasteboard.string(forType: .string)
-        restorePasteboard(savedItems)
+        saved.restore(to: pasteboard)
 
         guard let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
@@ -170,6 +173,23 @@ struct SourceAppKeyboard {
         return true
     }
 
+    /// Presses Backspace `count` times — the undo for text typed into a terminal, where
+    /// ⌘Z does not work. Paced like typing, since Backspace keystrokes are just as
+    /// easy for a busy app to drop.
+    func deleteBackward(_ count: Int) async {
+        guard isTargetable, count > 0 else { return }
+
+        activate()
+        try? await Task.sleep(for: .milliseconds(130))
+
+        let delay = Self.keystrokeDelay(forCharacterCount: count)
+        for _ in 0..<count {
+            guard !Task.isCancelled else { return }
+            guard sendPlainKey(Key.backspace) else { return }
+            try? await Task.sleep(for: delay)
+        }
+    }
+
     /// Sends ⌘Z, used to undo an applied refinement in apps written to via keystrokes.
     func sendUndo() {
         guard isTargetable else { return }
@@ -188,13 +208,6 @@ struct SourceAppKeyboard {
             && text.count <= Self.maxCapturedCharacters
     }
 
-    private func restorePasteboard(_ items: [NSPasteboardItem]) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        if !items.isEmpty {
-            pasteboard.writeObjects(items)
-        }
-    }
 
     /// Posts text as a unicode keystroke, so it does not depend on the user's layout.
     @discardableResult

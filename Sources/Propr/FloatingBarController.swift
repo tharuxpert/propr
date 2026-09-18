@@ -7,6 +7,17 @@ enum TextApplyStrategy {
     case clipboardPaste
 }
 
+/// How to reverse an apply.
+///
+/// Replaces three loose properties that encoded two modes by convention ("the element
+/// is nil but the pid is not" meant "send ⌘Z"), which would not have survived a third.
+enum ApplyUndo {
+    /// Put a field's original contents back through Accessibility.
+    case restoreField(element: AXUIElement, originalText: String)
+    /// Reverse typed keystrokes in the given process, by ⌘Z or by Backspace.
+    case keystrokes(pid: pid_t, KeystrokeUndo)
+}
+
 enum TextApplyError: LocalizedError {
     case cannotWriteAX
     case cannotPaste
@@ -54,10 +65,8 @@ final class FloatingBarController {
     /// Snapshot the bar is currently showing for (drives the header + preview).
     var currentSnapshot: FieldSnapshot?
 
-    // Undo support
-    var undoOriginalText: String?
-    var undoElement: AXUIElement?
-    var undoSourcePID: pid_t = 0
+    /// How to reverse the last apply, or nil when there is nothing to undo.
+    var lastApplyUndo: ApplyUndo?
 
     // Used to force SwiftUI view recreation on every summon (resets @State)
     var summonID = UUID()
@@ -116,10 +125,8 @@ final class FloatingBarController {
         isVisible = false
         currentSnapshot = nil
 
-        // Clear undo state when the bar is dismissed
-        undoOriginalText = nil
-        undoElement = nil
-        undoSourcePID = 0
+        // Nothing to undo once the bar is dismissed.
+        lastApplyUndo = nil
     }
 
 }

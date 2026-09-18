@@ -5,63 +5,60 @@ import SwiftUI
 // scenes: in a pure LSUIElement (menu-bar-only) app the declarative window APIs do
 // not reliably open from a status-item menu.
 extension AppDelegate {
-    @objc func openSettingsWindow() {
+    @objc func openSettingsWindow(_ note: Notification) {
+        // Read the requested pane here. On first open the SettingsView does not exist
+        // yet, so the notification would otherwise be lost — "Manage Models…" opened
+        // on General.
+        let section =
+            (note.userInfo?["selectSection"] as? String)
+            .flatMap(SettingsSection.init(rawValue:)) ?? .general
+
         NSApp.activate(ignoringOtherApps: true)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            self.showSettingsWindow()
+            self.showSettingsWindow(section: section)
         }
     }
 
     @MainActor
-    func showSettingsWindow() {
+    func showSettingsWindow(section: SettingsSection = .general) {
         if settingsWindow == nil {
-            let hostingController = NSHostingController(rootView: SettingsView())
-
-            // Tell the hosting controller to let Auto Layout fully control its size.
+            let hostingController = NSHostingController(
+                rootView: SettingsView(initialSection: section))
+            // Let the window be resized freely; SwiftUI should fill it, not size it.
             hostingController.sizingOptions = []
 
-            // Wider initial + minimum size to accommodate the new left sidebar + content.
-            let contentRect = NSRect(x: 0, y: 0, width: 760, height: 620)
-            let window = NSWindow(
-                contentRect: contentRect,
-                styleMask: [.titled, .closable, .miniaturizable, .resizable],
-                backing: .buffered,
-                defer: false
-            )
+            // The hosting controller must be the window's *contentViewController*,
+            // not just have its view dropped in as contentView. Only then does it
+            // bridge the NavigationSplitView's toolbar and titlebar into the window
+            // and learn the titlebar's safe area. Without it the sidebar toggle and
+            // title showed up but the form slid underneath a phantom toolbar band.
+            let window = NSWindow(contentViewController: hostingController)
 
-            let hostingView = hostingController.view
-            hostingView.translatesAutoresizingMaskIntoConstraints = false
+            // Full-size content lets the sidebar run up under the titlebar, the way
+            // System Settings and other split-view Mac apps look.
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
+            window.toolbarStyle = .unified
+            window.setContentSize(NSSize(width: 760, height: 580))
+            window.minSize = NSSize(width: 720, height: 480)
 
-            window.contentView = hostingView
-            window.title = "Settings"
+            // The navigationTitle bridge only pushes a title when the selection
+            // *changes*, so without this the window opened as "Untitled" until the
+            // user switched panes.
+            window.title = section.title
+
             window.identifier = NSUserInterfaceItemIdentifier("settings")
-            window.center()
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            window.minSize = NSSize(width: 680, height: 540)
-            // Do not use .canJoinAllSpaces — we want the settings window to stay on the current Space
-            // like a normal utility window, not follow the user across all desktops.
+            // Stay on the current Space like a normal utility window.
             window.collectionBehavior = []
-
-            // Pin the hosting view to all edges
-            if let contentView = window.contentView {
-                NSLayoutConstraint.activate([
-                    hostingView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
-                    hostingView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-                    hostingView.topAnchor.constraint(equalTo: contentView.topAnchor),
-                    hostingView.bottomAnchor.constraint(equalTo: contentView.bottomAnchor)
-                ])
-            }
+            window.center()
 
             settingsWindow = window
         }
 
         settingsWindow?.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
-
-        // Force layout so the hosted SwiftUI content gets its size immediately
-        settingsWindow?.contentView?.layoutSubtreeIfNeeded()
     }
 
 
@@ -125,7 +122,7 @@ extension AppDelegate {
                 }
             ))
 
-            let contentRect = NSRect(x: 0, y: 0, width: 460, height: 540)
+            let contentRect = NSRect(x: 0, y: 0, width: 460, height: 460)
             hosting.frame = contentRect
 
             let window = NSWindow(
@@ -134,7 +131,7 @@ extension AppDelegate {
                 backing: .buffered,
                 defer: false
             )
-            window.title = "Welcome to Propr"
+            window.title = "Propr Setup"
             window.identifier = NSUserInterfaceItemIdentifier("onboarding")
             window.contentView = hosting
             window.center()

@@ -1,74 +1,60 @@
 import SwiftUI
 
-/// A configured endpoint in the list: its name, base URL and the models it exposes,
-/// with edit and delete actions.
+/// One configured endpoint in the Models list.
+///
+/// Deliberately has no background of its own — a `List` draws row backgrounds,
+/// selection and separators, and a card drawn inside one fights all three.
 struct EndpointRow: View {
     let endpoint: CustomEndpoint
-    let onEdit: () -> Void
-    let onDelete: () -> Void
+
+    private var modelSummary: String {
+        endpoint.models.map(\.displayName).joined(separator: ", ")
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text(endpoint.name)
-                    .font(.headline)
-
-                Spacer()
-
-                Button(action: onEdit) {
-                    Image(systemName: "pencil")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.blue)
-                .help("Edit this endpoint")
-
-                Button(role: .destructive, action: onDelete) {
-                    Image(systemName: "trash")
-                }
-                .buttonStyle(.plain)
-                .foregroundStyle(.red)
-                .help("Remove this endpoint")
-            }
-
-            Text(endpoint.baseURL)
-                .font(.caption)
+        HStack(spacing: 10) {
+            Image(systemName: "server.rack")
+                .font(.title3)
                 .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+                .frame(width: 22)
 
-            ForEach(endpoint.models) { model in
-                if let alias = model.alias {
-                    HStack(spacing: 4) {
-                        Text("• \(alias)")
-                            .font(.caption)
-                        Text("(\(model.name))")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                } else {
-                    Text("• \(model.name)")
-                        .font(.caption)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(endpoint.name)
+                    .font(.body)
+
+                Text(endpoint.baseURL)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+
+                if !endpoint.models.isEmpty {
+                    Text(modelSummary)
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+                        .lineLimit(1)
+                        .truncationMode(.tail)
                 }
             }
+
+            Spacer(minLength: 0)
         }
-        .padding(12)
-        .background(.quaternary, in: RoundedRectangle(cornerRadius: 10))
+        .padding(.vertical, 4)
     }
 }
 
 #Preview {
-    EndpointRow(
-        endpoint: CustomEndpoint(
-            name: "My Groq",
-            baseURL: "https://api.groq.com/openai/v1",
-            models: [
-                CustomModel(name: "llama-3.3-70b-versatile", alias: "Llama 3.3 70B"),
-                CustomModel(name: "mixtral-8x7b-32768"),
-            ]
-        ),
-        onEdit: {},
-        onDelete: {}
-    )
-    .frame(width: 420)
-    .padding()
+    List {
+        EndpointRow(
+            endpoint: CustomEndpoint(
+                name: "My Groq",
+                baseURL: "https://api.groq.com/openai/v1",
+                models: [
+                    CustomModel(name: "llama-3.3-70b-versatile", alias: "Llama 3.3 70B"),
+                    CustomModel(name: "openai/gpt-oss-120b"),
+                ]
+            )
+        )
+    }
+    .frame(width: 460, height: 140)
 }

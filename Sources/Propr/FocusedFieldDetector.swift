@@ -183,23 +183,13 @@ final class FocusedFieldDetector: ObservableObject {
     private func shouldTrustAXValue(_ value: String, appName: String, role: String?) -> Bool {
         guard !value.isEmpty else { return true }
         guard value.count <= 8_000 else { return false }
-        guard !isTerminalLikeApp(appName) else { return false }
+        guard !TerminalApps.isTerminal(appName: appName) else { return false }
         return role == kAXTextFieldRole as String
             || role == kAXTextAreaRole as String
             || role == "AXSearchFieldRole"
             || role == kAXComboBoxRole as String
     }
 
-    private func isTerminalLikeApp(_ appName: String) -> Bool {
-        let lowered = appName.lowercased()
-        return lowered.contains("warp")
-            || lowered.contains("terminal")
-            || lowered.contains("iterm")
-            || lowered.contains("ghostty")
-            || lowered.contains("wezterm")
-            || lowered.contains("alacritty")
-            || lowered.contains("kitty")
-    }
 
     private func scheduleHide() {
         cancelPendingHide()

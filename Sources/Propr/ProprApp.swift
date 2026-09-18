@@ -107,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Listen for requests to open Settings (from AppKit menu items like "Settings..." and "Manage Models...")
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(openSettingsWindow),
+            selector: #selector(openSettingsWindow(_:)),
             name: .proprOpenSettings,
             object: nil
         )
@@ -144,32 +144,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func setupDoubleCommandHotkey() {
-        // NSEvent.h declares this handler as a plain block with no actor isolation, so
-        // the closure body is NOT main-actor isolated. Touching @MainActor state inside
-        // it made Swift fall back to a *runtime* isolation check, and that check was
-        // segfaulting on first run — six crash reports, all in this closure, all
-        // EXC_BAD_ACCESS inside swift_task_isCurrentExecutor.
+        // The handler is a `nonisolated static` function, passed by reference — not a
+        // closure written here.
         //
-        // So: read only the modifier flags here (an OptionSet, safe to pass across an
-        // isolation boundary) and hop to the main actor explicitly for everything else.
-        // The NSEvent itself is deliberately not captured — it is not Sendable.
-        commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(matching: .flagsChanged) { event in
-            let flags = event.modifierFlags
-            guard AppDelegate.isPureCommand(flags) else { return }
+        // A closure written inside this method inherits the class's @MainActor
+        // isolation (it is not @Sendable), and because it is handed to an Objective-C
+        // API the compiler cannot vouch for, Swift inserts a runtime "am I on the main
+        // actor?" assertion at its entry. That assertion is what was crashing — every
+        // report was EXC_BAD_ACCESS inside swift_task_isCurrentExecutor, called from
+        // this callback. Removing captures or changing the body does not help, because
+        // neither changes the inherited isolation. Declaring the handler nonisolated
+        // does: there is then no assertion to run.
+        commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(
+            matching: .flagsChanged,
+            handler: AppDelegate.handleFlagsChanged
+        )
+    }
 
-            // Deliberately capture nothing and start no Task. The crash was in this
-            // closure's prologue, inspecting its captured context — so the closure is
-            // kept non-capturing (a thin function with no context object at all), and
-            // the delegate is reached through the existing static instead.
-            //
-            // GCD rather than `Task { @MainActor }` for the same reason: it hands the
-            // work to the main queue without asking the concurrency runtime which
-            // executor we are currently on.
-            DispatchQueue.main.async {
-                MainActor.assumeIsolated {
-                    AppDelegate.shared?.handlePureCommandPress()
-                }
-            }
+    /// Runs on AppKit's event-monitor callback. Nonisolated by declaration, so no
+    /// actor-isolation check is emitted at its entry.
+    nonisolated private static func handleFlagsChanged(_ event: NSEvent) {
+        // Read only the flags (an OptionSet, safe across isolation); the NSEvent itself
+        // is not Sendable and must not be carried into the task.
+        guard isPureCommand(event.modifierFlags) else { return }
+
+        // Enqueue onto the main actor. Creating a Task does not ask the runtime which
+        // executor we are currently on, which is the call that was failing.
+        Task { @MainActor in
+            AppDelegate.shared?.handlePureCommandPress()
         }
     }
 
