@@ -5,18 +5,26 @@ import SwiftUI
 // scenes: in a pure LSUIElement (menu-bar-only) app the declarative window APIs do
 // not reliably open from a status-item menu.
 extension AppDelegate {
-    @objc func openSettingsWindow() {
+    @objc func openSettingsWindow(_ note: Notification) {
+        // Read the requested pane here. On first open the SettingsView does not exist
+        // yet, so the notification would otherwise be lost — "Manage Models…" opened
+        // on General.
+        let section =
+            (note.userInfo?["selectSection"] as? String)
+            .flatMap(SettingsSection.init(rawValue:)) ?? .general
+
         NSApp.activate(ignoringOtherApps: true)
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-            self.showSettingsWindow()
+            self.showSettingsWindow(section: section)
         }
     }
 
     @MainActor
-    func showSettingsWindow() {
+    func showSettingsWindow(section: SettingsSection = .general) {
         if settingsWindow == nil {
-            let hostingController = NSHostingController(rootView: SettingsView())
+            let hostingController = NSHostingController(
+                rootView: SettingsView(initialSection: section))
             // Let the window be resized freely; SwiftUI should fill it, not size it.
             hostingController.sizingOptions = []
 
@@ -33,6 +41,11 @@ extension AppDelegate {
             window.toolbarStyle = .unified
             window.setContentSize(NSSize(width: 760, height: 580))
             window.minSize = NSSize(width: 720, height: 480)
+
+            // The navigationTitle bridge only pushes a title when the selection
+            // *changes*, so without this the window opened as "Untitled" until the
+            // user switched panes.
+            window.title = section.title
 
             window.identifier = NSUserInterfaceItemIdentifier("settings")
             window.isReleasedWhenClosed = false

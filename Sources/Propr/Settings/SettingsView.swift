@@ -28,7 +28,14 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 /// VStack and `.onTapGesture`, which meant no keyboard navigation, no system
 /// highlight and no hover behaviour.
 struct SettingsView: View {
-    @State private var selection: SettingsSection = .general
+    @State private var selection: SettingsSection
+
+    /// - Parameter initialSection: the pane to show when the window is first built.
+    ///   Passed in rather than delivered by notification, because the notification
+    ///   that asks for it is posted before this view exists to hear it.
+    init(initialSection: SettingsSection = .general) {
+        _selection = State(initialValue: initialSection)
+    }
 
     var body: some View {
         NavigationSplitView {

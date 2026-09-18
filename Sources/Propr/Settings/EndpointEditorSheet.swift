@@ -47,21 +47,41 @@ struct EndpointEditorSheet: View {
                         }
                     }
 
-                    // Every field gets a placeholder. With the bezel below they read as
-                    // inputs; without one, an empty field in a grouped form is just blank
-                    // space and new users could not tell they were meant to type there.
-                    TextField("Name", text: $form.name, prompt: Text("e.g. My OpenRouter"))
+                    // Each field sits in LabeledContent with its own label hidden.
+                    // Grouped forms otherwise right-align a labelled field's
+                    // placeholder while typed text is left-aligned, which looks broken
+                    // inside a bezel.
+                    //
+                    // Placeholders use Text(verbatim:). A plain string literal is a
+                    // LocalizedStringKey, which SwiftUI parses as Markdown — and a bare
+                    // URL gets autolinked, so the example URL rendered as a blue link
+                    // that looked like an already-filled value.
+                    LabeledContent("Name") {
+                        TextField(
+                            "Name", text: $form.name,
+                            prompt: Text(verbatim: "e.g. My OpenRouter")
+                        )
+                        .labelsHidden()
+                    }
                     validationMessage(form.nameError(in: context))
 
-                    TextField(
-                        "Base URL", text: $form.baseURL,
-                        prompt: Text("https://api.example.com/v1"))
+                    LabeledContent("Base URL") {
+                        TextField(
+                            "Base URL", text: $form.baseURL,
+                            prompt: Text(verbatim: "https://api.example.com/v1")
+                        )
+                        .labelsHidden()
+                    }
                     validationMessage(form.urlError)
 
                     if requiresKey {
-                        SecureField(
-                            "API Key", text: $form.apiKey,
-                            prompt: Text(provider?.apiKeyExample ?? "Paste your key"))
+                        LabeledContent("API Key") {
+                            SecureField(
+                                "API Key", text: $form.apiKey,
+                                prompt: Text(verbatim: provider?.apiKeyExample ?? "Paste your key")
+                            )
+                            .labelsHidden()
+                        }
                         validationMessage(form.apiKeyError)
                     }
                 } footer: {
@@ -99,10 +119,10 @@ struct EndpointEditorSheet: View {
                     // placeholders carry the meaning — otherwise the grouped form turns
                     // the labels into what looked like column headings.
                     HStack(spacing: 8) {
-                        TextField("Model ID", text: $form.draftModelName, prompt: Text("Model ID"))
+                        TextField("Model ID", text: $form.draftModelName, prompt: Text(verbatim: "Model ID"))
                             .labelsHidden()
                         TextField(
-                            "Alias", text: $form.draftModelAlias, prompt: Text("Alias (optional)")
+                            "Alias", text: $form.draftModelAlias, prompt: Text(verbatim: "Alias (optional)")
                         )
                         .labelsHidden()
                         .frame(maxWidth: 150)

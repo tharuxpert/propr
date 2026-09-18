@@ -107,7 +107,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Listen for requests to open Settings (from AppKit menu items like "Settings..." and "Manage Models...")
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(openSettingsWindow),
+            selector: #selector(openSettingsWindow(_:)),
             name: .proprOpenSettings,
             object: nil
         )
