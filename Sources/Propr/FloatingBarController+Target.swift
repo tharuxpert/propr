@@ -57,7 +57,11 @@ extension FloatingBarController {
             )
         }
 
-        if let currentInput = await SourceAppKeyboard(pid: pid).copyCurrentInput() {
+        // Case 2 is skipped in terminals: ⌘A there selects the scrollback, not the
+        // prompt, and would hand the model the user's command history as context.
+        if TerminalApps.allowsSelectAllCapture(appName: snapshot.appName),
+            let currentInput = await SourceAppKeyboard(pid: pid).copyCurrentInput()
+        {
             print(
                 "[Propr Bar] summon fallback: captured current input (\(currentInput.count) chars)")
             return FieldSnapshot(
@@ -138,7 +142,7 @@ extension FloatingBarController {
         // Terminal-style apps often claim AX text editability while exposing the
         // transcript/window instead of the real prompt. Always use the fallback
         // key-event path for them.
-        guard !isTerminalLikeApp(appName), let element, isEditableTextRole(role) else {
+        guard !TerminalApps.isTerminal(appName: appName), let element, isEditableTextRole(role) else {
             return .clipboardPaste
         }
 
@@ -158,16 +162,6 @@ extension FloatingBarController {
             || role == kAXComboBoxRole as String
     }
 
-    func isTerminalLikeApp(_ appName: String) -> Bool {
-        let lowered = appName.lowercased()
-        return lowered.contains("warp")
-            || lowered.contains("terminal")
-            || lowered.contains("iterm")
-            || lowered.contains("ghostty")
-            || lowered.contains("wezterm")
-            || lowered.contains("alacritty")
-            || lowered.contains("kitty")
-    }
 
     func logTarget(snapshot: FieldSnapshot) {
         print(
