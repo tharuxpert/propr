@@ -148,11 +148,22 @@ struct FloatingBarView: View {
         // it the way Spotlight does. The panel itself is borderless and clear; the
         // rounding and the shadow live here.
         .background(
-            VisualEffectBackground(
-                material: .hudWindow,
-                blendingMode: .behindWindow,
-                cornerRadius: Self.cornerRadius
-            )
+            ZStack {
+                VisualEffectBackground(
+                    material: .hudWindow,
+                    blendingMode: .behindWindow,
+                    cornerRadius: Self.cornerRadius
+                )
+
+                // Behind-window vibrancy is composited by the window server, so the
+                // panel's own pixels there are fully transparent. The window server
+                // treats transparent pixels of a non-opaque window as "not this
+                // window" — so it routed hover straight through the bar to whatever
+                // was behind (links underlined beneath it). A floor of opacity makes
+                // every pixel of the bar count as the bar. 2% is invisible over the
+                // HUD material.
+                Color.black.opacity(0.02)
+            }
         )
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .overlay(
