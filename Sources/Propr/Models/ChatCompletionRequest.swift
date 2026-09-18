@@ -22,10 +22,22 @@ struct ChatCompletionRequest {
         !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
+    /// Whatever the model replies is written into the user's document, so a refusal or
+    /// a request for clarification must be recognisable as not-the-answer. This asks
+    /// for a fixed marker instead of prose; see `ModelReply`.
+    static let cannotInstruction = """
+        If you cannot do what was asked — the request is unclear, impossible, or something \
+        you would decline — do not reply with an apology or explanation as if it were the \
+        answer. Instead reply with exactly \(ModelReply.cannotMarker) followed by one short \
+        sentence saying why, and nothing else.
+        """
+
     /// Used when the user has selected text, or the field's contents were readable.
     static let refineSystemPrompt = """
         You are a helpful writing assistant. Follow the user's instruction precisely.
         Only return the rewritten text. Do not add explanations, quotes, or markdown unless the user asked for it.
+
+        \(cannotInstruction)
         """
 
     /// Used when there is nothing to rewrite — the user summoned the bar at an empty
@@ -36,6 +48,8 @@ struct ChatCompletionRequest {
         You write text that will be typed directly into whatever the user is working in.
         Answer with exactly the text they asked for and nothing else. Do not add explanations, \
         preamble, quotes, or markdown fences unless the user asked for them.
+
+        \(cannotInstruction)
         """
 
     var systemPrompt: String {

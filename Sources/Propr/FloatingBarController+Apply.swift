@@ -100,7 +100,27 @@ extension FloatingBarController {
         element: AXUIElement,
         replaceSelectionOnly: Bool
     ) async throws {
-        var firstToken = true
+        let writer = AXTextWriter(element: element)
+        var wroteAnything = false
+
+        // Clears the selection (or the whole field) only once there is real text to
+        // put in its place — so a reply the model marks as "cannot" leaves the user's
+        // document exactly as it was.
+        func write(_ text: String) async throws {
+            guard !text.isEmpty else { return }
+            if !wroteAnything {
+                wroteAnything = true
+                sessionState.startTyping()
+                try writer.prepareForReplacement(
+                    replacingWholeValue: !replaceSelectionOnly && !originalText.isEmpty
+                )
+                try? await Task.sleep(for: .milliseconds(25))
+            }
+            try await writer.append(text)
+        }
+
+        // Holds output back only while it could still be the "cannot" marker.
+        var filter = StreamingReplyFilter()
 
         for try await token in AIService.shared.refineStream(
             original: originalText,
@@ -111,23 +131,23 @@ extension FloatingBarController {
             // Throws rather than returning: a bare return here would leave the bar
             // showing "Thinking…" forever with its input disabled.
             try Task.checkCancellation()
-
-            if firstToken {
-                firstToken = false
-                sessionState.startTyping()
-                try AXTextWriter(element: element).prepareForReplacement(
-                    replacingWholeValue: !replaceSelectionOnly && !originalText.isEmpty
-                )
-                try? await Task.sleep(for: .milliseconds(25))
-            }
-
-            try await AXTextWriter(element: element).append(token)
+            try await write(filter.receive(token))
         }
 
-        if firstToken {
-            sessionState.fail("The model returned an empty response.")
-        } else {
+        switch filter.finish() {
+        case .cannot(let reason):
+            // The model says it can't do this. Its reason goes in the bar; nothing was
+            // written to the document.
+            sessionState.fail(reason)
+            return
+        case .text(let remaining):
+            try await write(remaining)
+        }
+
+        if wroteAnything {
             sessionState.finishRequest()
+        } else {
+            sessionState.fail("The model returned an empty response.")
         }
     }
 
@@ -140,7 +160,7 @@ extension FloatingBarController {
         appName: String,
         replaceExistingInput: Bool
     ) async throws {
-        let result = try await withTimeout(seconds: 45) {
+        let reply = try await withTimeout(seconds: 45) {
             try await AIService.shared.refine(
                 original: originalText,
                 instruction: instruction,
@@ -149,7 +169,19 @@ extension FloatingBarController {
             )
         }
         try Task.checkCancellation()
-        guard !result.isEmpty else {
+
+        // A reply the model marks as "cannot" is a message for the user, not text for
+        // their document: show it in the bar and insert nothing.
+        let answer: String
+        switch ModelReply.parse(reply) {
+        case .cannot(let reason):
+            sessionState.fail(reason)
+            return
+        case .text(let text):
+            answer = text
+        }
+
+        guard !answer.isEmpty else {
             sessionState.fail("The model returned an empty response.")
             return
         }
@@ -164,11 +196,11 @@ extension FloatingBarController {
         let inserted: String
         let delivered: Bool
         if TerminalApps.isTerminal(appName: appName) {
-            inserted = Self.normalizingLineEndings(result)
+            inserted = Self.normalizingLineEndings(answer)
             delivered = await keyboard.paste(inserted)
         } else {
-            inserted = result
-            delivered = await keyboard.type(result, replacingExistingInput: replaceExistingInput)
+            inserted = answer
+            delivered = await keyboard.type(answer, replacingExistingInput: replaceExistingInput)
         }
         guard delivered else { throw TextApplyError.cannotPaste }
 
