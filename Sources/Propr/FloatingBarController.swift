@@ -44,7 +44,7 @@ enum TextApplyError: LocalizedError {
 @MainActor
 final class FloatingBarController {
     var panel: FloatingPanel?
-    var hostingView: NSHostingView<AnyView>?
+    var hostingView: FloatingPanelHostingView?
 
     weak var detector: FocusedFieldDetector?
     var sessionState = FloatingBarSessionState()

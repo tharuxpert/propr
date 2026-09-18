@@ -26,6 +26,7 @@
 		45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBFA4D9B786404254155B7B /* SettingsView.swift */; };
 		4848505D4F32561FA5F37A97 /* KeystrokeUndoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E1C7BFDFBE80EA88CB1EFA /* KeystrokeUndoTests.swift */; };
 		50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */; };
+		55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */; };
 		624CFF35C6BA55F254037DCF /* FloatingBarController+Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */; };
 		6B6C1809031B24CEE305D5EB /* KeystrokePacingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051988735931571C55E220DD /* KeystrokePacingTests.swift */; };
 		7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */; };
@@ -96,6 +97,7 @@
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
 		7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Windows.swift"; sourceTree = "<group>"; };
 		91026A33DABF3EF4F433F52A /* ChatCompletionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCompletionRequest.swift; sourceTree = "<group>"; };
+		918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelHostingView.swift; sourceTree = "<group>"; };
 		93DE19428A72A8063B962EA4 /* TerminalApps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalApps.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
@@ -144,6 +146,7 @@
 				5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */,
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
+				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
 				CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */,
 				BC3CFE06765D24588F37A915 /* Info.plist */,
 				26088ADA097DE290EDA0A187 /* OnboardingView.swift */,
@@ -403,6 +406,7 @@
 				20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */,
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
+				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,
 				D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */,
 				E1CAB360CA3E516859A6F73E /* GeneralSettingsView.swift in Sources */,
 				7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */,

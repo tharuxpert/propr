@@ -200,7 +200,7 @@ extension FloatingBarController {
         // We rely on .nonactivatingPanel style + not calling makeKeyAndOrderFront in ways that activate us.
         // canBecomeKey is get-only on NSWindow in this SDK; the style mask is the correct signal.
 
-        let hosting = NSHostingView<AnyView>(
+        let hosting = FloatingPanelHostingView(
             rootView: AnyView(
                 FloatingBarView(
                     snapshot: FieldSnapshot(
