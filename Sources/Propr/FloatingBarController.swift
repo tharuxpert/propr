@@ -12,8 +12,8 @@ enum TextApplyStrategy {
 /// Replaces three loose properties that encoded two modes by convention ("the element
 /// is nil but the pid is not" meant "send ⌘Z"), which would not have survived a third.
 enum ApplyUndo {
-    /// Put a field's original contents back through Accessibility.
-    case restoreField(element: AXUIElement, originalText: String)
+    /// Put a field back through Accessibility, exactly as it was before the apply.
+    case restoreField(element: AXUIElement, before: AXTextWriter.FieldState)
     /// Reverse typed keystrokes in the given process, by ⌘Z or by Backspace.
     case keystrokes(pid: pid_t, KeystrokeUndo)
 }

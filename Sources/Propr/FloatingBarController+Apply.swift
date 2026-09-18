@@ -46,7 +46,12 @@ extension FloatingBarController {
                     guard let element else {
                         throw TextApplyError.cannotWriteAX
                     }
-                    self.lastApplyUndo = .restoreField(element: element, originalText: originalText)
+                    // Record the whole field as it is now — value and selection — not
+                    // just the text being rewritten. Undo used to write that text back
+                    // over the *entire* field, so rewriting one selected word and then
+                    // undoing left the field containing only the old word.
+                    self.lastApplyUndo = AXTextWriter(element: element).currentState()
+                        .map { .restoreField(element: element, before: $0) }
                     try await applyWithAccessibilityStreaming(
                         originalText: originalText,
                         instruction: context,
@@ -191,8 +196,8 @@ extension FloatingBarController {
         lastApplyUndo = nil
 
         switch undo {
-        case .restoreField(let element, let originalText):
-            AXTextWriter(element: element).replaceAll(with: originalText)
+        case .restoreField(let element, let before):
+            AXTextWriter(element: element).restore(before)
             // Hide after a moment so the user sees the restoration happen.
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(250))

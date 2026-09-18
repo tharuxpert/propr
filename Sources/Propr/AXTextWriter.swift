@@ -53,11 +53,52 @@ struct AXTextWriter {
         }
     }
 
-    /// Replaces the whole field with `text` in one write, used to undo an apply.
-    func replaceAll(with text: String) {
+    /// Everything needed to put a field back as it was: its whole value, and where
+    /// the selection or caret sat.
+    struct FieldState {
+        let value: String
+        let selectedRange: CFRange?
+    }
+
+    /// Reads the field's current value and selection, or nil if the value cannot be
+    /// read — in which case there is no safe way to restore it.
+    func currentState() -> FieldState? {
+        var valueRef: AnyObject?
+        guard
+            AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef)
+                == .success,
+            let value = valueRef as? String
+        else {
+            return nil
+        }
+
+        var selectedRange: CFRange?
+        var rangeRef: AnyObject?
+        if AXUIElementCopyAttributeValue(
+            element, kAXSelectedTextRangeAttribute as CFString, &rangeRef) == .success,
+            let rangeRef, CFGetTypeID(rangeRef) == AXValueGetTypeID()
+        {
+            var range = CFRange()
+            if AXValueGetValue(unsafeDowncast(rangeRef, to: AXValue.self), .cfRange, &range) {
+                selectedRange = range
+            }
+        }
+
+        return FieldState(value: value, selectedRange: selectedRange)
+    }
+
+    /// Puts the field back exactly as it was: the whole value, then the selection, so
+    /// the user is left where they were before summoning — e.g. with their original
+    /// word selected again.
+    func restore(_ state: FieldState) {
         selectEntireValue()
         AXUIElementSetAttributeValue(
-            element, kAXSelectedTextAttribute as CFString, text as CFString)
+            element, kAXSelectedTextAttribute as CFString, state.value as CFString)
+
+        if var range = state.selectedRange, let rangeValue = AXValueCreate(.cfRange, &range) {
+            AXUIElementSetAttributeValue(
+                element, kAXSelectedTextRangeAttribute as CFString, rangeValue)
+        }
     }
 
     /// Selects the field's current contents. Silent on failure: callers treat a
