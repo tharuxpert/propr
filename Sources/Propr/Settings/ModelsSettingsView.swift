@@ -74,7 +74,7 @@ struct ModelsSettingsView: View {
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Endpoints", systemImage: "cpu")
+            Label("No Endpoints", systemImage: "brain")
         } description: {
             Text("Add an OpenAI-compatible provider to start refining text.")
         } actions: {

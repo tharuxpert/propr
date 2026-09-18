@@ -16,7 +16,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .general: return "gearshape"
-        case .models: return "cpu"
+        case .models: return "brain"
         }
     }
 }

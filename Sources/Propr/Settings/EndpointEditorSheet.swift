@@ -47,16 +47,21 @@ struct EndpointEditorSheet: View {
                         }
                     }
 
-                    TextField("Name", text: $form.name)
+                    // Every field gets a placeholder. With the bezel below they read as
+                    // inputs; without one, an empty field in a grouped form is just blank
+                    // space and new users could not tell they were meant to type there.
+                    TextField("Name", text: $form.name, prompt: Text("e.g. My OpenRouter"))
                     validationMessage(form.nameError(in: context))
 
-                    TextField("Base URL", text: $form.baseURL, prompt: Text("https://…/v1"))
+                    TextField(
+                        "Base URL", text: $form.baseURL,
+                        prompt: Text("https://api.example.com/v1"))
                     validationMessage(form.urlError)
 
                     if requiresKey {
                         SecureField(
                             "API Key", text: $form.apiKey,
-                            prompt: Text(provider?.apiKeyExample ?? "sk-…"))
+                            prompt: Text(provider?.apiKeyExample ?? "Paste your key"))
                         validationMessage(form.apiKeyError)
                     }
                 } footer: {
@@ -90,10 +95,19 @@ struct EndpointEditorSheet: View {
                         }
                     }
 
+                    // Two inputs share one row, so their labels are hidden and the
+                    // placeholders carry the meaning — otherwise the grouped form turns
+                    // the labels into what looked like column headings.
                     HStack(spacing: 8) {
-                        TextField("Model ID", text: $form.draftModelName)
-                        TextField("Alias (optional)", text: $form.draftModelAlias)
-                        Button("Add") { form.addDraftModel() }
+                        TextField("Model ID", text: $form.draftModelName, prompt: Text("Model ID"))
+                            .labelsHidden()
+                        TextField(
+                            "Alias", text: $form.draftModelAlias, prompt: Text("Alias (optional)")
+                        )
+                        .labelsHidden()
+                        .frame(maxWidth: 150)
+                        // Distinct from the sheet's own "Add" button below.
+                        Button("Add Model") { form.addDraftModel() }
                             .disabled(!form.canAddDraftModel)
                     }
                 } header: {
@@ -105,6 +119,11 @@ struct EndpointEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
+            // Grouped forms draw text fields borderless and right-aligned, which is fine
+            // for a value you glance at but hides where you are supposed to type.
+            // A bezel and leading-aligned text make each field unmistakably an input.
+            .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.leading)
 
             Divider()
 
