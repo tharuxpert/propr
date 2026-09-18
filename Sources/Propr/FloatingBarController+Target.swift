@@ -7,27 +7,6 @@ import AppKit
 extension FloatingBarController {
     // MARK: - Show / Position
 
-    func snapshotForCurrentFocusedElement() -> FieldSnapshot? {
-        guard let element = captureCurrentFocusedElement() else { return nil }
-
-        var pid: pid_t = 0
-        AXUIElementGetPid(element, &pid)
-        guard pid != 0, pid != getpid() else { return nil }
-
-        var roleRef: AnyObject?
-        AXUIElementCopyAttributeValue(element, kAXRoleAttribute as CFString, &roleRef)
-        let role = roleRef as? String
-        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "Unknown App"
-
-        return FieldSnapshot(
-            appName: appName,
-            pid: pid,
-            fullText: "",
-            selectedText: nil,
-            role: role
-        )
-    }
-
     func prepareSnapshotForSummon(_ snapshot: FieldSnapshot) async -> FieldSnapshot {
         let element = captureCurrentFocusedElement()
         let pid = targetPID(from: element, fallback: snapshot.pid)

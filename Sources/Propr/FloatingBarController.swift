@@ -46,7 +46,8 @@ final class FloatingBarController {
     var panel: FloatingPanel?
     var hostingView: FloatingPanelHostingView?
 
-    weak var detector: FocusedFieldDetector?
+    /// Reads the focused field on demand; holds no state between summons.
+    let detector = FocusedFieldDetector()
     var sessionState = FloatingBarSessionState()
     var refineTask: Task<Void, Never>?
 
@@ -76,32 +77,28 @@ final class FloatingBarController {
     /// another file, and Swift scopes `private(set)` to the declaring file.
     var isVisible: Bool = false
 
-    init(detector: FocusedFieldDetector) {
-        self.detector = detector
-    }
+    init() {}
 
     // MARK: - Public API
 
     /// Summon the floating bar (centered on screen). Captures the currently focused text field.
     func summon() {
-        detector?.refreshCurrentFocus()
-
+        // The short delay is unchanged from before: it lets a status-bar menu that was
+        // just clicked finish closing, so the focus read below is the user's field and
+        // not the menu.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             guard let self else { return }
 
             Task { @MainActor in
-                // Always center when summoned, regardless of where the field is.
-                // For fallback targets like Warp, capture selected/current input *before*
-                // the Propr panel becomes key; after that the source app selection/focus
-                // can already be gone.
-                let baseSnapshot =
-                    self.detector?.currentField ?? self.snapshotForCurrentFocusedElement()
-                if let baseSnapshot {
+                // Read the focused field now. This used to come from a cache updated on
+                // timers, which is how a summon could show the previous one's context.
+                //
+                // Capture happens before the panel becomes key: for fallback targets
+                // such as terminals, the source app's selection can be gone after that.
+                if let snapshot = self.detector.snapshotOfFocusedElement() {
                     // Show the real target even with no text to work on: the user asked
-                    // for the bar, and an empty context is a valid way to use it (ask
-                    // for something to be written at the cursor). Falling back to the
-                    // placeholder here would drop the app's name and icon.
-                    let prepared = await self.prepareSnapshotForSummon(baseSnapshot)
+                    // for the bar, and an empty context is a valid way to use it.
+                    let prepared = await self.prepareSnapshotForSummon(snapshot)
                     self.showCentered(for: prepared)
                 } else {
                     self.showCenteredEmpty()

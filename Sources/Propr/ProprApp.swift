@@ -10,13 +10,12 @@ extension Notification.Name {
 @main
 struct ProprApp: App {
     // Access the single long-lived instances that live on the AppDelegate.
-    // This avoids duplicate managers/detectors in a menu-bar-only LSUIElement app.
+    // This avoids duplicate managers and controllers in a menu-bar-only LSUIElement app.
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
 
     private var accessibility: AccessibilityManager { appDelegate.accessibility }
-    private var fieldDetector: FocusedFieldDetector { appDelegate.fieldDetector }
 
     init() {
         // Nothing extra — the delegate wires everything in applicationDidFinishLaunching.
@@ -34,17 +33,14 @@ struct ProprApp: App {
 }
 
 // MARK: - App Delegate (gives us the most reliable "app finished launching" hook)
-// Marked @MainActor because it owns @MainActor-isolated objects (AccessibilityManager, detector, controller)
+// Marked @MainActor because it owns @MainActor-isolated objects (AccessibilityManager, controller)
 // and all delegate callbacks + AX work happen on the main thread anyway.
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate {
     // Long-lived core objects owned by the delegate (reliable lifetime in LSUIElement apps).
     let accessibility = AccessibilityManager.shared
-    let fieldDetector = FocusedFieldDetector()
     // Eagerly created so menu/hotkey summons can reuse one controller for the app lifetime.
     private let floatingBarController: FloatingBarController
-
-    private var permissionCancellable: AnyCancellable?
 
     // Double-tap Command key detection for quick summon
     private var lastCommandPressTime: Date?
@@ -64,24 +60,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     static weak var shared: AppDelegate?
 
     override init() {
-        floatingBarController = FloatingBarController(detector: fieldDetector)
+        floatingBarController = FloatingBarController()
         super.init()
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
-
-        // Keep detector state cleared if Accessibility goes away. The floating bar reads focus
-        // only when explicitly summoned; it does not run a live focus observer.
-        permissionCancellable = accessibility.$hasPermission
-            .receive(on: RunLoop.main)
-            .sink { [weak self] granted in
-                guard let self else { return }
-                if !granted {
-                    print("[Propr] Accessibility permission lost — stopping focus detector")
-                    self.fieldDetector.stop()
-                }
-            }
 
         // Kick an initial permission check
         accessibility.startMonitoring()
