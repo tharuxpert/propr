@@ -116,3 +116,32 @@ struct ModelReplyTests {
         #expect(ChatCompletionRequest.generateSystemPrompt.contains(ModelReply.cannotMarker))
     }
 }
+
+struct ModelReplyPresentationTests {
+    @MainActor
+    @Test("A model refusal is a notice, not an error")
+    func refusalUsesNoticeState() {
+        let state = FloatingBarSessionState()
+        state.startRequest()
+
+        state.showNotice("The request needs more information.")
+
+        #expect(state.noticeMessage == "The request needs more information.")
+        #expect(state.errorMessage == nil)
+        #expect(!state.hasSubmitted)
+        #expect(!state.isThinking)
+        #expect(!state.isTyping)
+    }
+
+    @MainActor
+    @Test("Starting another request clears the previous notice")
+    func newRequestClearsNotice() {
+        let state = FloatingBarSessionState()
+        state.showNotice("The request needs more information.")
+
+        state.startRequest()
+
+        #expect(state.noticeMessage == nil)
+        #expect(state.isThinking)
+    }
+}

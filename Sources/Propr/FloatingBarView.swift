@@ -108,7 +108,11 @@ struct FloatingBarView: View {
                         isPromptFocused = true
                     }
                 }
-                .disabled(sessionState.hasSubmitted && sessionState.errorMessage == nil)
+                .disabled(
+                    sessionState.hasSubmitted
+                        && sessionState.errorMessage == nil
+                        && sessionState.noticeMessage == nil
+                )
 
             if sessionState.isThinking {
                 RefineStatusRow(label: "Thinking…")
@@ -120,8 +124,13 @@ struct FloatingBarView: View {
                 RefineErrorBanner(message: error) { sessionState.clearError() }
             }
 
+            if let notice = sessionState.noticeMessage {
+                RefineNoticeBanner(message: notice) { sessionState.clearNotice() }
+            }
+
             if sessionState.hasSubmitted && !sessionState.isThinking && !sessionState.isTyping
                 && sessionState.errorMessage == nil
+                && sessionState.noticeMessage == nil
             {
                 HStack(spacing: 12) {
                     if let onUndo {

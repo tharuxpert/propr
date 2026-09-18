@@ -138,7 +138,7 @@ extension FloatingBarController {
         case .cannot(let reason):
             // The model says it can't do this. Its reason goes in the bar; nothing was
             // written to the document.
-            sessionState.fail(reason)
+            sessionState.showNotice(reason)
             return
         case .text(let remaining):
             try await write(remaining)
@@ -175,7 +175,7 @@ extension FloatingBarController {
         let answer: String
         switch ModelReply.parse(reply) {
         case .cannot(let reason):
-            sessionState.fail(reason)
+            sessionState.showNotice(reason)
             return
         case .text(let text):
             answer = text
