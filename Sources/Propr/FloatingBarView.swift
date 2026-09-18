@@ -144,16 +144,30 @@ struct FloatingBarView: View {
             }
         }
         .frame(width: 470)
+        // A real behind-window vibrancy view, so the bar samples the desktop beneath
+        // it the way Spotlight does. The panel itself is borderless and clear; the
+        // rounding and the shadow live here.
         .background(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .fill(.ultraThinMaterial)
-                .shadow(color: .black.opacity(0.2), radius: 14, x: 0, y: 5)
+            VisualEffectBackground(
+                material: .hudWindow,
+                blendingMode: .behindWindow,
+                cornerRadius: Self.cornerRadius
+            )
         )
+        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(.white.opacity(0.06), lineWidth: 0.5)
+            // The hairline macOS puts around floating panels: a light top edge over a
+            // separator, rather than a uniform white stroke.
+            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
+                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
         )
+        // No SwiftUI shadow: the panel sets `hasShadow`, and now that the content is
+        // an opaque rounded shape the window shadow follows it correctly. Drawing
+        // both stacked two shadows on top of each other.
     }
+
+    /// Matches the rounding macOS uses on floating panels of this size.
+    private static let cornerRadius: CGFloat = 12
 
     private func appIcon(for pid: pid_t) -> NSImage {
         if let app = NSRunningApplication(processIdentifier: pid) {
