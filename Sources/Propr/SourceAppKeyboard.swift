@@ -77,7 +77,8 @@ struct SourceAppKeyboard {
         guard isTargetable else { return nil }
 
         let pasteboard = NSPasteboard.general
-        let savedItems = pasteboard.pasteboardItems ?? []
+        // A copy of the data, not the item objects — see PasteboardSnapshot.
+        let saved = PasteboardSnapshot(of: pasteboard)
         let oldString = pasteboard.string(forType: .string)
         let oldChangeCount = pasteboard.changeCount
 
@@ -89,7 +90,7 @@ struct SourceAppKeyboard {
         let copied = pasteboard.string(forType: .string)
         // A changeCount bump alone is not proof: some apps rewrite identical contents.
         let changed = pasteboard.changeCount != oldChangeCount || copied != oldString
-        restorePasteboard(savedItems)
+        saved.restore(to: pasteboard)
 
         guard changed, let copied, isUsable(copied) else { return nil }
         return copied
@@ -107,7 +108,8 @@ struct SourceAppKeyboard {
         guard isTargetable else { return nil }
 
         let pasteboard = NSPasteboard.general
-        let savedItems = pasteboard.pasteboardItems ?? []
+        // A copy of the data, not the item objects — see PasteboardSnapshot.
+        let saved = PasteboardSnapshot(of: pasteboard)
 
         activate()
         try? await Task.sleep(for: .milliseconds(90))
@@ -121,13 +123,13 @@ struct SourceAppKeyboard {
 
         try? await Task.sleep(for: .milliseconds(60))
         guard sendCommandKey(Key.c) else {
-            restorePasteboard(savedItems)
+            saved.restore(to: pasteboard)
             return nil
         }
         try? await Task.sleep(for: .milliseconds(140))
 
         let copied = pasteboard.string(forType: .string)
-        restorePasteboard(savedItems)
+        saved.restore(to: pasteboard)
 
         guard let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             return nil
@@ -188,13 +190,6 @@ struct SourceAppKeyboard {
             && text.count <= Self.maxCapturedCharacters
     }
 
-    private func restorePasteboard(_ items: [NSPasteboardItem]) {
-        let pasteboard = NSPasteboard.general
-        pasteboard.clearContents()
-        if !items.isEmpty {
-            pasteboard.writeObjects(items)
-        }
-    }
 
     /// Posts text as a unicode keystroke, so it does not depend on the user's layout.
     @discardableResult
