@@ -144,6 +144,7 @@ struct FloatingBarView: View {
             }
         }
         .frame(width: 470)
+        .modifier(DraggablePanel())
         // A real behind-window vibrancy view, so the bar samples the desktop beneath
         // it the way Spotlight does. The panel itself is borderless and clear; the
         // rounding and the shadow live here.
@@ -204,4 +205,34 @@ struct FloatingBarView: View {
     )
     .padding(40)
     .background(Color.black.opacity(0.6))
+}
+
+/// Lets the bar be dragged around by any part that is not a control.
+///
+/// SwiftUI content does not reliably take part in AppKit's
+/// `isMovableByWindowBackground`, which is all the bar relied on. From macOS 15 the
+/// documented way to drag a window by a SwiftUI view is `WindowDragGesture`, and
+/// `allowsWindowActivationEvents()` is what lets that work on a window whose app is
+/// not active — which, for this non-activating panel, is always.
+///
+/// It sits on the whole bar so the header (icon and app name) drags too. The text
+/// field keeps selecting text normally: it is an AppKit field that handles its own
+/// mouse events before SwiftUI gestures see them. A plain click on a button still
+/// goes to the button, since a child's tap outranks a parent's drag.
+///
+/// On macOS 14 the panel's `isMovableByWindowBackground` remains the only path.
+private struct DraggablePanel: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content
+                // Without this SwiftUI only hit-tests actual child views, so padding
+                // and the header's Spacer — the blank areas you would naturally grab —
+                // would not start a drag.
+                .contentShape(Rectangle())
+                .gesture(WindowDragGesture())
+                .allowsWindowActivationEvents()
+        } else {
+            content
+        }
+    }
 }
