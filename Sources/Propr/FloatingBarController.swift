@@ -2,7 +2,7 @@ import AppKit
 @preconcurrency import ApplicationServices
 import Combine
 import SwiftUI
-enum TextApplyStrategy {
+enum TextApplyStrategy: Equatable {
     case accessibility
     case clipboardPaste
 }
@@ -79,6 +79,23 @@ final class FloatingBarController {
 
     init() {}
 
+    /// The source target captured before the floating panel took keyboard focus.
+    ///
+    /// Do not try to recover a missing AX element here: once the panel is open, the
+    /// focused element belongs to Propr and recapturing it replaces the real source
+    /// PID with our own. Apps whose editors expose no AX element (including ChatGPT)
+    /// must keep using the frontmost-app PID resolved at summon time.
+    func capturedTargetForApply() -> (
+        element: AXUIElement?, pid: pid_t, strategy: TextApplyStrategy
+    ) {
+        let element = applyTargetElement
+        return (
+            element: element,
+            pid: applyTargetPID,
+            strategy: element == nil ? .clipboardPaste : applyStrategy
+        )
+    }
+
     // MARK: - Public API
 
     /// Summon the floating bar (centered on screen). Captures the currently focused text field.
@@ -101,7 +118,14 @@ final class FloatingBarController {
                     let prepared = await self.prepareSnapshotForSummon(snapshot)
                     self.showCentered(for: prepared)
                 } else {
-                    self.showCenteredEmpty()
+                    // Some editors (including ChatGPT's composer) do not expose a
+                    // focused AX text element. We still know the frontmost process,
+                    // so run the keyboard-copy fallback before the panel takes focus.
+                    // The old empty path skipped this step, which made a real text
+                    // selection look like an empty prompt.
+                    let snapshot = self.snapshotForFrontmostApp()
+                    let prepared = await self.prepareSnapshotForSummon(snapshot)
+                    self.showCentered(for: prepared)
                 }
             }
         }

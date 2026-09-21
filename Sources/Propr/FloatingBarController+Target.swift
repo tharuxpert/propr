@@ -7,6 +7,21 @@ import AppKit
 extension FloatingBarController {
     // MARK: - Show / Position
 
+    /// Minimal source identity for apps that expose no focused AX element. This is
+    /// created while the source app is still frontmost, before Propr's panel can take
+    /// focus, and then enriched by `prepareSnapshotForSummon` using keyboard copy.
+    func snapshotForFrontmostApp() -> FieldSnapshot {
+        let pid = resolveTargetPID(from: nil, fallback: 0)
+        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "Unknown App"
+        return FieldSnapshot(
+            appName: appName,
+            pid: pid,
+            fullText: "",
+            selectedText: nil,
+            role: nil
+        )
+    }
+
     func prepareSnapshotForSummon(_ snapshot: FieldSnapshot) async -> FieldSnapshot {
         let element = captureCurrentFocusedElement()
         let pid = targetPID(from: element, fallback: snapshot.pid)

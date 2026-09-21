@@ -61,58 +61,6 @@ extension FloatingBarController {
         isVisible = true
     }
 
-    func showCenteredEmpty() {
-        summonID = UUID()
-        sessionState = FloatingBarSessionState()
-
-        // Resolve the target first: the snapshot is built from it, and without a real
-        // pid the bar would open but be unable to write anything back.
-        applyTargetElement = captureCurrentFocusedElement()
-        applyTargetPID = resolveTargetPID(from: applyTargetElement, fallback: 0)
-
-        // Name the app we resolved to, rather than showing a placeholder dash.
-        let appName =
-            NSRunningApplication(processIdentifier: applyTargetPID)?.localizedName ?? "—"
-        let dummy = FieldSnapshot(
-            appName: appName, pid: applyTargetPID, fullText: "", selectedText: nil, role: nil)
-
-        applyStrategy = strategy(for: applyTargetElement, role: dummy.role, appName: dummy.appName)
-        logTarget(snapshot: dummy)
-        currentSnapshot = dummy
-
-        ensurePanelExists()
-        guard let panel, let hosting = hostingView else { return }
-
-        let view = AnyView(
-            FloatingBarView(
-                snapshot: dummy,
-                sessionState: sessionState,
-                onRefine: { [weak self] prompt in
-                    self?.performRefine(context: prompt, snapshot: dummy)
-                },
-                onClose: { [weak self] in self?.hide() },
-                onUndo: { [weak self] in self?.undoLastApply() }
-            )
-            .id(summonID)
-        )
-
-        hosting.rootView = view
-        hosting.setFrameSize(viewSize(for: dummy))
-
-        sizePanelToFitContent(recenter: true)
-        observeSessionStateForResizing()
-
-        panel.alphaValue = 0
-        panel.orderFront(nil)
-        panel.makeKey()
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.16
-            panel.animator().alphaValue = 1
-        }
-
-        isVisible = true
-    }
-
     /// Resizes the panel to whatever height its SwiftUI content currently needs.
     ///
     /// - Parameter recenter: `true` on first show. On later updates the top edge is

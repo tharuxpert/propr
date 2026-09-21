@@ -7,9 +7,10 @@ extension FloatingBarController {
     // MARK: - Apply logic (smooth typing-style)
 
     func performRefine(context: String, snapshot: FieldSnapshot) {
-        let element = applyTargetElement ?? captureCurrentFocusedElement()
-        let targetPID = targetPID(from: element, fallback: applyTargetPID)
-        let strategy = element == nil ? .clipboardPaste : applyStrategy
+        let target = capturedTargetForApply()
+        let element = target.element
+        let targetPID = target.pid
+        let strategy = target.strategy
 
         refineTask?.cancel()
 

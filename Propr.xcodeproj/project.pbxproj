@@ -17,6 +17,7 @@
 		20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */; };
 		25CED71435B4452550DF3818 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */; };
 		269F1D27DF7BB71BEEE02C63 /* PasteboardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */; };
+		28E2526107024D7426EAA254 /* ApplyTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */; };
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
 		369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */; };
@@ -75,6 +76,7 @@
 		0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Target.swift"; sourceTree = "<group>"; };
 		16E1C7BFDFBE80EA88CB1EFA /* KeystrokeUndoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndoTests.swift; sourceTree = "<group>"; };
+		1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyTargetTests.swift; sourceTree = "<group>"; };
 		1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCompletionTests.swift; sourceTree = "<group>"; };
 		20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		26088ADA097DE290EDA0A187 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 		5FB8ABBD8D591491F6974E5C /* ProprTests */ = {
 			isa = PBXGroup;
 			children = (
+				1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */,
 				1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */,
 				55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */,
 				57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */,
@@ -378,6 +381,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				28E2526107024D7426EAA254 /* ApplyTargetTests.swift in Sources */,
 				126530E8DEE7708B39A76F2F /* ChatCompletionTests.swift in Sources */,
 				CE15BBC3E89CAFBA6BB51E5A /* EndpointFormStateTests.swift in Sources */,
 				FB4B7256873269C13E7DEB32 /* HotkeyTests.swift in Sources */,
