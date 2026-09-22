@@ -85,7 +85,7 @@ extension FloatingBarController {
                             self.lastApplyUndo = undo
                         }
                     ) {
-                        let answerLength = (answer as NSString).length
+                        let answerLength = (answer.text as NSString).length
                         let finalSelection = writer.currentState()?.selectedRange
                         let appliedLocation: Int
                         if let finalSelection, finalSelection.length == answerLength {
@@ -101,16 +101,21 @@ extension FloatingBarController {
                             location: appliedLocation,
                             length: answerLength
                         )
+                        if let cursorOffset = answer.cursorUTF16Offset {
+                            try? writer.placeCaret(
+                                atUTF16Offset: appliedLocation + cursorOffset)
+                        }
                         let revision = AppliedRevision(
-                            turn: RefinementTurn(instruction: context, output: answer),
+                            turn: RefinementTurn(instruction: context, output: answer.text),
                             undo: undo,
-                            accessibilityRange: range
+                            accessibilityRange: range,
+                            cursorUTF16Offset: answer.cursorUTF16Offset
                         )
                         self.appliedRevisions.append(revision)
                         self.lastApplyUndo = undo
                         pendingAXUndo = nil
                         self.panel?.makeKey()
-                        self.sessionState.finishRequest(appliedText: answer)
+                        self.sessionState.finishRequest(appliedText: answer.text)
                     }
 
                 case .clipboardPaste:
@@ -167,7 +172,7 @@ extension FloatingBarController {
         replaceSelectionOnly: Bool,
         previousRevision: AppliedRevision?,
         onWillWrite: () -> Void
-    ) async throws -> String? {
+    ) async throws -> CursorMarkedText? {
         let writer = AXTextWriter(element: element)
         var wroteAnything = false
         var writtenText = ""
@@ -201,6 +206,8 @@ extension FloatingBarController {
 
         // Holds output back only while it could still be the "cannot" marker.
         var filter = StreamingReplyFilter()
+        // Independently holds a possible cursor marker so none of it is ever typed.
+        var cursorFilter = StreamingCursorMarkerFilter()
 
         for try await token in AIService.shared.refineStream(
             original: originalText,
@@ -212,7 +219,7 @@ extension FloatingBarController {
             // Throws rather than returning: a bare return here would leave the bar
             // showing "Thinking…" forever with its input disabled.
             try Task.checkCancellation()
-            try await write(filter.receive(token))
+            try await write(cursorFilter.receive(filter.receive(token)))
         }
 
         // Cancelling an AsyncThrowingStream can end iteration without throwing.
@@ -226,11 +233,15 @@ extension FloatingBarController {
             sessionState.showNotice(reason)
             return nil
         case .text(let remaining):
-            try await write(remaining)
+            try await write(cursorFilter.receive(remaining))
         }
+        try await write(cursorFilter.finish())
 
         if wroteAnything {
-            return writtenText
+            return CursorMarkedText(
+                text: writtenText,
+                cursorUTF16Offset: cursorFilter.cursorUTF16Offset
+            )
         } else {
             sessionState.fail("The model returned an empty response.")
             return nil

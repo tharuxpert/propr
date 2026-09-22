@@ -39,6 +39,118 @@ enum ModelReply: Equatable {
     }
 }
 
+/// Text returned by the model after removing the optional caret-placement marker.
+/// The offset uses UTF-16 because that is the coordinate system macOS Accessibility
+/// text ranges use.
+struct CursorMarkedText: Equatable {
+    static let marker = "<PROPR_CURSOR>"
+
+    let text: String
+    let cursorUTF16Offset: Int?
+
+    static func parse(_ reply: String) -> CursorMarkedText {
+        var remaining = reply[...]
+        var text = ""
+        var cursorUTF16Offset: Int?
+
+        while let range = remaining.range(of: marker) {
+            let prefix = String(remaining[..<range.lowerBound])
+            text += prefix
+            if cursorUTF16Offset == nil {
+                cursorUTF16Offset = text.utf16.count
+            }
+            remaining = remaining[range.upperBound...]
+        }
+
+        text += String(remaining)
+        return CursorMarkedText(
+            text: text,
+            cursorUTF16Offset: cursorUTF16Offset ?? inferredEmptySlotOffset(in: text)
+        )
+    }
+
+    /// Models do not always reproduce control markers reliably. An empty quoted
+    /// value is still an unambiguous fill-in slot, so keep cursor placement useful
+    /// for commands and templates even when the marker was omitted.
+    private static func inferredEmptySlotOffset(in text: String) -> Int? {
+        let pairs = ["''", "\"\""]
+        let candidates = pairs.compactMap { pair -> String.Index? in
+            text.range(of: pair)?.lowerBound
+        }
+        guard let openingQuote = candidates.min() else { return nil }
+        let caret = text.index(after: openingQuote)
+        return text[..<caret].utf16.count
+    }
+
+    /// Number of user-visible cursor steps from the requested caret to the end.
+    /// Keyboard fallback targets use this after inserting the complete result.
+    var trailingCharacterCount: Int {
+        guard let cursorUTF16Offset else { return 0 }
+        let utf16 = text.utf16
+        guard
+            let utf16Index = utf16.index(
+                utf16.startIndex,
+                offsetBy: cursorUTF16Offset,
+                limitedBy: utf16.endIndex
+            ),
+            let index = String.Index(utf16Index, within: text)
+        else {
+            return 0
+        }
+        return text[index...].count
+    }
+}
+
+/// Removes a cursor marker from a streamed answer without ever writing a partial
+/// marker into the source app. At most `marker.count - 1` characters are held.
+struct StreamingCursorMarkerFilter {
+    private var held = ""
+    private var emittedUTF16Count = 0
+    private(set) var cursorUTF16Offset: Int?
+
+    mutating func receive(_ chunk: String) -> String {
+        held += chunk
+        var output = ""
+
+        while let range = held.range(of: CursorMarkedText.marker) {
+            let prefix = String(held[..<range.lowerBound])
+            output += prefix
+            emittedUTF16Count += prefix.utf16.count
+            if cursorUTF16Offset == nil {
+                cursorUTF16Offset = emittedUTF16Count
+            }
+            held = String(held[range.upperBound...])
+        }
+
+        let heldSuffixCount = possibleMarkerPrefixSuffixLength(in: held)
+        let safeEnd = held.index(held.endIndex, offsetBy: -heldSuffixCount)
+        let safe = String(held[..<safeEnd])
+        output += safe
+        emittedUTF16Count += safe.utf16.count
+        held = String(held[safeEnd...])
+        return output
+    }
+
+    mutating func finish() -> String {
+        defer { held = "" }
+        emittedUTF16Count += held.utf16.count
+        return held
+    }
+
+    private func possibleMarkerPrefixSuffixLength(in text: String) -> Int {
+        let marker = CursorMarkedText.marker
+        let maximum = min(text.count, marker.count - 1)
+        guard maximum > 0 else { return 0 }
+
+        for length in stride(from: maximum, through: 1, by: -1) {
+            if marker.hasPrefix(text.suffix(length)) {
+                return length
+            }
+        }
+        return 0
+    }
+}
+
 /// Streams a reply through, holding back output only while it could still turn out to
 /// be the "cannot" marker — so a refusal is never half-written into the user's
 /// document before it is recognised.

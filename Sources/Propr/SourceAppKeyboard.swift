@@ -61,6 +61,7 @@ struct SourceAppKeyboard {
         static let a: CGKeyCode = 0x00
         static let c: CGKeyCode = 0x08
         static let v: CGKeyCode = 0x09
+        static let leftArrow: CGKeyCode = 0x7B
         static let rightArrow: CGKeyCode = 0x7C
         static let backspace: CGKeyCode = 0x33
     }
@@ -246,11 +247,38 @@ struct SourceAppKeyboard {
         }
     }
 
+    /// Moves through text already inserted by Propr. This is the fallback for apps
+    /// where Accessibility cannot set an exact selected-text range.
+    func moveCaretLeft(_ count: Int) async -> Bool {
+        await moveCaret(using: Key.leftArrow, count: count)
+    }
+
+    func moveCaretRight(_ count: Int) async -> Bool {
+        await moveCaret(using: Key.rightArrow, count: count)
+    }
+
     /// Sends ⌘Z, used to undo an applied refinement in apps written to via keystrokes.
     func sendUndo() {
         guard isTargetable else { return }
         activate()
         sendCommandKey(0x06)  // Z
+    }
+
+    private func moveCaret(using key: CGKeyCode, count: Int) async -> Bool {
+        guard isTargetable else { return false }
+        guard count > 0 else { return true }
+
+        activate()
+        // Match the proven paste/type activation window. Terminal apps such as Warp
+        // can still be switching focus from Propr when a shorter delay expires.
+        try? await Task.sleep(for: .milliseconds(130))
+
+        let delay = Self.keystrokeDelay(forCharacterCount: count)
+        for _ in 0..<count {
+            guard !Task.isCancelled, sendPlainKey(key) else { return false }
+            try? await Task.sleep(for: delay)
+        }
+        return true
     }
 
     // MARK: - Primitives

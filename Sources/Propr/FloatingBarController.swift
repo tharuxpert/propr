@@ -15,12 +15,14 @@ enum ApplyUndo {
     /// Put a field back through Accessibility, exactly as it was before the apply.
     case restoreField(element: AXUIElement, before: AXTextWriter.FieldState)
     /// Reverse typed keystrokes in the given process, by ⌘Z or by Backspace.
-    case keystrokes(pid: pid_t, KeystrokeUndo)
+    case keystrokes(pid: pid_t, KeystrokeUndo, cursorTrailingCharacters: Int)
     /// Replace the current fallback result with the previous session result.
     case restorePreviousKeystrokes(
         pid: pid_t,
         removeCurrent: KeystrokeUndo,
+        currentCursorTrailingCharacters: Int,
         previousText: String,
+        previousCursorTrailingCharacters: Int,
         replacingExistingInput: Bool,
         appName: String
     )
@@ -31,6 +33,13 @@ struct AppliedRevision {
     let undo: ApplyUndo
     /// Exact UTF-16 range occupied by this result in an AX-backed field.
     let accessibilityRange: CFRange?
+    /// Caret position within `turn.output`, or nil to leave it at the end.
+    let cursorUTF16Offset: Int?
+
+    var cursorTrailingCharacterCount: Int {
+        CursorMarkedText(text: turn.output, cursorUTF16Offset: cursorUTF16Offset)
+            .trailingCharacterCount
+    }
 }
 
 enum TextApplyError: LocalizedError {

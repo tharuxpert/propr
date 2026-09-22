@@ -28,17 +28,25 @@ extension FloatingBarController {
         case .restoreField(let element, let before):
             AXTextWriter(element: element).restore(before)
 
-        case .keystrokes(let pid, let keystrokeUndo):
-            await reverseKeystrokeApply(pid: pid, undo: keystrokeUndo)
+        case .keystrokes(let pid, let keystrokeUndo, let cursorTrailingCharacters):
+            await reverseKeystrokeApply(
+                pid: pid,
+                undo: keystrokeUndo,
+                cursorTrailingCharacters: cursorTrailingCharacters)
 
         case .restorePreviousKeystrokes(
             let pid,
             let removeCurrent,
+            let currentCursorTrailingCharacters,
             let previousText,
+            let previousCursorTrailingCharacters,
             let replacingExistingInput,
             let appName
         ):
-            await reverseKeystrokeApply(pid: pid, undo: removeCurrent)
+            await reverseKeystrokeApply(
+                pid: pid,
+                undo: removeCurrent,
+                cursorTrailingCharacters: currentCursorTrailingCharacters)
             guard
                 await deliverFallbackText(
                     previousText,
@@ -49,6 +57,9 @@ extension FloatingBarController {
             else {
                 throw TextApplyError.cannotPaste
             }
+            await placeFallbackCaret(
+                trailingCharacters: previousCursorTrailingCharacters,
+                pid: pid)
         }
     }
 }

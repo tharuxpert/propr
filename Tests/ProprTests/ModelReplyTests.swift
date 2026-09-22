@@ -108,12 +108,84 @@ struct ModelReplyTests {
         #expect(filter.receive(" PROPR_CANNOT: not a refusal here") == " PROPR_CANNOT: not a refusal here")
     }
 
+    // MARK: - Cursor placement
+
+    @Test("The cursor marker is removed and its UTF-16 position is preserved")
+    func parsesCursorMarker() {
+        let parsed = CursorMarkedText.parse("git commit -m '<PROPR_CURSOR>'")
+
+        #expect(parsed.text == "git commit -m ''")
+        #expect(parsed.cursorUTF16Offset == "git commit -m '".utf16.count)
+        #expect(parsed.trailingCharacterCount == 1)
+    }
+
+    @Test("Text without a cursor marker is unchanged")
+    func cursorMarkerIsOptional() {
+        let parsed = CursorMarkedText.parse("git status")
+        #expect(parsed == CursorMarkedText(text: "git status", cursorUTF16Offset: nil))
+        #expect(parsed.trailingCharacterCount == 0)
+    }
+
+    @Test("An empty single-quoted slot gets a fallback cursor")
+    func infersCursorInEmptySingleQuotes() {
+        let parsed = CursorMarkedText.parse("git commit -m ''")
+
+        #expect(parsed.text == "git commit -m ''")
+        #expect(parsed.cursorUTF16Offset == "git commit -m '".utf16.count)
+        #expect(parsed.trailingCharacterCount == 1)
+    }
+
+    @Test("An empty double-quoted slot gets a fallback cursor")
+    func infersCursorInEmptyDoubleQuotes() {
+        let parsed = CursorMarkedText.parse("printf \"\"")
+
+        #expect(parsed.text == "printf \"\"")
+        #expect(parsed.cursorUTF16Offset == "printf \"".utf16.count)
+        #expect(parsed.trailingCharacterCount == 1)
+    }
+
+    @Test("A Unicode prefix uses the Accessibility API's UTF-16 coordinates")
+    func cursorOffsetUsesUTF16() {
+        let parsed = CursorMarkedText.parse("👋🏽 <PROPR_CURSOR>done")
+        #expect(parsed.cursorUTF16Offset == "👋🏽 ".utf16.count)
+        #expect(parsed.trailingCharacterCount == 4)
+    }
+
+    @Test("A cursor marker split across stream chunks is never written")
+    func streamsCursorMarker() {
+        var filter = StreamingCursorMarkerFilter()
+        var written = ""
+        for chunk in ["git commit -m '<PRO", "PR_CUR", "SOR>", "'"] {
+            written += filter.receive(chunk)
+        }
+        written += filter.finish()
+
+        #expect(written == "git commit -m ''")
+        #expect(filter.cursorUTF16Offset == "git commit -m '".utf16.count)
+    }
+
+    @Test("An incomplete cursor-marker lookalike remains literal text")
+    func streamsCursorMarkerLookalike() {
+        var filter = StreamingCursorMarkerFilter()
+        var written = filter.receive("Use <PROPR_CUR")
+        written += filter.finish()
+        #expect(written == "Use <PROPR_CUR")
+        #expect(filter.cursorUTF16Offset == nil)
+    }
+
     // MARK: - Prompts
 
     @Test("Both prompts tell the model how to say it cannot")
     func promptsCarryMarker() {
         #expect(ChatCompletionRequest.refineSystemPrompt.contains(ModelReply.cannotMarker))
         #expect(ChatCompletionRequest.generateSystemPrompt.contains(ModelReply.cannotMarker))
+    }
+
+    @Test("Both prompts explain the optional cursor marker")
+    func promptsCarryCursorMarker() {
+        #expect(ChatCompletionRequest.refineSystemPrompt.contains(CursorMarkedText.marker))
+        #expect(ChatCompletionRequest.generateSystemPrompt.contains(CursorMarkedText.marker))
+        #expect(ChatCompletionRequest.cursorInstruction.contains("at most once"))
     }
 }
 

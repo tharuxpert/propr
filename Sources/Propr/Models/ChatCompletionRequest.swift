@@ -39,6 +39,17 @@ struct ChatCompletionRequest {
         by one short sentence saying why, and nothing else.
         """
 
+    /// Lets the model identify the most useful initial insertion point without
+    /// exposing implementation details in the text ultimately written to the app.
+    static let cursorInstruction = """
+        When a command or template needs a value the user did not provide, leave that value empty \
+        instead of inventing placeholder text, and place exactly \(CursorMarkedText.marker) at the \
+        best initial caret position. An obvious fill-in slot is not missing information and must not \
+        produce \(ModelReply.cannotMarker). Propr removes the cursor marker before inserting the text. \
+        Use it at most once and omit it when the result is already complete. Example: when asked for \
+        a git commit command without a message, return git commit -m '\(CursorMarkedText.marker)'
+        """
+
     /// Used when the user has selected text, or the field's contents were readable.
     static let refineSystemPrompt = """
         You edit text that will be inserted directly into the user's document. Follow only the \
@@ -52,6 +63,8 @@ struct ChatCompletionRequest {
         for them.
 
         \(cannotInstruction)
+
+        \(cursorInstruction)
         """
 
     /// Used when there is nothing to rewrite — the user summoned the bar at an empty
@@ -65,6 +78,8 @@ struct ChatCompletionRequest {
         unless the instruction asks for them.
 
         \(cannotInstruction)
+
+        \(cursorInstruction)
         """
 
     static let followUpInstruction = """

@@ -85,6 +85,24 @@ struct AXTextWriter {
         }
     }
 
+    /// Places a collapsed selection at an absolute UTF-16 offset.
+    func placeCaret(atUTF16Offset offset: Int) throws {
+        guard let state = currentState(), offset >= 0, offset <= (state.value as NSString).length
+        else {
+            throw TextApplyError.cannotWriteAX
+        }
+
+        var range = CFRange(location: offset, length: 0)
+        guard let rangeValue = AXValueCreate(.cfRange, &range) else {
+            throw TextApplyError.cannotWriteAX
+        }
+        let status = AXUIElementSetAttributeValue(
+            element, kAXSelectedTextRangeAttribute as CFString, rangeValue)
+        guard status == .success else {
+            throw TextApplyError.cannotWriteAX
+        }
+    }
+
     /// Everything needed to put a field back as it was: its whole value, and where
     /// the selection or caret sat.
     struct FieldState {
