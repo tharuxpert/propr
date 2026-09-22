@@ -9,6 +9,7 @@ final class FloatingBarSessionState: ObservableObject {
     @Published var noticeMessage: String?
     @Published private(set) var appliedTurnCount = 0
     @Published private(set) var composerRevision = 0
+    @Published private(set) var latestAppliedText: String?
 
     var isBusy: Bool { isThinking || isTyping }
     var hasAppliedResult: Bool { appliedTurnCount > 0 }
@@ -25,11 +26,12 @@ final class FloatingBarSessionState: ObservableObject {
         isTyping = true
     }
 
-    func finishRequest(appliedTurn: Bool = false) {
+    func finishRequest(appliedText: String? = nil) {
         isThinking = false
         isTyping = false
-        if appliedTurn {
+        if let appliedText {
             appliedTurnCount += 1
+            latestAppliedText = appliedText
             composerRevision &+= 1
         }
     }
@@ -62,8 +64,9 @@ final class FloatingBarSessionState: ObservableObject {
         noticeMessage = nil
     }
 
-    func rewindAppliedTurn() {
+    func rewindAppliedTurn(to previousText: String?) {
         appliedTurnCount = max(0, appliedTurnCount - 1)
+        latestAppliedText = previousText
         errorMessage = nil
         noticeMessage = nil
         composerRevision &+= 1

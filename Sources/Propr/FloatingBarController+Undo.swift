@@ -16,7 +16,7 @@ extension FloatingBarController {
                 // Keyboard fallbacks temporarily reactivate the source app. Bring the
                 // still-open refinement session back so the next follow-up is ready.
                 panel?.makeKey()
-                sessionState.rewindAppliedTurn()
+                sessionState.rewindAppliedTurn(to: appliedRevisions.last?.turn.output)
             } catch {
                 sessionState.fail(error.localizedDescription)
             }

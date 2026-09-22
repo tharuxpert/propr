@@ -8,6 +8,7 @@ struct FloatingBarView: View {
     @ObservedObject var sessionState: FloatingBarSessionState
 
     let onRefine: (String) -> Void
+    let onStop: () -> Void
     let onClose: () -> Void
     var onUndo: (() -> Void)? = nil
 
@@ -27,14 +28,24 @@ struct FloatingBarView: View {
             : "What do you want to do with this text?"
     }
 
+    private var displayedContextText: String {
+        sessionState.latestAppliedText ?? snapshot.contextText
+    }
+
+    private var displayedCharacterCount: Int {
+        sessionState.latestAppliedText?.count ?? snapshot.characterCount
+    }
+
+    private var trimmedPrompt: String {
+        prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     private var textPreview: String {
-        let text =
-            snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : snapshot.fullText
         let maxLength = 110
-        if text.count > maxLength {
-            return String(text.prefix(maxLength)) + "…"
+        if displayedContextText.count > maxLength {
+            return String(displayedContextText.prefix(maxLength)) + "…"
         }
-        return text
+        return displayedContextText
     }
 
     var body: some View {
@@ -56,8 +67,8 @@ struct FloatingBarView: View {
 
                 Spacer()
 
-                if snapshot.characterCount > 0 {
-                    Text("\(snapshot.characterCount)")
+                if displayedCharacterCount > 0 {
+                    Text("\(displayedCharacterCount)")
                         .font(.caption.monospacedDigit())
                         .foregroundStyle(.tertiary)
                 }
@@ -109,11 +120,7 @@ struct FloatingBarView: View {
                     .font(.title3)
                     .focused($isPromptFocused)
                     .onSubmit {
-                        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmed.isEmpty && !sessionState.isBusy {
-                            sessionState.startRequest()
-                            onRefine(trimmed)
-                        }
+                        submitPrompt()
                     }
                     .onAppear {
                         // Auto-focus the input as soon as the bar appears
@@ -146,25 +153,29 @@ struct FloatingBarView: View {
                 RefineNoticeBanner(message: notice) { sessionState.clearNotice() }
             }
 
-            if sessionState.hasAppliedResult && !sessionState.isBusy {
-                HStack(spacing: 12) {
-                    if let onUndo {
-                        Button("Undo", action: onUndo)
-                            .buttonStyle(.bordered)
-                            .controlSize(.regular)
-                    }
-
-                    Spacer()
-
-                    Button("Done") {
-                        onClose()
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.regular)
+            HStack(spacing: 12) {
+                if sessionState.hasAppliedResult && !sessionState.isBusy, let onUndo {
+                    Button("Undo", action: onUndo)
+                        .buttonStyle(.bordered)
+                        .controlSize(.regular)
                 }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+
+                Spacer()
+
+                Button(sessionState.isBusy ? "Stop" : "Send") {
+                    if sessionState.isBusy {
+                        onStop()
+                    } else {
+                        submitPrompt()
+                    }
+                }
+                .buttonStyle(.borderedProminent)
+                .controlSize(.regular)
+                .tint(sessionState.isBusy ? .red : .accentColor)
+                .disabled(!sessionState.isBusy && trimmedPrompt.isEmpty)
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
         }
         .frame(width: 470)
         .modifier(DraggablePanel())
@@ -193,6 +204,12 @@ struct FloatingBarView: View {
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 12
 
+    private func submitPrompt() {
+        guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }
+        sessionState.startRequest()
+        onRefine(trimmedPrompt)
+    }
+
     private func appIcon(for pid: pid_t) -> NSImage {
         if let app = NSRunningApplication(processIdentifier: pid) {
             return app.icon ?? NSWorkspace.shared.icon(for: .applicationBundle)
@@ -213,6 +230,7 @@ struct FloatingBarView: View {
         ),
         sessionState: FloatingBarSessionState(),
         onRefine: { _ in },
+        onStop: {},
         onClose: {}
     )
     .padding(40)

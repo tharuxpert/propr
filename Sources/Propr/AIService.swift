@@ -68,7 +68,7 @@ final class AIService {
         apiKey: String
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
-            Task {
+            let requestTask = Task {
                 do {
                     let request = try ChatCompletionRequest(
                         original: original,
@@ -113,6 +113,10 @@ final class AIService {
                 } catch {
                     continuation.finish(throwing: error)
                 }
+            }
+
+            continuation.onTermination = { @Sendable _ in
+                requestTask.cancel()
             }
         }
     }

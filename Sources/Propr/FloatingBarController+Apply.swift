@@ -6,6 +6,11 @@ import AppKit
 extension FloatingBarController {
     // MARK: - Apply logic (smooth typing-style)
 
+    func stopRefine() {
+        guard sessionState.isBusy else { return }
+        refineTask?.cancel()
+    }
+
     func performRefine(context: String, snapshot: FieldSnapshot) {
         let target = capturedTargetForApply()
         let element = target.element
@@ -105,7 +110,7 @@ extension FloatingBarController {
                         self.lastApplyUndo = undo
                         pendingAXUndo = nil
                         self.panel?.makeKey()
-                        self.sessionState.finishRequest(appliedTurn: true)
+                        self.sessionState.finishRequest(appliedText: answer)
                     }
 
                 case .clipboardPaste:
@@ -123,7 +128,7 @@ extension FloatingBarController {
                         self.appliedRevisions.append(revision)
                         self.lastApplyUndo = revision.undo
                         self.panel?.makeKey()
-                        self.sessionState.finishRequest(appliedTurn: true)
+                        self.sessionState.finishRequest(appliedText: revision.turn.output)
                     }
                 }
             } catch is CancellationError {
@@ -209,6 +214,10 @@ extension FloatingBarController {
             try Task.checkCancellation()
             try await write(filter.receive(token))
         }
+
+        // Cancelling an AsyncThrowingStream can end iteration without throwing.
+        // Treat that as cancellation before an empty or partial reply is validated.
+        try Task.checkCancellation()
 
         switch filter.finish() {
         case .cannot(let reason):

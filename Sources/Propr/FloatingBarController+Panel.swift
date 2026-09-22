@@ -42,6 +42,7 @@ extension FloatingBarController {
                 onRefine: { [weak self] prompt in
                     self?.performRefine(context: prompt, snapshot: snapshot)
                 },
+                onStop: { [weak self] in self?.stopRefine() },
                 onClose: { [weak self] in self?.hide() },
                 onUndo: { [weak self] in self?.undoLastApply() }
             )
@@ -160,6 +161,7 @@ extension FloatingBarController {
                         role: nil),
                     sessionState: sessionState,
                     onRefine: { _ in },
+                    onStop: {},
                     onClose: {},
                     onUndo: nil
                 )))

@@ -152,23 +152,27 @@ struct ModelReplyPresentationTests {
 
         state.startRequest()
         state.startTyping()
-        state.finishRequest(appliedTurn: true)
+        state.finishRequest(appliedText: "First result")
 
         #expect(state.hasAppliedResult)
         #expect(state.appliedTurnCount == 1)
+        #expect(state.latestAppliedText == "First result")
         #expect(!state.isBusy)
 
         state.startRequest()
-        state.finishRequest(appliedTurn: true)
+        state.finishRequest(appliedText: "Second result")
         #expect(state.appliedTurnCount == 2)
+        #expect(state.latestAppliedText == "Second result")
 
-        state.rewindAppliedTurn()
+        state.rewindAppliedTurn(to: "First result")
         #expect(state.appliedTurnCount == 1)
         #expect(state.hasAppliedResult)
+        #expect(state.latestAppliedText == "First result")
 
-        state.rewindAppliedTurn()
+        state.rewindAppliedTurn(to: nil)
         #expect(state.appliedTurnCount == 0)
         #expect(!state.hasAppliedResult)
+        #expect(state.latestAppliedText == nil)
     }
 
     @MainActor
@@ -176,13 +180,14 @@ struct ModelReplyPresentationTests {
     func failedFollowUpKeepsHistory() {
         let state = FloatingBarSessionState()
         state.startRequest()
-        state.finishRequest(appliedTurn: true)
+        state.finishRequest(appliedText: "First result")
 
         state.startRequest()
         state.fail("Provider unavailable")
 
         #expect(state.appliedTurnCount == 1)
         #expect(state.hasAppliedResult)
+        #expect(state.latestAppliedText == "First result")
         #expect(state.errorMessage == "Provider unavailable")
         #expect(!state.isBusy)
     }
