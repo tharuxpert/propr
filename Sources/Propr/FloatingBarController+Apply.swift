@@ -11,6 +11,8 @@ extension FloatingBarController {
         let element = target.element
         let targetPID = target.pid
         let strategy = target.strategy
+        let history = appliedRevisions.map(\.turn)
+        let previousRevision = appliedRevisions.last
 
         refineTask?.cancel()
 
@@ -21,6 +23,7 @@ extension FloatingBarController {
         let generation = refineGeneration
 
         refineTask = Task { @MainActor in
+            var pendingAXUndo: ApplyUndo?
             do {
                 guard let selection = ModelStore.shared.selectedModel() else {
                     sessionState.fail("No model selected. Add one in Settings.")
@@ -47,35 +50,87 @@ extension FloatingBarController {
                     guard let element else {
                         throw TextApplyError.cannotWriteAX
                     }
-                    // Record the whole field as it is now — value and selection — not
-                    // just the text being rewritten. Undo used to write that text back
-                    // over the *entire* field, so rewriting one selected word and then
-                    // undoing left the field containing only the old word.
-                    self.lastApplyUndo = AXTextWriter(element: element).currentState()
-                        .map { .restoreField(element: element, before: $0) }
-                    try await applyWithAccessibilityStreaming(
+                    let writer = AXTextWriter(element: element)
+                    guard let before = writer.currentState() else {
+                        throw TextApplyError.cannotWriteAX
+                    }
+                    let undo = ApplyUndo.restoreField(element: element, before: before)
+                    let previousRange = previousRevision?.accessibilityRange
+                    let insertionLocation: Int
+                    if let previousRange {
+                        insertionLocation = previousRange.location
+                    } else if !hasSelection && !originalText.isEmpty {
+                        insertionLocation = 0
+                    } else {
+                        insertionLocation = before.selectedRange?.location
+                            ?? (before.value as NSString).length
+                    }
+
+                    if let answer = try await applyWithAccessibilityStreaming(
                         originalText: originalText,
                         instruction: context,
+                        history: history,
                         selection: selection,
                         apiKey: key,
                         element: element,
-                        replaceSelectionOnly: hasSelection
-                    )
+                        replaceSelectionOnly: hasSelection,
+                        previousRevision: previousRevision,
+                        onWillWrite: {
+                            pendingAXUndo = undo
+                            self.lastApplyUndo = undo
+                        }
+                    ) {
+                        let answerLength = (answer as NSString).length
+                        let finalSelection = writer.currentState()?.selectedRange
+                        let appliedLocation: Int
+                        if let finalSelection, finalSelection.length == answerLength {
+                            appliedLocation = finalSelection.location
+                        } else if let finalSelection, finalSelection.length == 0,
+                            finalSelection.location >= answerLength
+                        {
+                            appliedLocation = finalSelection.location - answerLength
+                        } else {
+                            appliedLocation = insertionLocation
+                        }
+                        let range = CFRange(
+                            location: appliedLocation,
+                            length: answerLength
+                        )
+                        let revision = AppliedRevision(
+                            turn: RefinementTurn(instruction: context, output: answer),
+                            undo: undo,
+                            accessibilityRange: range
+                        )
+                        self.appliedRevisions.append(revision)
+                        self.lastApplyUndo = undo
+                        pendingAXUndo = nil
+                        self.panel?.makeKey()
+                        self.sessionState.finishRequest(appliedTurn: true)
+                    }
 
                 case .clipboardPaste:
-                    // Recorded after typing, once we know what was actually typed.
-                    self.lastApplyUndo = nil
-                    try await applyWithClipboardPaste(
+                    if let revision = try await applyWithClipboardPaste(
                         originalText: originalText,
                         instruction: context,
+                        history: history,
                         selection: selection,
                         apiKey: key,
                         targetPID: targetPID,
                         appName: snapshot.appName,
-                        replaceExistingInput: !hasSelection && !originalText.isEmpty
-                    )
+                        previousRevision: previousRevision,
+                        replaceExistingInput: fallbackReplacesExistingInput
+                    ) {
+                        self.appliedRevisions.append(revision)
+                        self.lastApplyUndo = revision.undo
+                        self.panel?.makeKey()
+                        self.sessionState.finishRequest(appliedTurn: true)
+                    }
                 }
             } catch is CancellationError {
+                if let pendingAXUndo {
+                    try? await applyUndo(pendingAXUndo)
+                    lastApplyUndo = isVisible ? previousRevision?.undo : nil
+                }
                 // Cancelled by a newer request or by the bar closing. Only the newest
                 // request may clear the spinner, otherwise a superseded task would
                 // reset the UI out from under the request that replaced it.
@@ -84,6 +139,10 @@ extension FloatingBarController {
                     sessionState.finishRequest()
                 }
             } catch {
+                if let pendingAXUndo {
+                    try? await applyUndo(pendingAXUndo)
+                    lastApplyUndo = previousRevision?.undo
+                }
                 print("AI refinement failed: \(error)")
                 if generation == refineGeneration {
                     sessionState.fail(error.localizedDescription)
@@ -96,13 +155,17 @@ extension FloatingBarController {
     func applyWithAccessibilityStreaming(
         originalText: String,
         instruction: String,
+        history: [RefinementTurn],
         selection: ModelSelection,
         apiKey: String,
         element: AXUIElement,
-        replaceSelectionOnly: Bool
-    ) async throws {
+        replaceSelectionOnly: Bool,
+        previousRevision: AppliedRevision?,
+        onWillWrite: () -> Void
+    ) async throws -> String? {
         let writer = AXTextWriter(element: element)
         var wroteAnything = false
+        var writtenText = ""
 
         // Clears the selection (or the whole field) only once there is real text to
         // put in its place — so a reply the model marks as "cannot" leaves the user's
@@ -112,12 +175,23 @@ extension FloatingBarController {
             if !wroteAnything {
                 wroteAnything = true
                 sessionState.startTyping()
+                onWillWrite()
+                if let previousRevision,
+                    let range = previousRevision.accessibilityRange
+                {
+                    try writer.selectPreviouslyAppliedText(
+                        previousRevision.turn.output,
+                        range: range
+                    )
+                }
                 try writer.prepareForReplacement(
-                    replacingWholeValue: !replaceSelectionOnly && !originalText.isEmpty
+                    replacingWholeValue: previousRevision == nil
+                        && !replaceSelectionOnly && !originalText.isEmpty
                 )
                 try? await Task.sleep(for: .milliseconds(25))
             }
             try await writer.append(text)
+            writtenText += text
         }
 
         // Holds output back only while it could still be the "cannot" marker.
@@ -126,6 +200,7 @@ extension FloatingBarController {
         for try await token in AIService.shared.refineStream(
             original: originalText,
             instruction: instruction,
+            history: history,
             selection: selection,
             apiKey: apiKey
         ) {
@@ -140,117 +215,18 @@ extension FloatingBarController {
             // The model says it can't do this. Its reason goes in the bar; nothing was
             // written to the document.
             sessionState.showNotice(reason)
-            return
+            return nil
         case .text(let remaining):
             try await write(remaining)
         }
 
         if wroteAnything {
-            sessionState.finishRequest()
+            return writtenText
         } else {
             sessionState.fail("The model returned an empty response.")
+            return nil
         }
     }
-
-    func applyWithClipboardPaste(
-        originalText: String,
-        instruction: String,
-        selection: ModelSelection,
-        apiKey: String,
-        targetPID: pid_t,
-        appName: String,
-        replaceExistingInput: Bool
-    ) async throws {
-        let reply = try await withTimeout(seconds: 45) {
-            try await AIService.shared.refine(
-                original: originalText,
-                instruction: instruction,
-                selection: selection,
-                apiKey: apiKey
-            )
-        }
-        try Task.checkCancellation()
-
-        // A reply the model marks as "cannot" is a message for the user, not text for
-        // their document: show it in the bar and insert nothing.
-        let answer: String
-        switch ModelReply.parse(reply) {
-        case .cannot(let reason):
-            sessionState.showNotice(reason)
-            return
-        case .text(let text):
-            answer = text
-        }
-
-        guard !answer.isEmpty else {
-            sessionState.fail("The model returned an empty response.")
-            return
-        }
-
-        sessionState.startTyping()
-        let keyboard = SourceAppKeyboard(pid: targetPID)
-
-        // Terminals get a paste, not typing: a typed newline is Return in a shell and
-        // would run each line of a multi-line answer as it was typed. Terminal applies
-        // never replace anything (Propr never selects-all there), so a paste at the
-        // cursor is the whole job.
-        let inserted: String
-        let delivered: Bool
-        if TerminalApps.isTerminal(appName: appName) {
-            inserted = Self.normalizingLineEndings(answer)
-            delivered = await keyboard.paste(inserted)
-        } else {
-            inserted = answer
-            delivered = await keyboard.type(answer, replacingExistingInput: replaceExistingInput)
-        }
-        guard delivered else { throw TextApplyError.cannotPaste }
-
-        lastApplyUndo = .keystrokes(
-            pid: targetPID,
-            KeystrokeUndo.plan(
-                appName: appName, insertedText: inserted, replacedExisting: replaceExistingInput)
-        )
-        sessionState.finishRequest()
-    }
-
-    /// `\r\n` and bare `\r` become `\n`. A shell treats a carriage return as Return, and
-    /// Undo counts what was inserted — so the pasted text must contain exactly one
-    /// character per line break, the same one the Backspace count assumes.
-    static func normalizingLineEndings(_ text: String) -> String {
-        text.replacingOccurrences(of: "\r\n", with: "\n")
-            .replacingOccurrences(of: "\r", with: "\n")
-    }
-
-    func undoLastApply() {
-        guard let undo = lastApplyUndo else {
-            hide()
-            return
-        }
-        lastApplyUndo = nil
-
-        switch undo {
-        case .restoreField(let element, let before):
-            AXTextWriter(element: element).restore(before)
-            // Hide after a moment so the user sees the restoration happen.
-            Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(250))
-                hide()
-            }
-
-        case .keystrokes(let pid, .undoShortcut):
-            SourceAppKeyboard(pid: pid).sendUndo()
-            hide()
-
-        case .keystrokes(let pid, .deleteTyped(let count)):
-            // Get the bar out of the way first; deleting reactivates the source app
-            // and the user watches their prompt return to how it was.
-            hide()
-            Task { @MainActor in
-                await SourceAppKeyboard(pid: pid).deleteBackward(count)
-            }
-        }
-    }
-
 
     func withTimeout<T: Sendable>(
         seconds: Double,

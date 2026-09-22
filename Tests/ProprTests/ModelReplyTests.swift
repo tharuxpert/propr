@@ -128,7 +128,7 @@ struct ModelReplyPresentationTests {
 
         #expect(state.noticeMessage == "The request needs more information.")
         #expect(state.errorMessage == nil)
-        #expect(!state.hasSubmitted)
+        #expect(!state.hasAppliedResult)
         #expect(!state.isThinking)
         #expect(!state.isTyping)
     }
@@ -143,5 +143,47 @@ struct ModelReplyPresentationTests {
 
         #expect(state.noticeMessage == nil)
         #expect(state.isThinking)
+    }
+
+    @MainActor
+    @Test("Completed turns keep the composer available and can be rewound")
+    func completedTurnsAndUndo() {
+        let state = FloatingBarSessionState()
+
+        state.startRequest()
+        state.startTyping()
+        state.finishRequest(appliedTurn: true)
+
+        #expect(state.hasAppliedResult)
+        #expect(state.appliedTurnCount == 1)
+        #expect(!state.isBusy)
+
+        state.startRequest()
+        state.finishRequest(appliedTurn: true)
+        #expect(state.appliedTurnCount == 2)
+
+        state.rewindAppliedTurn()
+        #expect(state.appliedTurnCount == 1)
+        #expect(state.hasAppliedResult)
+
+        state.rewindAppliedTurn()
+        #expect(state.appliedTurnCount == 0)
+        #expect(!state.hasAppliedResult)
+    }
+
+    @MainActor
+    @Test("A failed follow-up keeps the earlier successful turn undoable")
+    func failedFollowUpKeepsHistory() {
+        let state = FloatingBarSessionState()
+        state.startRequest()
+        state.finishRequest(appliedTurn: true)
+
+        state.startRequest()
+        state.fail("Provider unavailable")
+
+        #expect(state.appliedTurnCount == 1)
+        #expect(state.hasAppliedResult)
+        #expect(state.errorMessage == "Provider unavailable")
+        #expect(!state.isBusy)
     }
 }

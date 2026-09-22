@@ -18,7 +18,11 @@ struct FloatingBarView: View {
     /// points at nothing. With an empty context the bar writes at the cursor instead,
     /// so the prompt asks for that.
     private var promptPlaceholder: String {
-        snapshot.contextText.isEmpty
+        if sessionState.hasAppliedResult {
+            return "What should change next?"
+        }
+
+        return snapshot.contextText.isEmpty
             ? "What do you want to write?"
             : "What do you want to do with this text?"
     }
@@ -88,31 +92,45 @@ struct FloatingBarView: View {
                     .opacity(0.2)
             }
 
-            // Main instruction input
-            TextField(promptPlaceholder, text: $prompt)
-                .textFieldStyle(.plain)
-                .font(.title3)
+            // Main instruction input. Once a result has been applied, make the
+            // ongoing conversation explicit instead of presenting a fresh composer.
+            VStack(alignment: .leading, spacing: 6) {
+                if sessionState.hasAppliedResult {
+                    HStack(spacing: 5) {
+                        Image(systemName: "arrow.turn.down.right")
+                        Text("Follow-up")
+                    }
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tint)
+                }
+
+                TextField(promptPlaceholder, text: $prompt)
+                    .textFieldStyle(.plain)
+                    .font(.title3)
+                    .focused($isPromptFocused)
+                    .onSubmit {
+                        let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty && !sessionState.isBusy {
+                            sessionState.startRequest()
+                            onRefine(trimmed)
+                        }
+                    }
+                    .onAppear {
+                        // Auto-focus the input as soon as the bar appears
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                            isPromptFocused = true
+                        }
+                    }
+                    .onChange(of: sessionState.composerRevision) {
+                        prompt = ""
+                        DispatchQueue.main.async {
+                            isPromptFocused = true
+                        }
+                    }
+                    .disabled(sessionState.isBusy)
+            }
                 .padding(.horizontal, 14)
                 .padding(.vertical, 13)
-                .focused($isPromptFocused)
-                .onSubmit {
-                    let trimmed = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        sessionState.startRequest()
-                        onRefine(trimmed)
-                    }
-                }
-                .onAppear {
-                    // Auto-focus the input as soon as the bar appears
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        isPromptFocused = true
-                    }
-                }
-                .disabled(
-                    sessionState.hasSubmitted
-                        && sessionState.errorMessage == nil
-                        && sessionState.noticeMessage == nil
-                )
 
             if sessionState.isThinking {
                 RefineStatusRow(label: "Thinking…")
@@ -128,10 +146,7 @@ struct FloatingBarView: View {
                 RefineNoticeBanner(message: notice) { sessionState.clearNotice() }
             }
 
-            if sessionState.hasSubmitted && !sessionState.isThinking && !sessionState.isTyping
-                && sessionState.errorMessage == nil
-                && sessionState.noticeMessage == nil
-            {
+            if sessionState.hasAppliedResult && !sessionState.isBusy {
                 HStack(spacing: 12) {
                     if let onUndo {
                         Button("Undo", action: onUndo)
@@ -146,7 +161,6 @@ struct FloatingBarView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.regular)
-                    .keyboardShortcut(.defaultAction)
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

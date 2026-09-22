@@ -33,6 +33,38 @@ struct AXTextWriter {
         }
     }
 
+    /// Selects exactly the text Propr wrote on the previous turn. Refuses to move the
+    /// selection when the field no longer matches, so a follow-up cannot overwrite a
+    /// user's intervening edit or text whose range shifted behind Propr's back.
+    func selectPreviouslyAppliedText(_ expected: String, range: CFRange) throws {
+        var valueRef: AnyObject?
+        guard
+            AXUIElementCopyAttributeValue(element, kAXValueAttribute as CFString, &valueRef)
+                == .success,
+            let value = valueRef as? String
+        else {
+            throw TextApplyError.cannotWriteAX
+        }
+
+        let nsValue = value as NSString
+        let nsRange = NSRange(location: range.location, length: range.length)
+        guard range.location >= 0, range.length >= 0, NSMaxRange(nsRange) <= nsValue.length,
+            nsValue.substring(with: nsRange) == expected
+        else {
+            throw TextApplyError.sourceChanged
+        }
+
+        var mutableRange = range
+        guard let rangeValue = AXValueCreate(.cfRange, &mutableRange) else {
+            throw TextApplyError.cannotWriteAX
+        }
+        let status = AXUIElementSetAttributeValue(
+            element, kAXSelectedTextRangeAttribute as CFString, rangeValue)
+        guard status == .success else {
+            throw TextApplyError.cannotWriteAX
+        }
+    }
+
     /// Appends a streamed token.
     ///
     /// Written whole rather than character by character with an artificial delay.

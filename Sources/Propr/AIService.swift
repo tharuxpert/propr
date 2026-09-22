@@ -26,12 +26,14 @@ final class AIService {
     func refine(
         original: String,
         instruction: String,
+        history: [RefinementTurn] = [],
         selection: ModelSelection,
         apiKey: String
     ) async throws -> String {
         let request = try ChatCompletionRequest(
             original: original,
             instruction: instruction,
+            history: history,
             selection: selection,
             apiKey: apiKey,
             stream: false
@@ -61,6 +63,7 @@ final class AIService {
     func refineStream(
         original: String,
         instruction: String,
+        history: [RefinementTurn] = [],
         selection: ModelSelection,
         apiKey: String
     ) -> AsyncThrowingStream<String, Error> {
@@ -70,6 +73,7 @@ final class AIService {
                     let request = try ChatCompletionRequest(
                         original: original,
                         instruction: instruction,
+                        history: history,
                         selection: selection,
                         apiKey: apiKey,
                         stream: true

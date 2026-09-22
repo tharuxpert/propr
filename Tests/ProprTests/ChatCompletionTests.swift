@@ -23,6 +23,7 @@ struct ChatCompletionTests {
     private func request(
         original: String = "hello",
         instruction: String = "make it formal",
+        history: [RefinementTurn] = [],
         baseURL: String = "https://api.example.com/v1",
         apiKey: String = "sk-test",
         stream: Bool = false
@@ -30,6 +31,7 @@ struct ChatCompletionTests {
         ChatCompletionRequest(
             original: original,
             instruction: instruction,
+            history: history,
             selection: selection(baseURL: baseURL),
             apiKey: apiKey,
             stream: stream
@@ -178,6 +180,34 @@ struct ChatCompletionTests {
                 list open ports
                 </instruction>
                 """)
+    }
+
+    @Test("Follow-ups preserve prior user and assistant turns in role order")
+    func followUpHistory() throws {
+        let followUp = request(
+            original: "write a poem",
+            instruction: "make it funny",
+            history: [
+                RefinementTurn(instruction: "do it", output: "A quiet moon above the hill"),
+                RefinementTurn(
+                    instruction: "make it two lines",
+                    output: "A quiet moon above the hill\nIt watches while the town lies still"
+                ),
+            ]
+        )
+
+        let messages = followUp.messages
+        #expect(messages.map { $0["role"] } == [
+            "system", "user", "assistant", "user", "assistant", "user",
+        ])
+        #expect(messages[1]["content"]?.contains("write a poem") == true)
+        #expect(messages[0]["content"]?.contains("multi-turn editing session") == true)
+        #expect(messages[1]["content"]?.contains("do it") == true)
+        #expect(messages[2]["content"] == "A quiet moon above the hill")
+        #expect(messages[3]["content"]?.contains("make it two lines") == true)
+        #expect(messages[4]["content"]?.contains("town lies still") == true)
+        #expect(messages[5]["content"]?.contains("make it funny") == true)
+        #expect(messages[5]["content"]?.contains("source_text") == false)
     }
 
     // MARK: - Non-streaming response

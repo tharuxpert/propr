@@ -1,5 +1,11 @@
 import Foundation
 
+/// One completed exchange in the current floating-bar session.
+struct RefinementTurn: Equatable {
+    let instruction: String
+    let output: String
+}
+
 /// Builds the OpenAI-compatible chat-completion request Propr sends to a provider.
 ///
 /// The streaming and non-streaming calls previously each assembled their own copy of
@@ -12,6 +18,7 @@ import Foundation
 struct ChatCompletionRequest {
     let original: String
     let instruction: String
+    var history: [RefinementTurn] = []
     let selection: ModelSelection
     let apiKey: String
     let stream: Bool
@@ -60,8 +67,16 @@ struct ChatCompletionRequest {
         \(cannotInstruction)
         """
 
+    static let followUpInstruction = """
+        This may be a multi-turn editing session. On a follow-up turn, apply the newest instruction \
+        to your most recent answer. Use earlier turns as context, but return the complete updated text \
+        that should replace your previous answer.
+        """
+
     var systemPrompt: String {
-        hasOriginalText ? Self.refineSystemPrompt : Self.generateSystemPrompt
+        let base = hasOriginalText ? Self.refineSystemPrompt : Self.generateSystemPrompt
+        guard !history.isEmpty else { return base }
+        return base + "\n\n" + Self.followUpInstruction
     }
 
     var userPrompt: String {
@@ -87,10 +102,7 @@ struct ChatCompletionRequest {
     var payload: [String: Any] {
         var payload: [String: Any] = [
             "model": selection.modelName,
-            "messages": [
-                ["role": "system", "content": systemPrompt],
-                ["role": "user", "content": userPrompt],
-            ],
+            "messages": messages,
             "temperature": 0.4,
             "max_tokens": 2048,
         ]
@@ -98,6 +110,57 @@ struct ChatCompletionRequest {
             payload["stream"] = true
         }
         return payload
+    }
+
+    /// The first turn carries the original source. Later turns use real chat roles,
+    /// so prior output remains assistant output rather than becoming untrusted source
+    /// text pasted into a new prompt.
+    var messages: [[String: String]] {
+        var result = [["role": "system", "content": systemPrompt]]
+
+        if let first = history.first {
+            result.append([
+                "role": "user",
+                "content": Self.userPrompt(original: original, instruction: first.instruction),
+            ])
+            result.append(["role": "assistant", "content": first.output])
+
+            for turn in history.dropFirst() {
+                result.append([
+                    "role": "user",
+                    "content": Self.instructionPrompt(turn.instruction),
+                ])
+                result.append(["role": "assistant", "content": turn.output])
+            }
+            result.append(["role": "user", "content": Self.instructionPrompt(instruction)])
+        } else {
+            result.append(["role": "user", "content": userPrompt])
+        }
+
+        return result
+    }
+
+    private static func userPrompt(original: String, instruction: String) -> String {
+        guard !original.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return instructionPrompt(instruction)
+        }
+        return """
+            <instruction>
+            \(instruction)
+            </instruction>
+
+            <source_text>
+            \(original)
+            </source_text>
+            """
+    }
+
+    private static func instructionPrompt(_ instruction: String) -> String {
+        """
+        <instruction>
+        \(instruction)
+        </instruction>
+        """
     }
 
     /// - Throws: `AIError.invalidEndpoint` when the selection's base URL is not usable.

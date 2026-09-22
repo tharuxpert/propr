@@ -20,11 +20,15 @@ extension FloatingBarController {
         // Fresh ID so SwiftUI recreates the view and resets all @State (prompt, hasApplied, etc.)
         summonID = UUID()
         sessionState = FloatingBarSessionState()
+        appliedRevisions = []
+        lastApplyUndo = nil
 
         applyTargetElement = captureCurrentFocusedElement()
         applyTargetPID = resolveTargetPID(from: applyTargetElement, fallback: snapshot.pid)
         applyStrategy = strategy(
             for: applyTargetElement, role: snapshot.role, appName: snapshot.appName)
+        let selectedText = snapshot.selectedText?.isEmpty == false ? snapshot.selectedText! : ""
+        fallbackReplacesExistingInput = selectedText.isEmpty && !snapshot.fullText.isEmpty
         logTarget(snapshot: snapshot)
         currentSnapshot = snapshot
 

@@ -16,11 +16,27 @@ enum ApplyUndo {
     case restoreField(element: AXUIElement, before: AXTextWriter.FieldState)
     /// Reverse typed keystrokes in the given process, by ⌘Z or by Backspace.
     case keystrokes(pid: pid_t, KeystrokeUndo)
+    /// Replace the current fallback result with the previous session result.
+    case restorePreviousKeystrokes(
+        pid: pid_t,
+        removeCurrent: KeystrokeUndo,
+        previousText: String,
+        replacingExistingInput: Bool,
+        appName: String
+    )
+}
+
+struct AppliedRevision {
+    let turn: RefinementTurn
+    let undo: ApplyUndo
+    /// Exact UTF-16 range occupied by this result in an AX-backed field.
+    let accessibilityRange: CFRange?
 }
 
 enum TextApplyError: LocalizedError {
     case cannotWriteAX
     case cannotPaste
+    case sourceChanged
     case requestTimedOut
 
     var errorDescription: String? {
@@ -29,6 +45,8 @@ enum TextApplyError: LocalizedError {
             return "Could not update the focused text field directly."
         case .cannotPaste:
             return "Could not paste or type the generated text into the source app."
+        case .sourceChanged:
+            return "The source text changed after Propr wrote it. Start a new session to avoid replacing the wrong text."
         case .requestTimedOut:
             return "The model request timed out. Try again or choose a faster model."
         }
@@ -66,8 +84,16 @@ final class FloatingBarController {
     /// Snapshot the bar is currently showing for (drives the header + preview).
     var currentSnapshot: FieldSnapshot?
 
-    /// How to reverse the last apply, or nil when there is nothing to undo.
+    /// How to reverse an incomplete streamed apply, or the latest completed apply.
     var lastApplyUndo: ApplyUndo?
+
+    /// Completed turns in this summon. This is both the model's chat history and the
+    /// document revision stack used by turn-by-turn Undo.
+    var appliedRevisions: [AppliedRevision] = []
+
+    /// Whether fallback writes replace the original whole field. Follow-ups unwind
+    /// to that same base state before inserting their next complete revision.
+    var fallbackReplacesExistingInput = false
 
     // Used to force SwiftUI view recreation on every summon (resets @State)
     var summonID = UUID()
@@ -148,6 +174,8 @@ final class FloatingBarController {
 
         // Nothing to undo once the bar is dismissed.
         lastApplyUndo = nil
+        appliedRevisions = []
+        fallbackReplacesExistingInput = false
     }
 
 }
