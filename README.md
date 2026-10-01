@@ -10,7 +10,7 @@ Propr lives in your menu bar. Double-tap the **Command** key in any app to refin
 - Summon the refinement bar with a double-tap of the Command key
 - Reads the focused text field (or your current selection) via the Accessibility API
 - Look up a selection with Fn or Force Click in a separate, read-only search panel
-- Edit the search query and switch between Google, DuckDuckGo, and your configured AI model
+- Edit the search query and switch between Google and your configured AI model
 - Beautiful first-run onboarding with proper permission handling
 - Floating refinement panel with editable context
 - Direct "Open System Settings" flow for Accessibility permission
@@ -55,7 +55,7 @@ After launching, Propr appears as an icon in the menu bar. It stays out of the w
 3. Type what you want done — "make this more concise", "fix the grammar", "rewrite as a polite reply" — and press Return.
 4. The result is typed back into the field you came from. You can send follow-up instructions or use **Undo** in the bar.
 
-For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google, DuckDuckGo, or AI. AI gives a brief meaning for a word or phrase and mentions a distinct common slang meaning when relevant. If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
+For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google or AI. AI gives a brief meaning for a word or phrase and mentions a distinct common slang meaning when relevant. If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
 
 Lookup first reads the current selection through Accessibility or the same temporary clipboard-copy fallback used by the refinement bar. If a Force Click has no selected text, it reads the word at the pressed position through Accessibility or a local screenshot. Only that last fallback requires Screen Recording permission; the search panel offers an explicit button to request it. The clipboard is restored, screenshots are not sent to a server, and lookup never selects and copies an entire field.
 
@@ -65,7 +65,7 @@ API keys are stored in the **macOS Keychain**, under the service `com.tharuxpert
 
 Everything else — your endpoints, model list and current selection — lives in plaintext JSON at `~/Library/Application Support/Propr/models.json`. That file contains no secrets.
 
-Refinement text and your API key go directly from your Mac to the AI endpoint you configured. In the search panel, a web lookup sends the current query to the selected web provider (Google or DuckDuckGo). Choosing AI sends the current query to your configured AI endpoint using the selected model and its Keychain-stored key. Propr has no backend.
+Refinement text and your API key go directly from your Mac to the AI endpoint you configured. In the search panel, a web lookup sends the current query to Google. Choosing AI sends the current query to your configured AI endpoint using the selected model and its Keychain-stored key. Propr has no backend.
 
 ## Developing
 

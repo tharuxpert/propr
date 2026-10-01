@@ -3,28 +3,13 @@ import Foundation
 /// Web destinations available in the floating lookup panel.
 enum SearchProvider: String, CaseIterable, Sendable {
     case google
-    case duckDuckGo
     case ai
 
     var title: String {
         switch self {
         case .google: "Google"
-        case .duckDuckGo: "DuckDuckGo"
         case .ai: "AI"
         }
-    }
-
-    /// Scry's provider-specific scripts. Google is left unstyled; the consent
-    /// helper and DuckDuckGo cleanup are the only page modifications.
-    var injectedCSS: String? {
-        guard self == .duckDuckGo else { return nil }
-        return """
-            /* Clean up DuckDuckGo for embedded display */
-            .header__form, .header--aside, .js-search-filters,
-            .nav-header { display: none !important; }
-            body { padding-top: 0 !important; }
-            .results--main { margin-top: 8px !important; }
-            """
     }
 
     var injectedJS: String? {
@@ -58,10 +43,6 @@ enum SearchProvider: String, CaseIterable, Sendable {
                 URLQueryItem(name: "q", value: query),
                 URLQueryItem(name: "igu", value: "1")
             ]
-        case .duckDuckGo:
-            components.host = "duckduckgo.com"
-            components.path = "/"
-            components.queryItems = [URLQueryItem(name: "q", value: query)]
         case .ai:
             return nil
         }

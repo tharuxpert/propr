@@ -6,31 +6,20 @@ import WebKit
 @testable import Propr
 
 struct SearchPanelTests {
-    @Test("Only Google, DuckDuckGo, and AI appear in lookup")
+    @Test("Only Google and AI appear in lookup")
     func availableProviders() {
-        #expect(SearchProvider.allCases == [.google, .duckDuckGo, .ai])
+        #expect(SearchProvider.allCases == [.google, .ai])
     }
 
-    @Test(
-        "Each web provider searches the complete edited phrase",
-        arguments: SearchProvider.allCases.filter { $0 != .ai }
-    )
-    func providerSearchURL(provider: SearchProvider) {
+    @Test("Google searches the complete edited phrase")
+    func providerSearchURL() {
         let query = "rejection & Swift/Unicode 👋"
-        let url = provider.searchURL(for: query)
+        let url = SearchProvider.google.searchURL(for: query)
         let components = url.flatMap { URLComponents(url: $0, resolvingAgainstBaseURL: false) }
 
         #expect(url?.scheme == "https")
+        #expect(url?.host == "www.google.com")
         #expect(components?.queryItems?.contains { $0.value == query } == true)
-
-        switch provider {
-        case .google:
-            #expect(url?.host == "www.google.com")
-        case .duckDuckGo:
-            #expect(url?.host == "duckduckgo.com")
-        case .ai:
-            Issue.record("AI should not be treated as a web provider")
-        }
     }
 
     @Test("Empty queries do not navigate", arguments: SearchProvider.allCases)
@@ -49,10 +38,6 @@ struct SearchPanelTests {
         #expect(google.userContentController.userScripts[0].injectionTime == .atDocumentEnd)
         #expect(google.userContentController.userScripts[0].source.contains("dismissConsent"))
 
-        let duckDuckGo = SearchWebPresentation.makeConfiguration(for: .duckDuckGo)
-        #expect(duckDuckGo.userContentController.userScripts.count == 1)
-        #expect(duckDuckGo.userContentController.userScripts[0].injectionTime == .atDocumentStart)
-        #expect(duckDuckGo.userContentController.userScripts[0].source.contains(".results--main"))
         #expect(SearchWebPresentation.makeConfiguration(for: .ai)
             .userContentController.userScripts.isEmpty)
     }

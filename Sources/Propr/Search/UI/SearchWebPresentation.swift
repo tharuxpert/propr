@@ -16,18 +16,6 @@ enum SearchWebPresentation {
         preferences.allowsContentJavaScript = true
         configuration.defaultWebpagePreferences = preferences
 
-        if let css = provider.injectedCSS {
-            let script = """
-                (function() {
-                  var style = document.createElement('style');
-                  style.textContent = `\(css)`;
-                  (document.head || document.documentElement).appendChild(style);
-                })();
-                """
-            configuration.userContentController.addUserScript(WKUserScript(
-                source: script, injectionTime: .atDocumentStart, forMainFrameOnly: true
-            ))
-        }
         if let script = provider.injectedJS {
             configuration.userContentController.addUserScript(WKUserScript(
                 source: script, injectionTime: .atDocumentEnd, forMainFrameOnly: true
