@@ -80,6 +80,16 @@ struct FocusedFieldDetector {
     /// The selected text, read directly when the element offers it, otherwise cut out
     /// of the value using the selected range.
     private func selectedText(of element: AXUIElement, within fullText: String) -> String? {
+        // Some apps expose the selection itself without a selected-text range.
+        // Read it first so lookup can use those apps without copying the field.
+        var selectedRef: AnyObject?
+        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectedRef)
+            == .success,
+            let selected = selectedRef as? String, !selected.isEmpty
+        {
+            return selected
+        }
+
         var rangeRef: AnyObject?
         guard
             AXUIElementCopyAttributeValue(
@@ -92,14 +102,6 @@ struct FocusedFieldDetector {
 
         var cfRange = CFRange()
         guard AXValueGetValue(axRange, .cfRange, &cfRange) else { return nil }
-
-        var selectedRef: AnyObject?
-        if AXUIElementCopyAttributeValue(element, kAXSelectedTextAttribute as CFString, &selectedRef)
-            == .success,
-            let selected = selectedRef as? String, !selected.isEmpty
-        {
-            return selected
-        }
 
         let range = NSRange(location: cfRange.location, length: cfRange.length)
         let nsText = fullText as NSString

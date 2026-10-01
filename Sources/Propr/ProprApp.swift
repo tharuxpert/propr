@@ -41,6 +41,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let accessibility = AccessibilityManager.shared
     // Eagerly created so menu/hotkey summons can reuse one controller for the app lifetime.
     private let floatingBarController: FloatingBarController
+    private let searchPanelController: SearchPanelController
+    private var searchTriggerService: SearchTriggerService?
+    private var searchGeneration = 0
 
     // Double-tap Command key detection for quick summon
     private var lastCommandPressTime: Date?
@@ -61,6 +64,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     override init() {
         floatingBarController = FloatingBarController()
+        searchPanelController = SearchPanelController()
         super.init()
     }
 
@@ -73,6 +77,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Double-Command key summon
         setupDoubleCommandHotkey()
+        setupSearchLookupTriggers()
 
         // Reliable way for menu bar items (and anything) to summon the bar
         NotificationCenter.default.addObserver(
@@ -105,6 +110,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     func applicationWillTerminate(_ notification: Notification) {
+        searchTriggerService?.stop()
+        searchTriggerService = nil
         if let commandKeyMonitor {
             NSEvent.removeMonitor(commandKeyMonitor)
         }
@@ -176,7 +183,49 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     @MainActor
     func summonFloatingBar() {
+        searchGeneration += 1
+        searchPanelController.hide()
         floatingBarController.summonForCurrentFocus()
     }
-}
 
+    private func setupSearchLookupTriggers() {
+        searchPanelController.onDismiss = { [weak self] in
+            self?.searchGeneration += 1
+            SelectionCaptureService.shared.clearPreClickSelection()
+        }
+        let triggers = SearchTriggerService(
+            onFn: { [weak self] in
+                guard let self else { return }
+                SelectionCaptureService.shared.clearPreClickSelection()
+                let pid = NSWorkspace.shared.frontmostApplication?.processIdentifier ?? 0
+                self.summonSearch(pid: pid, gestureID: nil, near: nil)
+            },
+            onMouseDown: { gestureID, pid, point in
+                SelectionCaptureService.shared.recordMouseDown(
+                    gestureID: gestureID, pid: pid, at: point)
+            },
+            onForceClick: { [weak self] gestureID, pid, point in
+                self?.summonSearch(pid: pid, gestureID: gestureID, near: point)
+            }
+        )
+        searchTriggerService = triggers
+        triggers.start()
+    }
+
+    private func summonSearch(pid: pid_t, gestureID: UUID?, near point: CGPoint?) {
+        guard pid != 0, pid != getpid() else { return }
+        searchGeneration += 1
+        let generation = searchGeneration
+
+        Task { @MainActor [weak self] in
+            let query = await SelectionCaptureService.shared.lookupSelection(
+                pid: pid, gestureID: gestureID, at: point) ?? ""
+            guard let self, self.searchGeneration == generation,
+                NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+            else { return }
+
+            self.floatingBarController.hide()
+            self.searchPanelController.show(query: query, near: point)
+        }
+    }
+}

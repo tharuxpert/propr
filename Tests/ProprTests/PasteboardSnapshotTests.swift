@@ -113,4 +113,20 @@ struct PasteboardSnapshotTests {
         #expect(pb.string(forType: .string) == "original")
         pb.releaseGlobally()
     }
+
+    @Test("A newer user copy is not overwritten by an older capture")
+    func preservesConcurrentCopy() {
+        let pb = makePasteboard()
+        pb.setString("original", forType: .string)
+        let snapshot = PasteboardSnapshot(of: pb)
+
+        pb.setString("copied by Propr", forType: .string)
+        let expectedChangeCount = pb.changeCount
+        pb.setString("new user copy", forType: .string)
+
+        #expect(snapshot.restore(
+            to: pb, ifChangeCount: expectedChangeCount, ifString: "copied by Propr") == false)
+        #expect(pb.string(forType: .string) == "new user copy")
+        pb.releaseGlobally()
+    }
 }

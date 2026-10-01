@@ -1,14 +1,16 @@
 # Propr
 
-Lightweight native macOS menu bar app for instant AI text refinement anywhere.
+Lightweight native macOS menu bar app for AI text refinement and quick lookup anywhere.
 
-Propr lives in your menu bar. Double-tap the **Command** key in any app and a floating bar appears, letting you refine or rewrite the text you're working on with AI. The improved version is applied back to the original field with a smooth, character-by-character typing animation.
+Propr lives in your menu bar. Double-tap the **Command** key in any app to refine or rewrite text with AI, then apply it back to the original field. Tap **Fn** or use a genuine trackpad **Force Click** to look up selected text in a separate floating search panel without changing the source text.
 
 ## Features
 
 - Menu bar only (no Dock icon)
-- Summon from anywhere with a double-tap of the Command key
+- Summon the refinement bar with a double-tap of the Command key
 - Reads the focused text field (or your current selection) via the Accessibility API
+- Look up a selection with Fn or Force Click in a separate, read-only search panel
+- Edit the search query and switch between Google, DuckDuckGo, and your configured AI model
 - Beautiful first-run onboarding with proper permission handling
 - Floating refinement panel with editable context
 - Direct "Open System Settings" flow for Accessibility permission
@@ -51,9 +53,11 @@ After launching, Propr appears as an icon in the menu bar. It stays out of the w
 1. Put the cursor in any text field, or select some text.
 2. **Double-tap the Command key.** The bar appears in the centre of the screen. (You can also use *Show Floating Bar* from the menu bar icon.)
 3. Type what you want done — "make this more concise", "fix the grammar", "rewrite as a polite reply" — and press Return.
-4. The result is typed back into the field you came from. Use **Undo** in the bar if you don't like it.
+4. The result is typed back into the field you came from. You can send follow-up instructions or use **Undo** in the bar.
 
-Propr only reads your text at the moment you summon it. It does not watch what you type.
+For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google, DuckDuckGo, or AI. If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
+
+Lookup uses the current selection or, for Force Click, text at the pressed position when available. It does not select and copy an entire field as a fallback. Screenshot capture is not currently connected to search.
 
 ## Where your API keys are stored
 
@@ -61,7 +65,7 @@ API keys are stored in the **macOS Keychain**, under the service `com.tharuxpert
 
 Everything else — your endpoints, model list and current selection — lives in plaintext JSON at `~/Library/Application Support/Propr/models.json`. That file contains no secrets.
 
-Your text and keys go directly from your Mac to whichever provider you configured. Propr has no backend and sends nothing anywhere else.
+Refinement text and your API key go directly from your Mac to the AI endpoint you configured. In the search panel, a web lookup sends the current query to the selected web provider (Google or DuckDuckGo). Choosing AI sends the current query to your configured AI endpoint using the selected model and its Keychain-stored key. Propr has no backend.
 
 ## Developing
 

@@ -7,69 +7,6 @@ import AppKit
 extension FloatingBarController {
     // MARK: - Show / Position
 
-    /// Minimal source identity for apps that expose no focused AX element. This is
-    /// created while the source app is still frontmost, before Propr's panel can take
-    /// focus, and then enriched by `prepareSnapshotForSummon` using keyboard copy.
-    func snapshotForFrontmostApp() -> FieldSnapshot {
-        let pid = resolveTargetPID(from: nil, fallback: 0)
-        let appName = NSRunningApplication(processIdentifier: pid)?.localizedName ?? "Unknown App"
-        return FieldSnapshot(
-            appName: appName,
-            pid: pid,
-            fullText: "",
-            selectedText: nil,
-            role: nil
-        )
-    }
-
-    func prepareSnapshotForSummon(_ snapshot: FieldSnapshot) async -> FieldSnapshot {
-        let element = captureCurrentFocusedElement()
-        let pid = targetPID(from: element, fallback: snapshot.pid)
-        let strategy = strategy(for: element, role: snapshot.role, appName: snapshot.appName)
-
-        guard strategy == .clipboardPaste, pid != 0 else {
-            return snapshot
-        }
-
-        if snapshot.selectedText?.isEmpty == false {
-            return snapshot
-        }
-
-        // Context in priority order:
-        //   1. the user's own selection (⌘C alone, inert when nothing is selected)
-        //   2. the whole field (⌘A then ⌘C)
-        //   3. nothing — the bar still opens, ready to generate at the cursor
-        if let selectedText = await SourceAppKeyboard(pid: pid).copySelectedText() {
-            print(
-                "[Propr Bar] summon fallback: captured selected text (\(selectedText.count) chars)")
-            return FieldSnapshot(
-                appName: snapshot.appName,
-                pid: snapshot.pid,
-                fullText: "",
-                selectedText: selectedText,
-                role: snapshot.role
-            )
-        }
-
-        // Case 2 is skipped in terminals: ⌘A there selects the scrollback, not the
-        // prompt, and would hand the model the user's command history as context.
-        if TerminalApps.allowsSelectAllCapture(appName: snapshot.appName),
-            let currentInput = await SourceAppKeyboard(pid: pid).copyCurrentInput()
-        {
-            print(
-                "[Propr Bar] summon fallback: captured current input (\(currentInput.count) chars)")
-            return FieldSnapshot(
-                appName: snapshot.appName,
-                pid: snapshot.pid,
-                fullText: currentInput,
-                selectedText: nil,
-                role: snapshot.role
-            )
-        }
-
-        return snapshot
-    }
-
     // MARK: - AX Target Capture
 
     func captureCurrentFocusedElement() -> AXUIElement? {
