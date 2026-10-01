@@ -1,3 +1,4 @@
+import AppKit
 import Foundation
 import Testing
 import WebKit
@@ -77,7 +78,42 @@ struct SearchPanelTests {
         #expect(payload["model"] as? String == "test-model")
         #expect(payload["temperature"] as? Double == 0.4)
         #expect(messages[0]["content"] as? String == AILookupRequest.systemPrompt)
-        #expect(messages[1]["content"] as? String == "the edited query")
+        #expect(messages[1]["content"] as? String == "What does the edited query mean?")
+        #expect(payload["max_tokens"] as? Int == 160)
+        #expect(AILookupRequest.systemPrompt.contains("slang meaning"))
+    }
+
+    @Test("Direct questions stay direct while words become meaning questions")
+    func aiLookupPrompt() {
+        #expect(AILookupRequest.userPrompt(for: "integration") == "What does integration mean?")
+        #expect(AILookupRequest.userPrompt(for: "What is integration?") == "What is integration?")
+        #expect(AILookupRequest.userPrompt(for: "Explain integration") == "Explain integration")
+    }
+
+    @MainActor
+    @Test("AI answer renders Markdown and reflows tables for the narrow panel")
+    func aiAnswerFormatting() {
+        let answer = """
+            **Integration** connects separate parts.
+
+            | Term | Meaning |
+            | --- | --- |
+            | *Slang* | Social inclusion |
+
+            See [more](https://example.com).
+            """
+        let rendered = SearchAnswerFormatter.render(answer)
+        #expect(rendered.string.contains("Integration connects separate parts."))
+        #expect(rendered.string.contains("Slang\nMeaning: Social inclusion"))
+        #expect(rendered.string.contains("See more."))
+        #expect(!rendered.string.contains("**"))
+        #expect(!rendered.string.contains("| --- |"))
+        let boldRange = (rendered.string as NSString).range(of: "Integration")
+        let boldFont = rendered.attribute(.font, at: boldRange.location, effectiveRange: nil) as? NSFont
+        #expect(boldFont?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+        let linkRange = (rendered.string as NSString).range(of: "more")
+        #expect(rendered.attribute(.link, at: linkRange.location, effectiveRange: nil) as? URL
+            == URL(string: "https://example.com"))
     }
 
     @Test("Optional image context is included only when supplied")

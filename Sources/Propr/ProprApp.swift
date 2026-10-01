@@ -218,14 +218,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let generation = searchGeneration
 
         Task { @MainActor [weak self] in
-            let query = await SelectionCaptureService.shared.lookupSelection(
+            var query = await SelectionCaptureService.shared.lookupSelection(
                 pid: pid, gestureID: gestureID, at: point) ?? ""
             guard let self, self.searchGeneration == generation,
                 NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
             else { return }
 
+            var capturePermissionRequired = false
+            if query.isEmpty, let point {
+                switch await PointerOCRService.lookupWord(at: point) {
+                case .word(let word): query = word
+                case .permissionRequired: capturePermissionRequired = true
+                case .noWord: break
+                }
+            }
+            guard self.searchGeneration == generation,
+                NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+            else { return }
+
             self.floatingBarController.hide()
-            self.searchPanelController.show(query: query, near: point)
+            self.searchPanelController.show(
+                query: query, near: point,
+                capturePermissionRequired: capturePermissionRequired)
         }
     }
 }

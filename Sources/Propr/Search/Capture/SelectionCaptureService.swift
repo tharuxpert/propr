@@ -8,8 +8,8 @@ enum SelectionCapturePolicy {
     var allowsWholeFieldCopy: Bool { self == .refinementContext }
 }
 
-/// Reads a source app before either Propr panel takes focus. Lookup never uses
-/// select-all: only an explicit selection may start an automatic search.
+/// Reads a source app before either Propr panel takes focus. Lookup may copy
+/// selected text, but never selects and copies an entire field.
 @MainActor
 final class SelectionCaptureService {
     static let shared = SelectionCaptureService()
@@ -107,8 +107,8 @@ final class SelectionCaptureService {
         preClickSelection = nil
     }
 
-    /// Current selection wins: Force Click can select a new word. The pre-click
-    /// selection is used only when the click collapsed that same selection.
+    /// Current AX selection wins when it belongs to the press. Apps that hide
+    /// selection from AX still get the same ⌘C fallback as the refinement bar.
     func lookupSelection(pid: pid_t, gestureID: UUID? = nil, at point: CGPoint? = nil) async -> String? {
         let previous = preClickSelection
         preClickSelection = nil
@@ -121,26 +121,27 @@ final class SelectionCaptureService {
                 // AX can keep reporting an old selection after a press elsewhere.
                 // Never treat nonempty selected text alone as proof that it belongs
                 // to the pointer, including when the app omits selection bounds.
-                guard selection(current, contains: point, pid: pid) else {
-                    return readAXWord(pid: pid, at: point)
-                }
+                if selection(current, contains: point, pid: pid) { return current.text }
+            } else {
+                return current.text
             }
-            return current.text
         }
 
-        if let copied = await SourceAppKeyboard(pid: pid).copySelectedText() {
-            return copied
-        }
-
-        guard let gestureID,
+        if point != nil, let gestureID,
             previous?.matches(
                 gestureID: gestureID,
                 pid: pid,
                 now: ProcessInfo.processInfo.systemUptime) == true
-        else {
-            return point.flatMap { readAXWord(pid: pid, at: $0) }
+        {
+            return previous?.text
         }
-        return previous?.text
+
+        // ⌘C reads only an existing selection and restores the user's pasteboard.
+        // A Force Click on unselected text then falls through to the clicked word.
+        if let copied = await SourceAppKeyboard(pid: pid).copySelectedText() {
+            return copied
+        }
+        return point.flatMap { readAXWord(pid: pid, at: $0) }
     }
 
     private struct AXSelection {

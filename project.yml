@@ -60,7 +60,7 @@ targets:
         NSPrincipalClass: NSApplication
         # Accessibility permission description (shown in System Settings)
         NSAccessibilityUsageDescription: "Propr needs Accessibility access to detect when you focus a text field in any app and read the text so it can help you refine it."
-        # We will add more privacy strings later if needed (e.g. for future local model features)
+        NSScreenCaptureUsageDescription: "Propr uses a local screenshot to read a Force Clicked word when the source app does not expose it through Accessibility."
     entitlements:
       path: Sources/Propr/Propr.entitlements
       properties:

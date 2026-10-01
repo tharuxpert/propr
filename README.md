@@ -55,9 +55,9 @@ After launching, Propr appears as an icon in the menu bar. It stays out of the w
 3. Type what you want done — "make this more concise", "fix the grammar", "rewrite as a polite reply" — and press Return.
 4. The result is typed back into the field you came from. You can send follow-up instructions or use **Undo** in the bar.
 
-For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google, DuckDuckGo, or AI. If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
+For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google, DuckDuckGo, or AI. AI gives a brief meaning for a word or phrase and mentions a distinct common slang meaning when relevant. If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
 
-Lookup uses the current selection or, for Force Click, text at the pressed position when available. It does not select and copy an entire field as a fallback. Screenshot capture is not currently connected to search.
+Lookup first reads the current selection through Accessibility or the same temporary clipboard-copy fallback used by the refinement bar. If a Force Click has no selected text, it reads the word at the pressed position through Accessibility or a local screenshot. Only that last fallback requires Screen Recording permission; the search panel offers an explicit button to request it. The clipboard is restored, screenshots are not sent to a server, and lookup never selects and copies an entire field.
 
 ## Where your API keys are stored
 
