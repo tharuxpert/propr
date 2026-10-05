@@ -27,6 +27,7 @@
 		369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */; };
 		3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */; };
 		3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */; };
+		4172233E337C9DC0DED63426 /* AILookupResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC12BB0F299BDA428F273879 /* AILookupResponse.swift */; };
 		437F8C440C29E7957CA6905A /* FloatingBarController+Undo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96F99DB649F480E889873B0F /* FloatingBarController+Undo.swift */; };
 		446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */ = {isa = PBXBuildFile; fileRef = B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */; };
 		45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2BBFA4D9B786404254155B7B /* SettingsView.swift */; };
@@ -55,6 +56,7 @@
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
 		B6E6A1DE7FA20F95EC7BEB75 /* ModelReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943FE8B0546E576D52251F40 /* ModelReply.swift */; };
+		BDA200A0538074009E49888B /* AILookupResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */; };
 		BEF5D76A239AF194CAD69CB2 /* PointerOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8518B3BA6A0D090FBC44919A /* PointerOCRService.swift */; };
 		C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */; };
 		C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */; };
@@ -135,6 +137,7 @@
 		9ECBAA31B8DFE7F9B2A25B02 /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
 		B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectBackground.swift; sourceTree = "<group>"; };
 		B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsSettingsView.swift; sourceTree = "<group>"; };
 		B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarStatusViews.swift; sourceTree = "<group>"; };
@@ -154,6 +157,7 @@
 		F5B1B3109E53D4520B221BB5 /* Signing.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.xcconfig; sourceTree = "<group>"; };
 		F6105F8D3DFBBB44451A3815 /* SearchTriggerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTriggerTests.swift; sourceTree = "<group>"; };
 		F74673AD381A1CEB1E25EDCF /* ModelReplyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelReplyTests.swift; sourceTree = "<group>"; };
+		FC12BB0F299BDA428F273879 /* AILookupResponse.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponse.swift; sourceTree = "<group>"; };
 		FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointEditorSheet.swift; sourceTree = "<group>"; };
 		FD6ECC01E365A7C98FFA52FA /* SearchProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchProvider.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -250,6 +254,7 @@
 		5FB8ABBD8D591491F6974E5C /* ProprTests */ = {
 			isa = PBXGroup;
 			children = (
+				B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */,
 				1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */,
 				1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */,
 				55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */,
@@ -352,6 +357,7 @@
 			isa = PBXGroup;
 			children = (
 				36B135C377077BEEC7913818 /* AILookupRequest.swift */,
+				FC12BB0F299BDA428F273879 /* AILookupResponse.swift */,
 				FD6ECC01E365A7C98FFA52FA /* SearchProvider.swift */,
 			);
 			path = Providers;
@@ -472,6 +478,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				BDA200A0538074009E49888B /* AILookupResponseTests.swift in Sources */,
 				28E2526107024D7426EAA254 /* ApplyTargetTests.swift in Sources */,
 				126530E8DEE7708B39A76F2F /* ChatCompletionTests.swift in Sources */,
 				CE15BBC3E89CAFBA6BB51E5A /* EndpointFormStateTests.swift in Sources */,
@@ -494,6 +501,7 @@
 			files = (
 				AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */,
 				21ED182E748C1D0DC0067711 /* AILookupRequest.swift in Sources */,
+				4172233E337C9DC0DED63426 /* AILookupResponse.swift in Sources */,
 				1ED66005BF837E2236B1D32A /* AIService.swift in Sources */,
 				3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */,
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,

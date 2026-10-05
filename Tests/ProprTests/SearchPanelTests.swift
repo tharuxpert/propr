@@ -65,7 +65,12 @@ struct SearchPanelTests {
         #expect(messages[0]["content"] as? String == AILookupRequest.systemPrompt)
         #expect(messages[1]["content"] as? String == "What does the edited query mean?")
         #expect(payload["max_tokens"] as? Int == 160)
-        #expect(AILookupRequest.systemPrompt.contains("slang meaning"))
+        #expect(AILookupRequest.systemPrompt.contains("Include slang only when"))
+        #expect(AILookupRequest.systemPrompt.contains("definition on its own line"))
+        #expect(AILookupRequest.systemPrompt.contains("example in quotation marks on the following line"))
+        #expect(AILookupRequest.systemPrompt.contains("one common meaning"))
+        #expect(AILookupRequest.systemPrompt.contains("**Noun**"))
+        #expect(AILookupRequest.systemPrompt.contains("separate compact Markdown block"))
     }
 
     @Test("Direct questions stay direct while words become meaning questions")
@@ -99,6 +104,26 @@ struct SearchPanelTests {
         let linkRange = (rendered.string as NSString).range(of: "more")
         #expect(rendered.attribute(.link, at: linkRange.location, effectiveRange: nil) as? URL
             == URL(string: "https://example.com"))
+    }
+
+    @MainActor
+    @Test("Part-of-speech labels render bold above their meanings")
+    func aiPartOfSpeechFormatting() {
+        let answer = """
+            **Adjective**
+            Short in time.
+            “A brief meeting.”
+
+            **Noun**
+            A short summary.
+            “A project brief.”
+            """
+        let rendered = SearchAnswerFormatter.render(answer)
+        #expect(rendered.string.contains("Adjective\nShort in time.\n“A brief meeting.”"))
+        #expect(rendered.string.contains("Noun\nA short summary.\n“A project brief.”"))
+        let nounRange = (rendered.string as NSString).range(of: "Noun")
+        let nounFont = rendered.attribute(.font, at: nounRange.location, effectiveRange: nil) as? NSFont
+        #expect(nounFont?.fontDescriptor.symbolicTraits.contains(.bold) == true)
     }
 
     @Test("Optional image context is included only when supplied")
