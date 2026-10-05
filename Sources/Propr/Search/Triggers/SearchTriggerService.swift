@@ -8,8 +8,12 @@ import CoreGraphics
 final class SearchTriggerService {
     private typealias PressureReader = (CGEvent) -> (type: NSEvent.EventType, stage: Int)?
 
-    // Quartz can deliver pressure as a generic-gesture envelope (29), or as
-    // the direct AppKit pressure type (34). Both require AppKit decoding.
+    // Quartz delivers Force Click pressure as a generic-gesture envelope (29)
+    // on some systems and as the direct AppKit pressure type (34) on others,
+    // so both are tapped. Type 29 also carries the trackpad gesture stream
+    // (pinch/magnify, swipe, rotate): those events pass through untouched via
+    // the no-press fast path in handleActiveEvent, since gestures never hold
+    // a mouse button.
     static let gestureEventType = CGEventType(rawValue: 29)!
     static let pressureEventType = CGEventType(rawValue: 34)!
     static let eventMask: CGEventMask =
@@ -175,24 +179,31 @@ final class SearchTriggerService {
 
     /// Called synchronously by the tap callback before the original event is
     /// forwarded. Only accepted stage-two pressure returns true for suppression.
-    fileprivate func handleActiveEvent(type: CGEventType, event: CGEvent) -> Bool {
-        let point = Self.appKitPoint(event.location)
+    /// Point conversion (NSScreen lookup) and AppKit decoding are deferred past
+    /// the gesture fast path so the high-frequency pinch stream passes through
+    /// with minimal work when no button is held.
+    /// Internal for test coverage of the gesture fast path.
+    func handleActiveEvent(type: CGEventType, event: CGEvent) -> Bool {
         switch type {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             forceDetector.cancel()
             if let eventTap { CGEvent.tapEnable(tap: eventTap, enable: true) }
         case .leftMouseDown:
             mouseDown(
-                at: point,
+                at: Self.appKitPoint(event.location),
                 pid: sourcePID(Int32(event.getIntegerValueField(.eventTargetUnixProcessID))),
                 passive: false
             )
         case .leftMouseDragged:
-            forceDetector.mouseDragged(to: point)
+            forceDetector.mouseDragged(to: Self.appKitPoint(event.location))
         case .leftMouseUp:
             forceDetector.mouseUp()
         default:
-            return handlePressureEnvelope(type: type, event: event, at: point)
+            if type == Self.gestureEventType, !forceDetector.hasActivePress {
+                return false
+            }
+            return handlePressureEnvelope(
+                type: type, event: event, at: Self.appKitPoint(event.location))
         }
         return false
     }
@@ -205,6 +216,11 @@ final class SearchTriggerService {
 
     @discardableResult
     func handlePressureEnvelope(type: CGEventType, event: CGEvent, at point: CGPoint) -> Bool {
+        // Both the generic gesture envelope (29) and direct pressure (34) can
+        // carry Force Click pressure; only .pressure decodings act. Anything
+        // else (magnify/swipe/rotate) passes through. The no-press fast path
+        // in handleActiveEvent keeps the pinch stream from reaching decoding
+        // at all during button-free gestures.
         guard type == Self.gestureEventType || type == Self.pressureEventType,
               let decoded = pressureReader(event), decoded.type == .pressure else { return false }
         return acceptPressure(stage: decoded.stage, at: point)

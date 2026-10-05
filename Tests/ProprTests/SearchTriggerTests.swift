@@ -95,6 +95,8 @@ struct SearchTriggerTests {
 
     @Test("Quartz gesture and direct pressure envelopes are both decoded")
     func pressureEnvelopeRouting() async {
+        // Both delivery paths are tapped: some systems report Force Click via
+        // the gesture envelope (29), others via direct pressure (34).
         #expect(SearchTriggerService.eventMask & (1 << 29) != 0)
         #expect(SearchTriggerService.eventMask & (1 << 34) != 0)
 
@@ -125,16 +127,50 @@ struct SearchTriggerTests {
         #expect(lookups == snapshots)
     }
 
-    @Test("Non-pressure gestures pass through")
-    func nonPressureGesture() {
+    @Test("Gesture envelopes without a press pass through untouched")
+    func gestureFastPathWithoutPress() {
+        var decoded = 0
         let service = SearchTriggerService(
             onFn: {},
             onMouseDown: { _, _, _ in },
             onForceClick: { _, _, _ in },
-            pressureReader: { _ in (.magnify, 2) }
+            pressureReader: { _ in
+                decoded += 1
+                return (.pressure, 2)
+            }
+        )
+        let event = CGEvent(source: nil)!
+        // No mouseDown: pinch/magnify has no button held, so the tap must
+        // pass gesture envelopes through without AppKit decoding.
+        #expect(!service.handleActiveEvent(type: SearchTriggerService.gestureEventType, event: event))
+        #expect(decoded == 0)
+        // With a press held (Force Click), the same envelope reaches decoding.
+        // (Acceptance itself is drift-dependent on the live mouse position,
+        // so this only asserts the fast path no longer skips the reader.)
+        service.mouseDown(at: .zero, pid: 123, passive: false)
+        _ = service.handleActiveEvent(type: SearchTriggerService.gestureEventType, event: event)
+        #expect(decoded == 1)
+    }
+
+    @Test("Non-pressure gestures pass through")
+    func nonPressureGesture() {
+        var decoded = 0
+        let service = SearchTriggerService(
+            onFn: {},
+            onMouseDown: { _, _, _ in },
+            onForceClick: { _, _, _ in },
+            pressureReader: { _ in
+                decoded += 1
+                return (.magnify, 2)
+            }
         )
         let event = CGEvent(source: nil)!
         service.mouseDown(at: .zero, pid: 123, passive: false)
+        // Gesture envelopes decoding to non-pressure pass through.
         #expect(!service.handlePressureEnvelope(type: SearchTriggerService.gestureEventType, event: event, at: .zero))
+        #expect(decoded == 1)
+        // Direct pressure events that decode to non-pressure also pass through.
+        #expect(!service.handlePressureEnvelope(type: SearchTriggerService.pressureEventType, event: event, at: .zero))
+        #expect(decoded == 2)
     }
 }

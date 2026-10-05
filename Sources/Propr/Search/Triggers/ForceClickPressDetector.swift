@@ -35,6 +35,12 @@ final class ForceClickPressDetector {
     private var press: Press?
     private var stage = 0
 
+    /// Whether a button press is currently tracked. The event-tap callback
+    /// uses this as a fast path: trackpad pinch/magnify never holds a mouse
+    /// button, so gesture envelopes with no active press pass through without
+    /// AppKit decoding or screen-coordinate lookups.
+    var hasActivePress: Bool { press != nil }
+
     func mouseDown(at point: CGPoint, pid: pid_t, passive: Bool = false) -> UUID? {
         // Passive delivery follows the original click and must preserve the
         // earlier, pre-click selection snapshot and its gesture ID.
