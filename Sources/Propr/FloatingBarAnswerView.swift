@@ -9,6 +9,9 @@ struct AnswerSection: View {
     let answer: FloatingBarSessionState.Answer
     let onEditInstead: () -> Void
 
+    /// About fourteen lines of body text before the answer scrolls.
+    private static let maxAnswerHeight: CGFloat = 260
+
     /// The model's lightweight Markdown, rendered the same way as lookup answers.
     /// Unfinished markup mid-stream falls back to plain text per line inside the
     /// formatter, so this is safe to call on every streamed token.
@@ -34,11 +37,19 @@ struct AnswerSection: View {
 
             // Styled by SearchAnswerFormatter (body 14, bold/code/links); no .font /
             // .foregroundStyle here, since those modifiers would override the runs.
-            Text(renderedAnswer)
-                .lineLimit(14)
-                .fixedSize(horizontal: false, vertical: true)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            //
+            // Hugs a short answer; a long one (lists, reflowed tables) scrolls once it
+            // reaches the cap instead of being cut off. The trailing fixedSize makes
+            // the scroll view report its content height, capped, so the panel grows
+            // to fit it.
+            ScrollView {
+                Text(renderedAnswer)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .textSelection(.enabled)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: Self.maxAnswerHeight)
+            .fixedSize(horizontal: false, vertical: true)
 
             if answer.isComplete {
                 HStack(spacing: 8) {
