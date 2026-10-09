@@ -90,6 +90,10 @@ struct FloatingBarView: View {
         // A real behind-window vibrancy view, so the bar samples the desktop beneath
         // it the way Spotlight does. The panel itself is borderless and clear; the
         // rounding and the shadow live here.
+        //
+        // The tint sits between the content and the blur, knocking the whole
+        // composer a shade darker than the raw material.
+        .background(Color.black.opacity(Self.backgroundDim))
         .background(
             VisualEffectBackground(
                 material: .hudWindow,
@@ -200,6 +204,9 @@ struct FloatingBarView: View {
 
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
+
+    /// How much darker than the raw material the composer sits.
+    private static let backgroundDim: CGFloat = 0.15
 
     private func submitPrompt() {
         guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }

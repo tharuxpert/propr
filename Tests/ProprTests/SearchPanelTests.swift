@@ -149,18 +149,74 @@ struct SearchPanelTests {
         let codeRange = (rendered.string as NSString).range(of: "print(\"Hello\")")
         let codeFont = rendered.attribute(.font, at: codeRange.location, effectiveRange: nil) as? NSFont
         #expect(codeFont?.fontName.localizedCaseInsensitiveContains("mono") == true)
-        #expect(rendered.attribute(.backgroundColor, at: codeRange.location, effectiveRange: nil) != nil)
+        #expect(rendered.attribute(.proprCode, at: codeRange.location, effectiveRange: nil) as? Bool == true)
     }
 
     @MainActor
-    @Test("Inline code carries a backdrop")
-    func inlineCodeBackdrop() {
+    @Test("Blank lines inside a code block are kept")
+    func codeBlockKeepsInnerBlanks() {
+        let rendered = SearchAnswerFormatter.render("```\nline one\n\nline two\n```")
+        #expect(rendered.string == "line one\n\nline two")
+        let range = (rendered.string as NSString).range(of: "line two")
+        #expect(rendered.attribute(.proprCode, at: range.location, effectiveRange: nil) as? Bool == true)
+    }
+
+    @MainActor
+    @Test("Inline code is marked for pill drawing")
+    func inlineCodePillMark() {
         let rendered = SearchAnswerFormatter.render(
             "run it with `python hello.py` on your system")
         let codeRange = (rendered.string as NSString).range(of: "python hello.py")
-        #expect(rendered.attribute(.backgroundColor, at: codeRange.location, effectiveRange: nil) != nil)
+        #expect(rendered.attribute(.proprCode, at: codeRange.location, effectiveRange: nil) as? Bool == false)
         let plainRange = (rendered.string as NSString).range(of: "run it")
-        #expect(rendered.attribute(.backgroundColor, at: plainRange.location, effectiveRange: nil) == nil)
+        #expect(rendered.attribute(.proprCode, at: plainRange.location, effectiveRange: nil) == nil)
+    }
+
+    @MainActor
+    @Test("Pill layout manager paints behind marked code")
+    func pillLayoutPaints() {
+        let content = SearchAnswerFormatter.render(
+            "Two options:\n\n```\nline one\nline two\n```\n\npick one")
+        func paintedPixels(withPills pills: Bool) -> Int {
+            let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+            if pills {
+                textView.textContainer?.replaceLayoutManager(PillBackgroundLayoutManager())
+            }
+            textView.drawsBackground = false
+            textView.textStorage?.setAttributedString(content)
+            guard let container = textView.textContainer else { return 0 }
+            textView.layoutManager?.ensureLayout(for: container)
+            let image = NSImage(size: NSSize(width: 400, height: 400))
+            image.lockFocus()
+            textView.draw(textView.bounds)
+            image.unlockFocus()
+            guard let tiff = image.tiffRepresentation,
+                  let rep = NSBitmapImageRep(data: tiff)
+            else { return 0 }
+            var count = 0
+            for x in 0..<rep.pixelsWide {
+                for y in 0..<rep.pixelsHigh {
+                    if (rep.colorAt(x: x, y: y)?.alphaComponent ?? 0) > 0.01 {
+                        count += 1
+                    }
+                }
+            }
+            return count
+        }
+        #expect(paintedPixels(withPills: true) > paintedPixels(withPills: false))
+    }
+
+    @MainActor
+    @Test("Answer height hugs short text and caps long text")
+    func answerTextSizing() {
+        let short = SearchAnswerFormatter.render("Hello.")
+        let shortHeight = AnswerTextSizing.height(for: short, width: 446, maxHeight: 260)
+        #expect(shortHeight > 0 && shortHeight < 260)
+        #expect(AnswerTextSizing.height(
+            for: NSAttributedString(string: ""), width: 446, maxHeight: 260) == 0)
+        let long = SearchAnswerFormatter.render(
+            (0..<200).map { "line \($0)" }.joined(separator: "\n"))
+        #expect(AnswerTextSizing.height(for: long, width: 446, maxHeight: 260) == 260)
     }
 
     @MainActor

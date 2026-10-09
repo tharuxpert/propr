@@ -326,6 +326,7 @@ final class SearchPanelController: NSObject {
         scrollView.translatesAutoresizingMaskIntoConstraints = false
         if let textView = scrollView.documentView as? NSTextView {
             textView.textStorage?.setAttributedString(SearchAnswerFormatter.render(answer))
+            textView.textContainer?.replaceLayoutManager(PillBackgroundLayoutManager())
             textView.drawsBackground = false
             textView.isEditable = false
             textView.isSelectable = true

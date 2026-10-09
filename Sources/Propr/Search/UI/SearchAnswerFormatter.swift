@@ -6,9 +6,6 @@ import AppKit
 enum SearchAnswerFormatter {
     private static let bodyFont = NSFont.systemFont(ofSize: 14)
 
-    /// Backdrop for code, subtle in both light and dark mode.
-    private static let codeBackground = NSColor.labelColor.withAlphaComponent(0.12)
-
     static func render(_ answer: String) -> NSAttributedString {
         let output = NSMutableAttributedString(string: "")
         let lines = normalizeBreaks(reflowTables(answer)).components(separatedBy: "\n")
@@ -19,9 +16,9 @@ enum SearchAnswerFormatter {
         /// Fence markers emit nothing at all (not even a separator), and runs of
         /// blank lines collapse to one — otherwise a fenced block surrounded by
         /// blank lines renders with double gaps above and below the code.
-        func append(_ part: NSAttributedString) {
+        func append(_ part: NSAttributedString, collapseBlanks: Bool = true) {
             let isBlank = part.length == 0
-            if isBlank, lastWasBlank { return }
+            if collapseBlanks, isBlank, lastWasBlank { return }
             if needsNewline {
                 output.append(NSAttributedString(string: "\n"))
             }
@@ -35,11 +32,14 @@ enum SearchAnswerFormatter {
             if trimmed.hasPrefix("```") {
                 inCodeBlock.toggle()
             } else if inCodeBlock {
+                // Blank lines inside a block are content, not gaps: keep them so
+                // the pill draws one continuous block around the code as written.
                 append(NSAttributedString(
                     string: originalLine,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
                                  .foregroundColor: NSColor.labelColor,
-                                 .backgroundColor: codeBackground]))
+                                 .proprCode: true]),
+                       collapseBlanks: false)
             } else {
                 var line = originalLine
                 let font = bodyFont
@@ -111,7 +111,7 @@ enum SearchAnswerFormatter {
                 .font: font, .foregroundColor: NSColor.labelColor
             ]
             if let intent = run.inlinePresentationIntent, intent.contains(.code) {
-                attributes[.backgroundColor] = codeBackground
+                attributes[.proprCode] = false
             }
             if let intent = run.inlinePresentationIntent, intent.contains(.strikethrough) {
                 attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue

@@ -12,11 +12,15 @@ struct AnswerSection: View {
     /// About fourteen lines of body text before the answer scrolls.
     private static let maxAnswerHeight: CGFloat = 260
 
+    /// Fallback text width until layout reports the real one: the 500pt panel
+    /// minus this section's leading and trailing insets.
+    @State private var textWidth: CGFloat = 500 - 42 - 12
+
     /// The model's lightweight Markdown, rendered the same way as lookup answers.
     /// Unfinished markup mid-stream falls back to plain text per line inside the
     /// formatter, so this is safe to call on every streamed token.
-    private var renderedAnswer: AttributedString {
-        AttributedString(SearchAnswerFormatter.render(answer.text))
+    private var content: NSAttributedString {
+        SearchAnswerFormatter.render(answer.text)
     }
 
     /// What lands on the clipboard: the answer without markup characters, so
@@ -35,21 +39,21 @@ struct AnswerSection: View {
                 .truncationMode(.tail)
                 .padding(.bottom, -4)
 
-            // Styled by SearchAnswerFormatter (body 14, bold/code/links); no .font /
-            // .foregroundStyle here, since those modifiers would override the runs.
-            //
-            // Hugs a short answer; a long one (lists, reflowed tables) scrolls once it
-            // reaches the cap instead of being cut off. The trailing fixedSize makes
-            // the scroll view report its content height, capped, so the panel grows
-            // to fit it.
-            ScrollView {
-                Text(renderedAnswer)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .textSelection(.enabled)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(maxHeight: Self.maxAnswerHeight)
-            .fixedSize(horizontal: false, vertical: true)
+            // A real text view so code pills draw rounded with side padding —
+            // SwiftUI Text can only paint sharp, padding-less fills. Hugs a short
+            // answer; a long one (lists, reflowed tables) scrolls once it reaches
+            // the cap instead of being cut off. The height is measured with the
+            // same insets the view uses, so the panel grows to fit it.
+            AnswerTextView(content: content, width: textWidth, maxHeight: Self.maxAnswerHeight)
+                .frame(height: AnswerTextSizing.height(
+                    for: content, width: textWidth, maxHeight: Self.maxAnswerHeight))
+                .background(
+                    GeometryReader { proxy in
+                        Color.clear
+                            .onAppear { textWidth = proxy.size.width }
+                            .onChange(of: proxy.size.width) { _, width in textWidth = width }
+                    }
+                )
 
             if answer.isComplete {
                 HStack(spacing: 8) {
