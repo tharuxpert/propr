@@ -22,19 +22,13 @@ enum ModelReply: Equatable {
     static let defaultReason = "The model couldn't complete this request."
 
     /// Classifies a complete reply.
-    ///
-    /// With `acceptsAnswers` false — the user asked for an edit — an answer marker is
-    /// dropped and what follows is the text. The model can still emit one, copying
-    /// the marked answers in the history, and routing that to the bar again would
-    /// make "Edit instead" do nothing.
-    static func parse(_ reply: String, acceptsAnswers: Bool = true) -> ModelReply {
+    static func parse(_ reply: String) -> ModelReply {
         let lead = leadingSkipped(reply)
         if hasMarker(cannotMarker, lead) {
             return .cannot(reason: reason(afterMarkerIn: lead))
         }
         if hasMarker(answerMarker, lead) {
-            let body = answerBody(afterMarkerIn: lead)
-            return acceptsAnswers ? .answer(body) : .text(body)
+            return .answer(answerBody(afterMarkerIn: lead))
         }
         return .text(reply)
     }
@@ -186,9 +180,6 @@ struct StreamingReplyFilter {
         case passing
         case cannot
         case answer
-        /// An answer marker on an edit request: dropped, with the text after it
-        /// written as usual. See `ModelReply.parse(_:acceptsAnswers:)`.
-        case strippingMarker
     }
 
     private static let markers: [(marker: String, state: State)] = [
@@ -196,13 +187,8 @@ struct StreamingReplyFilter {
         (ModelReply.answerMarker.lowercased(), .answer),
     ]
 
-    private let acceptsAnswers: Bool
     private var state = State.undecided
     private var held = ""
-
-    init(acceptsAnswers: Bool = true) {
-        self.acceptsAnswers = acceptsAnswers
-    }
 
     /// The answer received so far, once the reply is known to be one, so the bar
     /// can show it as it streams in.
@@ -221,19 +207,11 @@ struct StreamingReplyFilter {
             held += chunk
             return ""
 
-        case .strippingMarker:
-            held += chunk
-            return releaseTextAfterMarker()
-
         case .undecided:
             held += chunk
             let lead = ModelReply.leadingSkipped(held).lowercased()
 
             if let match = Self.markers.first(where: { lead.hasPrefix($0.marker) }) {
-                if match.state == .answer && !acceptsAnswers {
-                    state = .strippingMarker
-                    return releaseTextAfterMarker()
-                }
                 state = match.state
                 return ""
             }
@@ -262,20 +240,8 @@ struct StreamingReplyFilter {
         case .undecided:
             // A reply short enough to be ambiguous the whole way through is still text.
             return .text(held)
-        case .passing, .strippingMarker:
+        case .passing:
             return .text("")
         }
-    }
-
-    /// Holds a stripped marker's trailing whitespace until real text follows, so the
-    /// edit does not open with the space that separated it from the marker.
-    private mutating func releaseTextAfterMarker() -> String {
-        let body = ModelReply.leadingSkipped(held)
-            .dropFirst(ModelReply.answerMarker.count)
-            .drop(while: \.isWhitespace)
-        guard !body.isEmpty else { return "" }
-        state = .passing
-        held = ""
-        return String(body)
     }
 }

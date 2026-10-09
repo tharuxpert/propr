@@ -3,11 +3,11 @@ import SwiftUI
 
 /// An answer to a question about the text, shown in the bar instead of the document.
 ///
-/// Streams in as it arrives. Once complete it can be copied, or — if an edit was
-/// what the user actually wanted — the same instruction can be run again as one.
+/// Streams in as it arrives and can be copied once complete. If an edit was what
+/// the user wanted, a follow-up such as "do it" makes one: the answer is in the
+/// session history, so the model knows what "it" is.
 struct AnswerSection: View {
     let answer: FloatingBarSessionState.Answer
-    let onEditInstead: () -> Void
 
     /// About fourteen lines of body text before the answer scrolls.
     private static let maxAnswerHeight: CGFloat = 260
@@ -62,11 +62,6 @@ struct AnswerSection: View {
                         Label("Copy", systemImage: "doc.on.doc")
                     }
                     .help("Copy the answer")
-
-                    Button(action: onEditInstead) {
-                        Label("Edit instead", systemImage: "pencil.line")
-                    }
-                    .help("Run “\(answer.question)” as a change to your text")
                 }
                 .labelStyle(.titleAndIcon)
                 .buttonStyle(KeycapButtonStyle())

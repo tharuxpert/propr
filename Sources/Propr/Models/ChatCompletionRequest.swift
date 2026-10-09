@@ -30,8 +30,6 @@ struct RefinementTurn: Equatable {
 enum RefineIntent: Equatable, Sendable {
     /// The model decides: change the text, or answer a question about it in the bar.
     case auto
-    /// Always produce text for the document. Used to retry an answer as an edit.
-    case edit
     /// Always answer in the bar. The document is never touched.
     case ask
 }
@@ -150,9 +148,7 @@ struct ChatCompletionRequest {
         if intent == .ask { return Self.askSystemPrompt }
 
         var prompt = hasOriginalText ? Self.refineSystemPrompt : Self.generateSystemPrompt
-        if intent == .auto {
-            prompt += "\n\n" + Self.answerInstruction
-        }
+        prompt += "\n\n" + Self.answerInstruction
         if !history.isEmpty {
             prompt += "\n\n" + Self.followUpInstruction
         }

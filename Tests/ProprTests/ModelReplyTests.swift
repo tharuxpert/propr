@@ -53,10 +53,8 @@ struct ModelReplyTests {
 
     /// Feeds chunks through the filter; returns what would have been written, plus the
     /// final classification.
-    private func stream(
-        _ chunks: [String], acceptsAnswers: Bool = true
-    ) -> (written: String, end: ModelReply) {
-        var filter = StreamingReplyFilter(acceptsAnswers: acceptsAnswers)
+    private func stream(_ chunks: [String]) -> (written: String, end: ModelReply) {
+        var filter = StreamingReplyFilter()
         var written = ""
         for chunk in chunks { written += filter.receive(chunk) }
         let end = filter.finish()
@@ -152,33 +150,6 @@ struct ModelReplyTests {
     ])
     func answerLookalikes(_ chunks: [String]) {
         #expect(stream(chunks).written == chunks.joined())
-    }
-
-    /// "Edit instead" runs after an answer, so the history the model sees is full of
-    /// marked answers it may copy. On an edit the marker must not send it back to the bar.
-    @Test("An edit request writes the text after a copied answer marker", arguments: [
-        ["PROPR_ANSWER: Do you have time?"],
-        ["PRO", "PR_ANSWER:", " ", "Do you", " have time?"],
-        ["`PROPR_ANSWER:\n", "Do you have time?"],
-    ])
-    func editStripsAnswerMarker(_ chunks: [String]) {
-        let result = stream(chunks, acceptsAnswers: false)
-        #expect(result.written == "Do you have time?")
-        #expect(result.end == .text(""))
-    }
-
-    @Test("An edit request still honours the cannot marker")
-    func editKeepsCannot() {
-        let result = stream(["PROPR_CANNOT: Unclear."], acceptsAnswers: false)
-        #expect(result.written.isEmpty)
-        #expect(result.end == .cannot(reason: "Unclear."))
-    }
-
-    @Test("A complete edit reply drops a copied answer marker")
-    func parseEditStripsAnswerMarker() {
-        #expect(
-            ModelReply.parse("PROPR_ANSWER: Do you have time?", acceptsAnswers: false)
-                == .text("Do you have time?"))
     }
 
     @Test("Ask mode strips a stray marker from the answer")

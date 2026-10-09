@@ -175,14 +175,6 @@ struct ChatCompletionTests {
         }
     }
 
-    @Test("Edit intent never offers the answer path")
-    func editForbidsAnswers() {
-        var edit = request(original: "some text")
-        edit.intent = .edit
-        #expect(edit.systemPrompt == ChatCompletionRequest.refineSystemPrompt)
-        #expect(!edit.systemPrompt.contains(ModelReply.answerMarker))
-    }
-
     @Test("Ask intent uses the answer-only prompt, still delimiting the source")
     func askUsesAnswerPrompt() {
         var ask = request(original: "some text", instruction: "is this correct?")

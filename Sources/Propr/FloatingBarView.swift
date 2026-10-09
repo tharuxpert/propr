@@ -74,10 +74,7 @@ struct FloatingBarView: View {
                 .padding(.bottom, 12)
 
             if let answer = sessionState.answer {
-                AnswerSection(
-                    answer: answer,
-                    onEditInstead: { retryAsEdit(answer.question) }
-                )
+                AnswerSection(answer: answer)
             }
 
             if let error = sessionState.errorMessage {
@@ -221,15 +218,6 @@ struct FloatingBarView: View {
     private func toggleAskMode() {
         guard !sessionState.isBusy else { return }
         sessionState.isAskMode.toggle()
-    }
-
-    /// Runs an answered question again as a change to the text — for when the
-    /// model answered but an edit was wanted, or the answer suggests one.
-    private func retryAsEdit(_ question: String) {
-        guard !sessionState.isBusy else { return }
-        sessionState.isAskMode = false
-        sessionState.startRequest()
-        onRefine(question, .edit)
     }
 }
 

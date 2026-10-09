@@ -47,7 +47,7 @@ extension FloatingBarController {
         }
 
         // Holds output back only while it could still be the "cannot" marker.
-        var filter = StreamingReplyFilter(acceptsAnswers: intent != .edit)
+        var filter = StreamingReplyFilter()
         // Independently holds a possible cursor marker so none of it is ever typed.
         var cursorFilter = StreamingCursorMarkerFilter()
 
