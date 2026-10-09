@@ -138,6 +138,54 @@ struct SearchPanelTests {
         #expect(codeFont?.fontName.localizedCaseInsensitiveContains("mono") == true)
     }
 
+    @MainActor
+    @Test("Italic renders slanted without asterisks")
+    func italicFormatting() {
+        let rendered = SearchAnswerFormatter.render("This is *important* news.")
+        #expect(rendered.string.contains("This is important news."))
+        #expect(!rendered.string.contains("*"))
+        let range = (rendered.string as NSString).range(of: "important")
+        let font = rendered.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont
+        #expect(font?.fontName.localizedCaseInsensitiveContains("italic") == true)
+    }
+
+    @MainActor
+    @Test("Strikethrough renders struck without tildes")
+    func strikethroughFormatting() {
+        let rendered = SearchAnswerFormatter.render("That price is ~~gone~~ now.")
+        #expect(rendered.string.contains("That price is gone now."))
+        #expect(!rendered.string.contains("~~"))
+        let range = (rendered.string as NSString).range(of: "gone")
+        let style = rendered.attribute(.strikethroughStyle, at: range.location, effectiveRange: nil) as? Int
+        #expect(style == NSUnderlineStyle.single.rawValue)
+    }
+
+    @MainActor
+    @Test("Blockquotes lose the marker but keep the content")
+    func blockquoteFormatting() {
+        let rendered = SearchAnswerFormatter.render("> **Hello**, World!")
+        #expect(!rendered.string.contains(">"))
+        #expect(rendered.string.contains("Hello, World!"))
+        let range = (rendered.string as NSString).range(of: "Hello")
+        let font = rendered.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+    }
+
+    @MainActor
+    @Test("Emphasis survives the SwiftUI AttributedString conversion")
+    func emphasisSurvivesConversion() {
+        let converted = AttributedString(SearchAnswerFormatter.render(
+            "This is **bold** and *italic* with `code`."))
+        let back = NSAttributedString(converted)
+        func fontName(of text: String) -> String {
+            let range = (back.string as NSString).range(of: text)
+            return (back.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont)?.fontName ?? ""
+        }
+        #expect(fontName(of: "bold").localizedCaseInsensitiveContains("bold"))
+        #expect(fontName(of: "italic").localizedCaseInsensitiveContains("italic"))
+        #expect(fontName(of: "code").localizedCaseInsensitiveContains("mono"))
+    }
+
     @Test("Optional image context is included only when supplied")
     func aiLookupImageContext() throws {
         let selection = ModelSelection(

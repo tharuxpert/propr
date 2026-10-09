@@ -28,6 +28,11 @@ enum SearchAnswerFormatter {
                     font = .systemFont(ofSize: 15, weight: .semibold)
                 } else if let bullet = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
                     line.replaceSubrange(bullet, with: "• ")
+                } else if let quote = line.range(of: #"^\s{0,3}>\s?"#, options: .regularExpression) {
+                    line.removeSubrange(quote)
+                    output.append(NSAttributedString(
+                        string: "│ ",
+                        attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
                 }
                 output.append(inline(line, baseFont: font))
             }
@@ -70,6 +75,9 @@ enum SearchAnswerFormatter {
             var attributes: [NSAttributedString.Key: Any] = [
                 .font: font, .foregroundColor: NSColor.labelColor
             ]
+            if let intent = run.inlinePresentationIntent, intent.contains(.strikethrough) {
+                attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+            }
             if let url = run.link, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
                 attributes[.link] = url
                 attributes[.foregroundColor] = NSColor.linkColor
