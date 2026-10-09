@@ -52,16 +52,18 @@ struct FloatingBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            // One even inset, roughly the corner radius, so the keys in the corners
+            // never crowd the rounding.
             sourceStrip
                 .padding(.leading, 14)
-                .padding(.trailing, 10)
-                .padding(.top, 8)
+                .padding(.trailing, 12)
+                .padding(.top, 12)
 
             composerRow
                 .padding(.leading, 14)
-                .padding(.trailing, 10)
-                .padding(.top, 6)
-                .padding(.bottom, 10)
+                .padding(.trailing, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 12)
 
             if let error = sessionState.errorMessage {
                 RefineErrorBanner(message: error) { sessionState.clearError() }
