@@ -46,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var searchGeneration = 0
 
     // Double-tap Command key detection for quick summon
-    private var lastCommandPressTime: Date?
+    private let commandTapDetector = CommandDoubleTapDetector()
     private var commandKeyMonitor: Any?
 
     // Lazily-created windows presented manually via NSWindow + NSHostingView.
@@ -118,22 +118,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         commandKeyMonitor = nil
     }
 
-    /// How close two Command taps must be to count as a double tap.
-    /// Nonisolated: an immutable constant, read from the non-isolated event monitor.
-    nonisolated static let doubleCommandWindow: TimeInterval = 0.45
-
-    /// Whether these modifiers are Command and nothing else.
-    ///
-    /// Keeps Command+Shift, Command+Option and friends from registering as Command
-    /// presses, so ordinary shortcuts never summon the bar.
-    nonisolated static func isPureCommand(_ flags: NSEvent.ModifierFlags) -> Bool {
-        flags.contains(.command)
-            && !flags.contains(.shift)
-            && !flags.contains(.option)
-            && !flags.contains(.control)
-            && !flags.contains(.function)
-    }
-
     private func setupDoubleCommandHotkey() {
         // The handler is a `nonisolated static` function, passed by reference — not a
         // closure written here.
@@ -146,38 +130,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // this callback. Removing captures or changing the body does not help, because
         // neither changes the inherited isolation. Declaring the handler nonisolated
         // does: there is then no assertion to run.
+        //
+        // Key presses and clicks are watched too: they are what tell a ⌘ tap apart
+        // from ⌘ used in a shortcut such as ⌘C or ⌘-click.
         commandKeyMonitor = NSEvent.addGlobalMonitorForEvents(
-            matching: .flagsChanged,
-            handler: AppDelegate.handleFlagsChanged
+            matching: [.flagsChanged, .keyDown, .leftMouseDown, .rightMouseDown, .otherMouseDown],
+            handler: AppDelegate.handleCommandHotkeyEvent
         )
     }
 
     /// Runs on AppKit's event-monitor callback. Nonisolated by declaration, so no
     /// actor-isolation check is emitted at its entry.
-    nonisolated private static func handleFlagsChanged(_ event: NSEvent) {
-        // Read only the flags (an OptionSet, safe across isolation); the NSEvent itself
-        // is not Sendable and must not be carried into the task.
-        guard isPureCommand(event.modifierFlags) else { return }
+    nonisolated private static func handleCommandHotkeyEvent(_ event: NSEvent) {
+        // Read only Sendable values; the NSEvent itself must not be carried into the
+        // task. keyCode is only valid on keyboard events, so mouse events skip it.
+        guard event.type == .flagsChanged else {
+            Task { @MainActor in
+                AppDelegate.shared?.commandTapDetector.interrupt()
+            }
+            return
+        }
+        let keyCode = event.keyCode
+        let flags = event.modifierFlags
+        let time = event.timestamp
 
         // Enqueue onto the main actor. Creating a Task does not ask the runtime which
         // executor we are currently on, which is the call that was failing.
         Task { @MainActor in
-            AppDelegate.shared?.handlePureCommandPress()
+            AppDelegate.shared?.handleCommandFlagsChanged(keyCode: keyCode, flags: flags, at: time)
         }
     }
 
-    /// Records a Command tap, summoning the bar when it completes a double tap.
+    /// Feeds a modifier change to the detector, summoning the bar on a double tap.
     @MainActor
-    private func handlePureCommandPress() {
-        let now = Date()
-
-        if let last = lastCommandPressTime,
-            now.timeIntervalSince(last) < Self.doubleCommandWindow
-        {
-            lastCommandPressTime = nil
+    private func handleCommandFlagsChanged(keyCode: UInt16, flags: NSEvent.ModifierFlags, at time: TimeInterval) {
+        if commandTapDetector.flagsChanged(keyCode: keyCode, flags: flags, at: time) {
             summonFloatingBar()
-        } else {
-            lastCommandPressTime = now
         }
     }
 

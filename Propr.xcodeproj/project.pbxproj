@@ -20,6 +20,7 @@
 		21ED182E748C1D0DC0067711 /* AILookupRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B135C377077BEEC7913818 /* AILookupRequest.swift */; };
 		25CED71435B4452550DF3818 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */; };
 		269F1D27DF7BB71BEEE02C63 /* PasteboardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */; };
+		26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */; };
 		28E2526107024D7426EAA254 /* ApplyTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */; };
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
@@ -106,6 +107,7 @@
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		35387C75BDB30804F24E1866 /* PointerOCRTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOCRTests.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
+		3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandDoubleTapDetector.swift; sourceTree = "<group>"; };
 		39D6C1C202E14BE0422D6C8C /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		3B7578011130C67BA08139F5 /* SearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelController.swift; sourceTree = "<group>"; };
 		40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshot.swift; sourceTree = "<group>"; };
@@ -182,6 +184,7 @@
 				2F6EF88BB1DC3E553F6B94CA /* AIService.swift */,
 				7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */,
 				4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */,
+				3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */,
 				078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */,
 				073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */,
 				DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */,
@@ -508,6 +511,7 @@
 				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */,
+				26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */,
 				01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */,
 				12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */,
 				AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */,
