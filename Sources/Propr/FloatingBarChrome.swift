@@ -41,6 +41,35 @@ struct KeycapButtonStyle: ButtonStyle {
     }
 }
 
+/// The quiet "tab Ask" hint in an empty composer: names the mode Tab switches to,
+/// since nothing else says Tab does anything. Clicking it switches too.
+struct ModeSwitchHint: View {
+    /// The mode Tab would switch to, such as "Ask".
+    let target: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Text("tab")
+                    .font(.system(size: 10, weight: .semibold))
+                    .padding(.horizontal, 4)
+                    .frame(minHeight: 16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.5)
+                    )
+                Text(target)
+                    .font(.callout)
+            }
+            .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Press Tab to switch to \(target)")
+    }
+}
+
 /// A light streak that travels around the bar's edge while a request is running.
 ///
 /// The bar's one moment of motion, and it only plays while Propr is actually

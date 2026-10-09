@@ -159,6 +159,15 @@ struct FloatingBarView: View {
                 }
                 .disabled(sessionState.isBusy)
 
+            // Gone once typing starts, so it never crowds a real instruction.
+            if prompt.isEmpty && !sessionState.isBusy {
+                ModeSwitchHint(
+                    target: sessionState.isAskMode ? "Edit" : "Ask",
+                    action: toggleAskMode
+                )
+                .transition(.opacity)
+            }
+
             if let statusLabel {
                 Text(statusLabel)
                     .font(.callout)
