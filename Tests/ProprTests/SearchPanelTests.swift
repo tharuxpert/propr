@@ -172,6 +172,41 @@ struct SearchPanelTests {
     }
 
     @MainActor
+    @Test("Nested bullets keep their indent instead of flattening")
+    func nestedBulletsKeepIndent() {
+        let rendered = SearchAnswerFormatter.render("- top\n  - nested\n    - deep")
+        #expect(rendered.string == "• top\n  • nested\n    • deep")
+    }
+
+    @MainActor
+    @Test("Task lists render checkboxes without brackets")
+    func taskListFormatting() {
+        let rendered = SearchAnswerFormatter.render("- [ ] todo\n- [x] done")
+        #expect(rendered.string == "☐ todo\n☑ done")
+    }
+
+    @MainActor
+    @Test("A horizontal rule renders as a divider line")
+    func horizontalRuleFormatting() {
+        for marker in ["---", "***", "___"] {
+            let rendered = SearchAnswerFormatter.render("above\n\(marker)\nbelow")
+            #expect(!rendered.string.contains(marker))
+            #expect(rendered.string.contains("above\n"))
+            #expect(rendered.string.contains("\nbelow"))
+        }
+    }
+
+    @MainActor
+    @Test("Numbered lists read as-is with inner formatting kept")
+    func numberedListPassthrough() {
+        let rendered = SearchAnswerFormatter.render("1. first\n2. **second**")
+        #expect(rendered.string == "1. first\n2. second")
+        let range = (rendered.string as NSString).range(of: "second")
+        let font = rendered.attribute(.font, at: range.location, effectiveRange: nil) as? NSFont
+        #expect(font?.fontDescriptor.symbolicTraits.contains(.bold) == true)
+    }
+
+    @MainActor
     @Test("Emphasis survives the SwiftUI AttributedString conversion")
     func emphasisSurvivesConversion() {
         let converted = AttributedString(SearchAnswerFormatter.render(

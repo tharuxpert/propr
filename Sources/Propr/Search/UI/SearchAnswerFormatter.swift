@@ -23,18 +23,37 @@ enum SearchAnswerFormatter {
             } else {
                 var line = originalLine
                 var font = bodyFont
-                if let heading = line.range(of: #"^\s{0,3}#{1,6}\s+"#, options: .regularExpression) {
+                if line.range(
+                    of: #"^\s{0,3}(-{3,}|_{3,}|\*{3,})\s*$"#,
+                    options: .regularExpression
+                ) != nil {
+                    output.append(NSAttributedString(
+                        string: String(repeating: "─", count: 16),
+                        attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
+                } else if let heading = line.range(of: #"^\s{0,3}#{1,6}\s+"#, options: .regularExpression) {
                     line.removeSubrange(heading)
                     font = .systemFont(ofSize: 15, weight: .semibold)
+                    output.append(inline(line, baseFont: font))
+                } else if let task = line.range(
+                    of: #"^\s*[-*+]\s+\[[ xX]\]\s+"#, options: .regularExpression
+                ) {
+                    let box = line[task].contains("x") || line[task].contains("X") ? "☑ " : "☐ "
+                    line.replaceSubrange(task, with: indent(of: line, in: task) + box)
+                    output.append(inline(line, baseFont: font))
                 } else if let bullet = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
-                    line.replaceSubrange(bullet, with: "• ")
+                    line.replaceSubrange(bullet, with: indent(of: line, in: bullet) + "• ")
+                    output.append(inline(line, baseFont: font))
                 } else if let quote = line.range(of: #"^\s{0,3}>\s?"#, options: .regularExpression) {
                     line.removeSubrange(quote)
                     output.append(NSAttributedString(
                         string: "│ ",
                         attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
+                    output.append(inline(line, baseFont: font))
+                } else {
+                    // Numbered lists need no rewriting: "1. ..." reads as-is and the
+                    // inline pass below still styles any emphasis or code inside.
+                    output.append(inline(line, baseFont: font))
                 }
-                output.append(inline(line, baseFont: font))
             }
             if index < lines.count - 1 {
                 output.append(NSAttributedString(string: "\n"))
@@ -91,6 +110,12 @@ enum SearchAnswerFormatter {
     private static func normalizeBreaks(_ text: String) -> String {
         text.replacingOccurrences(
             of: #"(?i)<br\s*/?>"#, with: "\n", options: .regularExpression)
+    }
+
+    /// Leading whitespace of a matched list marker, so nested items keep their
+    /// depth instead of flattening to the left edge.
+    private static func indent(of line: String, in match: Range<String.Index>) -> String {
+        String(line[match].prefix(while: { $0 == " " || $0 == "\t" }))
     }
 
     /// Tables are reformatted into stacked label/value lines so they remain
