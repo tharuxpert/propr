@@ -30,10 +30,10 @@ extension FloatingBarController {
         let rawAnswer: String
         switch ModelReply.parse(reply) {
         case .cannot(let reason):
-            sessionState.showNotice(reason)
+            recordCannot(reason, to: instruction)
             return nil
         case .answer(let answer):
-            sessionState.showAnswer(answer, to: instruction, isComplete: true)
+            recordAnswer(answer, to: instruction)
             return nil
         case .text(let text):
             rawAnswer = text

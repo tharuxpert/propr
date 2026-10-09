@@ -76,12 +76,12 @@ extension FloatingBarController {
         case .cannot(let reason):
             // The model says it can't do this. Its reason goes in the bar; nothing was
             // written to the document.
-            sessionState.showNotice(reason)
+            recordCannot(reason, to: instruction)
             return nil
         case .answer(let answer):
             // A question about the text. The answer goes in the bar; nothing was
             // written to the document.
-            sessionState.showAnswer(answer, to: instruction, isComplete: true)
+            recordAnswer(answer, to: instruction)
             return nil
         case .text(let remaining):
             try await write(cursorFilter.receive(remaining))

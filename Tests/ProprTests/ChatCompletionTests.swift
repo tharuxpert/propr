@@ -232,13 +232,57 @@ struct ChatCompletionTests {
             "system", "user", "assistant", "user", "assistant", "user",
         ])
         #expect(messages[1]["content"]?.contains("write a poem") == true)
-        #expect(messages[0]["content"]?.contains("multi-turn editing session") == true)
+        #expect(messages[0]["content"]?.contains("multi-turn session") == true)
         #expect(messages[1]["content"]?.contains("do it") == true)
         #expect(messages[2]["content"] == "A quiet moon above the hill")
         #expect(messages[3]["content"]?.contains("make it two lines") == true)
         #expect(messages[4]["content"]?.contains("town lies still") == true)
         #expect(messages[5]["content"]?.contains("make it funny") == true)
         #expect(messages[5]["content"]?.contains("source_text") == false)
+    }
+
+    /// A temp chat: the model must see its own question to make sense of the reply.
+    @Test("Answers and refusals stay in the history, marked as such")
+    func historyKeepsAnswersAndRefusals() {
+        let followUp = request(
+            original: "Hello there",
+            instruction: "Spanish",
+            history: [
+                RefinementTurn(instruction: "translate this", output: "Which language?", kind: .cannot),
+                RefinementTurn(instruction: "is it formal?", output: "No, it is casual.", kind: .answer),
+            ]
+        )
+        let messages = followUp.messages
+
+        #expect(messages.map { $0["role"] } == ["system", "user", "assistant", "user", "assistant", "user"])
+        #expect(messages[1]["content"]?.contains("<source_text>\nHello there") == true)
+        #expect(messages[2]["content"] == "PROPR_CANNOT: Which language?")
+        #expect(messages[4]["content"] == "PROPR_ANSWER: No, it is casual.")
+        // Nothing has been written yet, so the current text is still the original.
+        #expect(messages[5]["content"]?.contains("<current_text>\nHello there\n</current_text>") == true)
+    }
+
+    @Test("The current text is the latest edit, not a later answer")
+    func currentTextIsLatestEdit() {
+        let followUp = request(
+            original: "hi",
+            history: [
+                RefinementTurn(instruction: "formal", output: "Good afternoon."),
+                RefinementTurn(instruction: "is it polite?", output: "Yes.", kind: .answer),
+            ]
+        )
+        #expect(followUp.currentText == "Good afternoon.")
+    }
+
+    @Test("With no text ever written or captured, follow-ups carry no current text")
+    func noCurrentTextWhenNothingExists() {
+        let followUp = request(
+            original: "",
+            instruction: "and in Python?",
+            history: [RefinementTurn(instruction: "how do I list files?", output: "Use ls.", kind: .answer)]
+        )
+        #expect(followUp.currentText == nil)
+        #expect(followUp.messages.last?["content"]?.contains("current_text") == false)
     }
 
     /// The reported bug: "what does this mean?" on a follow-up reached the model with

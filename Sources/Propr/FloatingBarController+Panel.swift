@@ -21,6 +21,7 @@ extension FloatingBarController {
         summonID = UUID()
         sessionState = FloatingBarSessionState()
         appliedRevisions = []
+        conversation = []
         lastApplyUndo = nil
 
         applyTargetElement = captureCurrentFocusedElement()

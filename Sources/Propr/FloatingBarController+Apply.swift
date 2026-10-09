@@ -16,7 +16,7 @@ extension FloatingBarController {
         let element = target.element
         let targetPID = target.pid
         let strategy = target.strategy
-        let history = appliedRevisions.map(\.turn)
+        let history = conversation
         let previousRevision = appliedRevisions.last
 
         refineTask?.cancel()
@@ -125,7 +125,7 @@ extension FloatingBarController {
                             accessibilityRange: range,
                             cursorUTF16Offset: answer.cursorUTF16Offset
                         )
-                        self.appliedRevisions.append(revision)
+                        self.recordEdit(revision)
                         self.lastApplyUndo = undo
                         pendingAXUndo = nil
                         self.panel?.makeKey()
@@ -145,7 +145,7 @@ extension FloatingBarController {
                         previousRevision: previousRevision,
                         replaceExistingInput: fallbackReplacesExistingInput
                     ) {
-                        self.appliedRevisions.append(revision)
+                        self.recordEdit(revision)
                         self.lastApplyUndo = revision.undo
                         self.panel?.makeKey()
                         self.sessionState.finishRequest(appliedText: revision.turn.output)

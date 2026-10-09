@@ -94,9 +94,13 @@ final class FloatingBarController {
     /// How to reverse an incomplete streamed apply, or the latest completed apply.
     var lastApplyUndo: ApplyUndo?
 
-    /// Completed turns in this summon. This is both the model's chat history and the
-    /// document revision stack used by turn-by-turn Undo.
+    /// Edits written into the document in this summon: the revision stack used by
+    /// turn-by-turn Undo.
     var appliedRevisions: [AppliedRevision] = []
+
+    /// Every completed exchange in this summon — edits, answers and refusals — sent
+    /// to the model as chat history. A temporary chat: cleared when the bar closes.
+    var conversation: [RefinementTurn] = []
 
     /// Whether fallback writes replace the original whole field. Follow-ups unwind
     /// to that same base state before inserting their next complete revision.
@@ -174,9 +178,13 @@ final class FloatingBarController {
         isVisible = false
         currentSnapshot = nil
 
-        // Nothing to undo once the bar is dismissed.
+        // Nothing to undo once the bar is dismissed, and the chat ends with it: the
+        // history, answers and captured text are dropped rather than kept until the
+        // next summon.
         lastApplyUndo = nil
         appliedRevisions = []
+        conversation = []
+        sessionState = FloatingBarSessionState()
         fallbackReplacesExistingInput = false
     }
 
