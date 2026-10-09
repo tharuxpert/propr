@@ -1,27 +1,6 @@
 import AppKit
 import SwiftUI
 
-/// The spinner + label shown while a refine is in flight.
-///
-/// One view rather than two near-identical blocks: "Thinking…" and "Typing…" differ
-/// only in their label.
-struct RefineStatusRow: View {
-    let label: String
-
-    var body: some View {
-        HStack(spacing: 10) {
-            ProgressView()
-                .controlSize(.small)
-            Text(label)
-                .font(.body)
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-    }
-}
-
 /// A provider error, shown in full.
 ///
 /// The message wraps rather than truncating — a provider error is the one thing here
@@ -122,7 +101,6 @@ struct RefineNoticeBanner: View {
 
 #Preview("Status") {
     VStack(spacing: 0) {
-        RefineStatusRow(label: "Thinking…")
         RefineErrorBanner(
             message: "API error (403): This model requires a verified organization.",
             onDismiss: {}

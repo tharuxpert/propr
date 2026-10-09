@@ -65,6 +65,7 @@
 		D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */; };
 		D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4E90C0D95E39B952432F396 /* SelectionCaptureService.swift */; };
 		D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */; };
+		D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */; };
 		DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */; };
 		DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */; };
 		E1CAB360CA3E516859A6F73E /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */; };
@@ -95,6 +96,7 @@
 		0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceAppKeyboard.swift; sourceTree = "<group>"; };
 		0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Target.swift"; sourceTree = "<group>"; };
+		1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarChrome.swift; sourceTree = "<group>"; };
 		16E1C7BFDFBE80EA88CB1EFA /* KeystrokeUndoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndoTests.swift; sourceTree = "<group>"; };
 		1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyTargetTests.swift; sourceTree = "<group>"; };
 		1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceClickPressDetector.swift; sourceTree = "<group>"; };
@@ -186,6 +188,7 @@
 				4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */,
 				3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */,
 				078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */,
+				1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */,
 				073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */,
 				DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */,
 				71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */,
@@ -518,6 +521,7 @@
 				C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */,
 				C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */,
 				3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */,
+				D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */,
 				31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */,
 				73F507865DF3D8F4FD78488A /* FloatingBarController+FallbackApply.swift in Sources */,
 				624CFF35C6BA55F254037DCF /* FloatingBarController+Panel.swift in Sources */,
