@@ -6,57 +6,73 @@ import AppKit
 enum SearchAnswerFormatter {
     private static let bodyFont = NSFont.systemFont(ofSize: 14)
 
+    /// Backdrop for code, subtle in both light and dark mode.
+    private static let codeBackground = NSColor.labelColor.withAlphaComponent(0.12)
+
     static func render(_ answer: String) -> NSAttributedString {
         let output = NSMutableAttributedString(string: "")
         let lines = normalizeBreaks(reflowTables(answer)).components(separatedBy: "\n")
         var inCodeBlock = false
+        var needsNewline = false
+        var lastWasBlank = true
 
-        for (index, originalLine) in lines.enumerated() {
+        /// Fence markers emit nothing at all (not even a separator), and runs of
+        /// blank lines collapse to one — otherwise a fenced block surrounded by
+        /// blank lines renders with double gaps above and below the code.
+        func append(_ part: NSAttributedString) {
+            let isBlank = part.length == 0
+            if isBlank, lastWasBlank { return }
+            if needsNewline {
+                output.append(NSAttributedString(string: "\n"))
+            }
+            output.append(part)
+            needsNewline = true
+            lastWasBlank = isBlank
+        }
+
+        for originalLine in lines {
             let trimmed = originalLine.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("```") {
                 inCodeBlock.toggle()
             } else if inCodeBlock {
-                output.append(NSAttributedString(
+                append(NSAttributedString(
                     string: originalLine,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
-                                 .foregroundColor: NSColor.labelColor]))
+                                 .foregroundColor: NSColor.labelColor,
+                                 .backgroundColor: codeBackground]))
             } else {
                 var line = originalLine
-                var font = bodyFont
+                let font = bodyFont
                 if line.range(
                     of: #"^\s{0,3}(-{3,}|_{3,}|\*{3,})\s*$"#,
                     options: .regularExpression
                 ) != nil {
-                    output.append(NSAttributedString(
+                    append(NSAttributedString(
                         string: String(repeating: "─", count: 16),
                         attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
                 } else if let heading = line.range(of: #"^\s{0,3}#{1,6}\s+"#, options: .regularExpression) {
                     line.removeSubrange(heading)
-                    font = .systemFont(ofSize: 15, weight: .semibold)
-                    output.append(inline(line, baseFont: font))
+                    append(inline(line, baseFont: .systemFont(ofSize: 15, weight: .semibold)))
                 } else if let task = line.range(
                     of: #"^\s*[-*+]\s+\[[ xX]\]\s+"#, options: .regularExpression
                 ) {
                     let box = line[task].contains("x") || line[task].contains("X") ? "☑ " : "☐ "
                     line.replaceSubrange(task, with: indent(of: line, in: task) + box)
-                    output.append(inline(line, baseFont: font))
+                    append(inline(line, baseFont: font))
                 } else if let bullet = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
                     line.replaceSubrange(bullet, with: indent(of: line, in: bullet) + "• ")
-                    output.append(inline(line, baseFont: font))
+                    append(inline(line, baseFont: font))
                 } else if let quote = line.range(of: #"^\s{0,3}>\s?"#, options: .regularExpression) {
                     line.removeSubrange(quote)
-                    output.append(NSAttributedString(
-                        string: "│ ",
-                        attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
-                    output.append(inline(line, baseFont: font))
+                    let quoted = NSMutableAttributedString(string: "│ ", attributes: [
+                        .font: font, .foregroundColor: NSColor.secondaryLabelColor])
+                    quoted.append(inline(line, baseFont: font))
+                    append(quoted)
                 } else {
                     // Numbered lists need no rewriting: "1. ..." reads as-is and the
                     // inline pass below still styles any emphasis or code inside.
-                    output.append(inline(line, baseFont: font))
+                    append(inline(line, baseFont: font))
                 }
-            }
-            if index < lines.count - 1 {
-                output.append(NSAttributedString(string: "\n"))
             }
         }
 
@@ -94,6 +110,9 @@ enum SearchAnswerFormatter {
             var attributes: [NSAttributedString.Key: Any] = [
                 .font: font, .foregroundColor: NSColor.labelColor
             ]
+            if let intent = run.inlinePresentationIntent, intent.contains(.code) {
+                attributes[.backgroundColor] = codeBackground
+            }
             if let intent = run.inlinePresentationIntent, intent.contains(.strikethrough) {
                 attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
             }

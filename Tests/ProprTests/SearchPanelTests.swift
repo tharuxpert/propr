@@ -139,6 +139,31 @@ struct SearchPanelTests {
     }
 
     @MainActor
+    @Test("Fenced code blocks drop fences without extra gaps")
+    func fencedCodeBlockFormatting() {
+        let rendered = SearchAnswerFormatter.render(
+            "Two easy options:\n\n```python\nprint(\"Hello\")\n```\n\nor two calls:")
+        #expect(!rendered.string.contains("```"))
+        #expect(!rendered.string.contains("\n\n\n"))
+        #expect(rendered.string == "Two easy options:\n\nprint(\"Hello\")\n\nor two calls:")
+        let codeRange = (rendered.string as NSString).range(of: "print(\"Hello\")")
+        let codeFont = rendered.attribute(.font, at: codeRange.location, effectiveRange: nil) as? NSFont
+        #expect(codeFont?.fontName.localizedCaseInsensitiveContains("mono") == true)
+        #expect(rendered.attribute(.backgroundColor, at: codeRange.location, effectiveRange: nil) != nil)
+    }
+
+    @MainActor
+    @Test("Inline code carries a backdrop")
+    func inlineCodeBackdrop() {
+        let rendered = SearchAnswerFormatter.render(
+            "run it with `python hello.py` on your system")
+        let codeRange = (rendered.string as NSString).range(of: "python hello.py")
+        #expect(rendered.attribute(.backgroundColor, at: codeRange.location, effectiveRange: nil) != nil)
+        let plainRange = (rendered.string as NSString).range(of: "run it")
+        #expect(rendered.attribute(.backgroundColor, at: plainRange.location, effectiveRange: nil) == nil)
+    }
+
+    @MainActor
     @Test("Italic renders slanted without asterisks")
     func italicFormatting() {
         let rendered = SearchAnswerFormatter.render("This is *important* news.")
