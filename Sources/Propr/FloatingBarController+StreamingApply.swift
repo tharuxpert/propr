@@ -47,7 +47,7 @@ extension FloatingBarController {
         }
 
         // Holds output back only while it could still be the "cannot" marker.
-        var filter = StreamingReplyFilter()
+        var filter = StreamingReplyFilter(acceptsAnswers: intent != .edit)
         // Independently holds a possible cursor marker so none of it is ever typed.
         var cursorFilter = StreamingCursorMarkerFilter()
 
@@ -63,7 +63,7 @@ extension FloatingBarController {
             // showing "Thinking…" forever with its input disabled.
             try Task.checkCancellation()
             try await write(cursorFilter.receive(filter.receive(token)))
-            if let partial = filter.partialAnswer {
+            if let partial = filter.partialAnswer, !partial.isEmpty {
                 sessionState.showAnswer(partial, to: instruction, isComplete: false)
             }
         }

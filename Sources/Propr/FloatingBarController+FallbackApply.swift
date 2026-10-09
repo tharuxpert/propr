@@ -28,7 +28,7 @@ extension FloatingBarController {
         try Task.checkCancellation()
 
         let rawAnswer: String
-        switch ModelReply.parse(reply) {
+        switch ModelReply.parse(reply, acceptsAnswers: intent != .edit) {
         case .cannot(let reason):
             recordCannot(reason, to: instruction)
             return nil
