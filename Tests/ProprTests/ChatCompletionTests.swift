@@ -241,6 +241,28 @@ struct ChatCompletionTests {
         #expect(messages[5]["content"]?.contains("source_text") == false)
     }
 
+    /// The reported bug: "what does this mean?" on a follow-up reached the model with
+    /// no text in the message, and it replied that nothing had been provided.
+    @Test("A follow-up carries the current text, so \"this\" has a referent")
+    func followUpCarriesCurrentText() {
+        for intent in [RefineIntent.auto, .ask] {
+            var followUp = request(
+                original: "",
+                instruction: "what does this mean?",
+                history: [
+                    RefinementTurn(
+                        instruction: "write a line about winning",
+                        output: "He crushed the competition with relentless, brutal force."),
+                ]
+            )
+            followUp.intent = intent
+            let last = followUp.messages.last?["content"] ?? ""
+
+            #expect(last.contains("<current_text>\nHe crushed the competition with relentless, brutal force.\n</current_text>"))
+            #expect(followUp.systemPrompt.contains("<current_text>"))
+        }
+    }
+
     // MARK: - Non-streaming response
 
     @Test("Message content is extracted and trimmed")
