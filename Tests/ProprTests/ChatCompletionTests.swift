@@ -197,6 +197,13 @@ struct ChatCompletionTests {
         #expect(ChatCompletionRequest.answerInstruction.contains("can you make this shorter?"))
     }
 
+    @Test("Answers may use lightweight Markdown instead of plain text")
+    func answersAllowMarkdown() {
+        #expect(ChatCompletionRequest.answerInstruction.contains("Markdown"))
+        #expect(ChatCompletionRequest.askSystemPrompt.contains("Markdown"))
+        #expect(!ChatCompletionRequest.askSystemPrompt.contains("without headings or Markdown"))
+    }
+
     @Test("The generate prompt actually reaches the payload")
     func generatePayload() throws {
         let built = try request(original: "", instruction: "list open ports").makeURLRequest()

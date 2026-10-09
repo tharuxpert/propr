@@ -126,6 +126,18 @@ struct SearchPanelTests {
         #expect(nounFont?.fontDescriptor.symbolicTraits.contains(.bold) == true)
     }
 
+    @MainActor
+    @Test("Inline code renders monospace without backticks")
+    func inlineCodeFormatting() {
+        let rendered = SearchAnswerFormatter.render(
+            "run it with `python hello.py` on your system")
+        #expect(rendered.string.contains("run it with python hello.py on your system"))
+        #expect(!rendered.string.contains("`"))
+        let codeRange = (rendered.string as NSString).range(of: "python hello.py")
+        let codeFont = rendered.attribute(.font, at: codeRange.location, effectiveRange: nil) as? NSFont
+        #expect(codeFont?.fontName.localizedCaseInsensitiveContains("mono") == true)
+    }
+
     @Test("Optional image context is included only when supplied")
     func aiLookupImageContext() throws {
         let selection = ModelSelection(

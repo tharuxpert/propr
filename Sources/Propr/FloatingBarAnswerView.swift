@@ -9,6 +9,19 @@ struct AnswerSection: View {
     let answer: FloatingBarSessionState.Answer
     let onEditInstead: () -> Void
 
+    /// The model's lightweight Markdown, rendered the same way as lookup answers.
+    /// Unfinished markup mid-stream falls back to plain text per line inside the
+    /// formatter, so this is safe to call on every streamed token.
+    private var renderedAnswer: AttributedString {
+        AttributedString(SearchAnswerFormatter.render(answer.text))
+    }
+
+    /// What lands on the clipboard: the answer without markup characters, so
+    /// `python hello.py` copies without its backticks.
+    private var plainAnswer: String {
+        SearchAnswerFormatter.render(answer.text).string
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // The prompt clears once the answer is in, so keep what was asked in view.
@@ -19,10 +32,9 @@ struct AnswerSection: View {
                 .truncationMode(.tail)
                 .padding(.bottom, -4)
 
-            Text(answer.text)
-                .font(.system(size: 14))
-                .foregroundStyle(.primary)
-                .lineSpacing(2)
+            // Styled by SearchAnswerFormatter (body 14, bold/code/links); no .font /
+            // .foregroundStyle here, since those modifiers would override the runs.
+            Text(renderedAnswer)
                 .lineLimit(14)
                 .fixedSize(horizontal: false, vertical: true)
                 .textSelection(.enabled)
@@ -34,7 +46,7 @@ struct AnswerSection: View {
 
                     Button {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(answer.text, forType: .string)
+                        NSPasteboard.general.setString(plainAnswer, forType: .string)
                     } label: {
                         Label("Copy", systemImage: "doc.on.doc")
                     }
