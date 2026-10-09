@@ -32,10 +32,6 @@ struct FloatingBarView: View {
         sessionState.latestAppliedText ?? snapshot.contextText
     }
 
-    private var displayedCharacterCount: Int {
-        sessionState.latestAppliedText?.count ?? snapshot.characterCount
-    }
-
     private var trimmedPrompt: String {
         prompt.trimmingCharacters(in: .whitespacesAndNewlines)
     }
@@ -59,13 +55,13 @@ struct FloatingBarView: View {
             sourceStrip
                 .padding(.leading, 14)
                 .padding(.trailing, 10)
-                .padding(.top, 10)
+                .padding(.top, 8)
 
             composerRow
-                .padding(.leading, 16)
+                .padding(.leading, 14)
                 .padding(.trailing, 10)
-                .padding(.top, 12)
-                .padding(.bottom, 12)
+                .padding(.top, 6)
+                .padding(.bottom, 10)
 
             if let error = sessionState.errorMessage {
                 RefineErrorBanner(message: error) { sessionState.clearError() }
@@ -122,10 +118,6 @@ struct FloatingBarView: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                     .frame(maxWidth: .infinity, alignment: .leading)
-
-                Text("\(displayedCharacterCount)")
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(.tertiary)
             }
 
             Button("esc", action: onClose)
@@ -149,7 +141,7 @@ struct FloatingBarView: View {
 
             TextField(promptPlaceholder, text: $prompt)
                 .textFieldStyle(.plain)
-                .font(.system(size: 19))
+                .font(.system(size: 16))
                 .focused($isPromptFocused)
                 .onSubmit {
                     submitPrompt()
@@ -188,8 +180,9 @@ struct FloatingBarView: View {
                 Button(action: onStop) {
                     Image(systemName: "stop.fill")
                         .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.red)
                 }
-                .buttonStyle(KeycapButtonStyle(tint: .red))
+                .buttonStyle(KeycapButtonStyle())
                 .help("Stop")
             } else {
                 Button(action: submitPrompt) {

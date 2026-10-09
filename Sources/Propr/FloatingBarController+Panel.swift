@@ -176,7 +176,7 @@ extension FloatingBarController {
     /// The bar's resting size: the source strip over the composer row.
     /// `sizePanelToFitContent` grows past this when needed (a wrapped error message)
     /// but never below it.
-    var baseContentSize: NSSize { NSSize(width: 500, height: 76) }
+    var baseContentSize: NSSize { NSSize(width: 500, height: 64) }
 
     func viewSize(for snapshot: FieldSnapshot) -> NSSize {
         baseContentSize

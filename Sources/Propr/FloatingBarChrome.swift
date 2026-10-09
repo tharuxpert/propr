@@ -60,9 +60,12 @@ struct WorkingEdge: View {
             let gradient = streak(at: angle(at: timeline.date))
 
             ZStack {
-                shape.strokeBorder(gradient, lineWidth: 4).blur(radius: 5)
+                shape.strokeBorder(gradient, lineWidth: 3).blur(radius: 3).opacity(0.7)
                 shape.strokeBorder(gradient, lineWidth: 1.25)
             }
+            // The glow may only spill inward. Anything drawn outside the rounded
+            // shape fills the window's corners, and the window shadow turns square.
+            .clipShape(shape)
         }
         .opacity(isActive ? 1 : 0)
         .animation(.easeOut(duration: 0.25), value: isActive)
@@ -80,8 +83,8 @@ struct WorkingEdge: View {
         AngularGradient(
             stops: [
                 .init(color: .accentColor.opacity(0), location: 0),
-                .init(color: .accentColor.opacity(0), location: 0.5),
-                .init(color: .accentColor, location: 0.88),
+                .init(color: .accentColor.opacity(0), location: 0.7),
+                .init(color: .accentColor, location: 0.92),
                 .init(color: .white, location: 0.97),
                 .init(color: .accentColor.opacity(0), location: 1),
             ],
