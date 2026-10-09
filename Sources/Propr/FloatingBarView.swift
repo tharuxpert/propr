@@ -116,10 +116,7 @@ struct FloatingBarView: View {
             Button(action: toggleAskMode) {
                 Image(systemName: modeSymbol)
                     .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(
-                        sessionState.isAskMode || sessionState.hasAppliedResult
-                            ? AnyShapeStyle(.tint) : AnyShapeStyle(.tertiary)
-                    )
+                    .foregroundStyle(.tint)
                     .frame(width: 18)
                     .contentTransition(.symbolEffect(.replace))
             }
