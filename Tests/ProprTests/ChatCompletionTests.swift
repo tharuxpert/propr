@@ -202,10 +202,9 @@ struct ChatCompletionTests {
         #expect(ChatCompletionRequest.answerInstruction.contains("Markdown"))
         #expect(ChatCompletionRequest.askSystemPrompt.contains("Markdown"))
         #expect(!ChatCompletionRequest.askSystemPrompt.contains("without headings or Markdown"))
-        // The model is told the full supported set, and what will not render.
-        #expect(ChatCompletionRequest.answerInstruction.contains("task lists"))
-        #expect(ChatCompletionRequest.answerInstruction.contains("No images"))
-        #expect(ChatCompletionRequest.askSystemPrompt.contains("blockquotes"))
+        // Both say what will not render, so dead image or footnote text is never produced.
+        #expect(ChatCompletionRequest.answerInstruction.contains("not images or footnotes"))
+        #expect(ChatCompletionRequest.askSystemPrompt.contains("not images or"))
     }
 
     @Test("The generate prompt actually reaches the payload")
