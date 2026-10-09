@@ -35,12 +35,14 @@
 		46115AED2137639D47094618 /* SearchTriggerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6105F8D3DFBBB44451A3815 /* SearchTriggerTests.swift */; };
 		4795A02E4D9C6AB5CF396867 /* SearchWebPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = DA9E7CA96633B37D76AFBC2C /* SearchWebPresentation.swift */; };
 		4848505D4F32561FA5F37A97 /* KeystrokeUndoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16E1C7BFDFBE80EA88CB1EFA /* KeystrokeUndoTests.swift */; };
+		4A1BB720FB6C07FF7F97DD89 /* FloatingBarController+Answer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */; };
 		50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = DD07EEB65CB46A1CFE8D5B01 /* ModelConfigStore.swift */; };
 		53E70E434146050BAB518EF3 /* SearchTriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998F9E9BACD2376DAABC7F9B /* SearchTriggerService.swift */; };
 		55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */; };
 		624CFF35C6BA55F254037DCF /* FloatingBarController+Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */; };
 		63874E09634BA61C31B8F864 /* SelectionCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88311BF34253F68358B6423E /* SelectionCaptureTests.swift */; };
 		6B6C1809031B24CEE305D5EB /* KeystrokePacingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051988735931571C55E220DD /* KeystrokePacingTests.swift */; };
+		6CB4285C23D48E82AADA9678 /* FloatingBarSourceStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */; };
 		7202D4569FD0E238366BBB3A /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */; };
 		72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 91026A33DABF3EF4F433F52A /* ChatCompletionRequest.swift */; };
 		73959275AACEED19AAD987D4 /* PasteboardSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */; };
@@ -56,6 +58,7 @@
 		AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */; };
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
+		B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */; };
 		B6E6A1DE7FA20F95EC7BEB75 /* ModelReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943FE8B0546E576D52251F40 /* ModelReply.swift */; };
 		BDA200A0538074009E49888B /* AILookupResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */; };
 		BEF5D76A239AF194CAD69CB2 /* PointerOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8518B3BA6A0D090FBC44919A /* PointerOCRService.swift */; };
@@ -65,6 +68,7 @@
 		D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */; };
 		D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4E90C0D95E39B952432F396 /* SelectionCaptureService.swift */; };
 		D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */; };
+		D533F6DD22B146979ECA5A0E /* FloatingBarController+StreamingApply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */; };
 		D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */; };
 		DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */; };
 		DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */; };
@@ -106,6 +110,7 @@
 		28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointURLValidator.swift; sourceTree = "<group>"; };
 		2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshotTests.swift; sourceTree = "<group>"; };
 		2BBFA4D9B786404254155B7B /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Answer.swift"; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		35387C75BDB30804F24E1866 /* PointerOCRTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PointerOCRTests.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
@@ -123,6 +128,7 @@
 		57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyTests.swift; sourceTree = "<group>"; };
 		5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSessionState.swift; sourceTree = "<group>"; };
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
+		65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+StreamingApply.swift"; sourceTree = "<group>"; };
 		687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalAppsTests.swift; sourceTree = "<group>"; };
 		68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormState.swift; sourceTree = "<group>"; };
 		71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+FallbackApply.swift"; sourceTree = "<group>"; };
@@ -141,11 +147,13 @@
 		9ECBAA31B8DFE7F9B2A25B02 /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
+		B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarAnswerView.swift; sourceTree = "<group>"; };
 		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
 		B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectBackground.swift; sourceTree = "<group>"; };
 		B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsSettingsView.swift; sourceTree = "<group>"; };
 		B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarStatusViews.swift; sourceTree = "<group>"; };
 		BC3CFE06765D24588F37A915 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSourceStrip.swift; sourceTree = "<group>"; };
 		C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Panel.swift"; sourceTree = "<group>"; };
 		C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Propr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB212309517604983B9E3644 /* FnTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnTapDetector.swift; sourceTree = "<group>"; };
@@ -188,14 +196,18 @@
 				4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */,
 				3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */,
 				078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */,
+				B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */,
 				1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */,
 				073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */,
+				2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */,
 				DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */,
 				71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */,
 				C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */,
+				65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */,
 				1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */,
 				96F99DB649F480E889873B0F /* FloatingBarController+Undo.swift */,
 				5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */,
+				C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */,
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
 				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
@@ -521,14 +533,18 @@
 				C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */,
 				C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */,
 				3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */,
+				B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */,
 				D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */,
+				4A1BB720FB6C07FF7F97DD89 /* FloatingBarController+Answer.swift in Sources */,
 				31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */,
 				73F507865DF3D8F4FD78488A /* FloatingBarController+FallbackApply.swift in Sources */,
 				624CFF35C6BA55F254037DCF /* FloatingBarController+Panel.swift in Sources */,
+				D533F6DD22B146979ECA5A0E /* FloatingBarController+StreamingApply.swift in Sources */,
 				A053967C0C6D803D5B127D2C /* FloatingBarController+Target.swift in Sources */,
 				437F8C440C29E7957CA6905A /* FloatingBarController+Undo.swift in Sources */,
 				2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */,
 				20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */,
+				6CB4285C23D48E82AADA9678 /* FloatingBarSourceStrip.swift in Sources */,
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,

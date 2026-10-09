@@ -39,8 +39,8 @@ extension FloatingBarController {
             FloatingBarView(
                 snapshot: snapshot,
                 sessionState: sessionState,
-                onRefine: { [weak self] prompt in
-                    self?.performRefine(context: prompt, snapshot: snapshot)
+                onRefine: { [weak self] prompt, intent in
+                    self?.performRefine(context: prompt, snapshot: snapshot, intent: intent)
                 },
                 onStop: { [weak self] in self?.stopRefine() },
                 onClose: { [weak self] in self?.hide() },
@@ -160,7 +160,7 @@ extension FloatingBarController {
                         appName: "—", pid: 0, fullText: "", selectedText: nil,
                         role: nil),
                     sessionState: sessionState,
-                    onRefine: { _ in },
+                    onRefine: { _, _ in },
                     onStop: {},
                     onClose: {},
                     onUndo: nil

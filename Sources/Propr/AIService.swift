@@ -28,7 +28,8 @@ final class AIService {
         instruction: String,
         history: [RefinementTurn] = [],
         selection: ModelSelection,
-        apiKey: String
+        apiKey: String,
+        intent: RefineIntent = .auto
     ) async throws -> String {
         let request = try ChatCompletionRequest(
             original: original,
@@ -36,7 +37,8 @@ final class AIService {
             history: history,
             selection: selection,
             apiKey: apiKey,
-            stream: false
+            stream: false,
+            intent: intent
         ).makeURLRequest()
 
         let (data, response) = try await session.data(for: request)
@@ -65,7 +67,8 @@ final class AIService {
         instruction: String,
         history: [RefinementTurn] = [],
         selection: ModelSelection,
-        apiKey: String
+        apiKey: String,
+        intent: RefineIntent = .auto
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let requestTask = Task {
@@ -76,7 +79,8 @@ final class AIService {
                         history: history,
                         selection: selection,
                         apiKey: apiKey,
-                        stream: true
+                        stream: true,
+                        intent: intent
                     ).makeURLRequest()
 
                     let (bytes, response) = try await session.bytes(for: request)

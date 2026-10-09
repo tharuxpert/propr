@@ -162,8 +162,39 @@ struct ChatCompletionTests {
 
     @Test("The system prompt switches between rewriting and writing")
     func systemPromptSwitches() {
-        #expect(request(original: "some text").systemPrompt == ChatCompletionRequest.refineSystemPrompt)
-        #expect(request(original: "").systemPrompt == ChatCompletionRequest.generateSystemPrompt)
+        #expect(request(original: "some text").systemPrompt.hasPrefix(ChatCompletionRequest.refineSystemPrompt))
+        #expect(request(original: "").systemPrompt.hasPrefix(ChatCompletionRequest.generateSystemPrompt))
+    }
+
+    // MARK: - Intent
+
+    @Test("By default the model may answer a question in the bar instead of editing")
+    func autoAllowsAnswers() {
+        for original in ["some text", ""] {
+            #expect(request(original: original).systemPrompt.contains(ModelReply.answerMarker))
+        }
+    }
+
+    @Test("Edit intent never offers the answer path")
+    func editForbidsAnswers() {
+        var edit = request(original: "some text")
+        edit.intent = .edit
+        #expect(edit.systemPrompt == ChatCompletionRequest.refineSystemPrompt)
+        #expect(!edit.systemPrompt.contains(ModelReply.answerMarker))
+    }
+
+    @Test("Ask intent uses the answer-only prompt, still delimiting the source")
+    func askUsesAnswerPrompt() {
+        var ask = request(original: "some text", instruction: "is this correct?")
+        ask.intent = .ask
+        #expect(ask.systemPrompt == ChatCompletionRequest.askSystemPrompt)
+        #expect(ask.systemPrompt.contains("never inserted"))
+        #expect(ask.userPrompt.contains("<source_text>"))
+    }
+
+    @Test("A question phrased edit is still called an edit in the prompt")
+    func answerInstructionGuardsEdits() {
+        #expect(ChatCompletionRequest.answerInstruction.contains("can you make this shorter?"))
     }
 
     @Test("The generate prompt actually reaches the payload")
@@ -173,7 +204,7 @@ struct ChatCompletionTests {
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         let messages = try #require(json["messages"] as? [[String: String]])
 
-        #expect(messages[0]["content"] == ChatCompletionRequest.generateSystemPrompt)
+        #expect(messages[0]["content"]?.hasPrefix(ChatCompletionRequest.generateSystemPrompt) == true)
         #expect(
             messages[1]["content"] == """
                 <instruction>

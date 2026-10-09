@@ -108,6 +108,57 @@ struct ModelReplyTests {
         #expect(filter.receive(" PROPR_CANNOT: not a refusal here") == " PROPR_CANNOT: not a refusal here")
     }
 
+    // MARK: - Answers
+
+    @Test("An answer-marked reply is an answer for the bar")
+    func parsesAnswer() {
+        #expect(
+            ModelReply.parse("PROPR_ANSWER: It means \"to find\".")
+                == .answer("It means \"to find\"."))
+    }
+
+    @Test("A multi-line answer keeps its lines")
+    func multiLineAnswer() {
+        #expect(ModelReply.parse("PROPR_ANSWER:\nYes.\nBut check the comma.") == .answer("Yes.\nBut check the comma."))
+    }
+
+    /// The whole point: a question must never touch the user's text, even when the
+    /// marker arrives in pieces.
+    @Test("An answer writes nothing to the document, even split across chunks", arguments: [
+        ["PROPR_ANSWER: No, ", "it should be \"do\"."],
+        ["PRO", "PR_ANS", "WER: No, it should", " be \"do\"."],
+        ["`", "PROPR_ANSWER:", " No, it should be \"do\"."],
+    ])
+    func streamsAnswer(_ chunks: [String]) {
+        let result = stream(chunks)
+        #expect(result.written.isEmpty)
+        #expect(result.end == .answer("No, it should be \"do\"."))
+    }
+
+    @Test("The answer is readable while it streams")
+    func partialAnswer() {
+        var filter = StreamingReplyFilter()
+        #expect(filter.receive("PROPR_ANS") == "")
+        #expect(filter.partialAnswer == nil)
+        #expect(filter.receive("WER: It means") == "")
+        #expect(filter.partialAnswer == "It means")
+    }
+
+    @Test("Text that only starts like the answer marker is written in full", arguments: [
+        ["PROPR_A", "pp settings"],
+        ["PROPR_", "CAN be configured"],
+    ])
+    func answerLookalikes(_ chunks: [String]) {
+        #expect(stream(chunks).written == chunks.joined())
+    }
+
+    @Test("Ask mode strips a stray marker from the answer")
+    @MainActor
+    func askAnswerStripsMarker() {
+        #expect(FloatingBarController.askAnswer(from: "PROPR_ANSWER: Yes.") == "Yes.")
+        #expect(FloatingBarController.askAnswer(from: "  Yes.\n") == "Yes.")
+    }
+
     // MARK: - Cursor placement
 
     @Test("The cursor marker is removed and its UTF-16 position is preserved")
