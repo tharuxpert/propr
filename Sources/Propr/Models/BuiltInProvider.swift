@@ -68,6 +68,13 @@ extension BuiltInProvider {
             apiKeyExample: "sk-..."
         ),
         BuiltInProvider(
+            name: "MiMo",
+            baseURL: "https://api.xiaomimimo.com/v1",
+            requiresKey: true,
+            description: "Xiaomi's MiMo models",
+            apiKeyExample: "sk-..."
+        ),
+        BuiltInProvider(
             name: "Local (Ollama / LM Studio)",
             baseURL: "http://127.0.0.1:11434/v1",
             requiresKey: false,
