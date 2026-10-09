@@ -12,7 +12,11 @@ extension FloatingBarController {
         selection: ModelSelection,
         apiKey: String
     ) async throws {
-        var reply = ""
+        // The ask prompt uses no markers, but the history shows earlier answers with
+        // one and the model may copy it. The filter holds a possible marker back so
+        // no "PROPR_ANS" fragment flashes up while it streams.
+        var filter = StreamingReplyFilter()
+        var passed = ""
         for try await token in AIService.shared.refineStream(
             original: originalText,
             instruction: question,
@@ -22,12 +26,21 @@ extension FloatingBarController {
             intent: .ask
         ) {
             try Task.checkCancellation()
-            reply += token
-            sessionState.showAnswer(Self.askAnswer(from: reply), to: question, isComplete: false)
+            passed += filter.receive(token)
+            let partial = filter.partialAnswer
+                ?? passed.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !partial.isEmpty {
+                sessionState.showAnswer(partial, to: question, isComplete: false)
+            }
         }
         try Task.checkCancellation()
 
-        let answer = Self.askAnswer(from: reply)
+        let answer: String
+        switch filter.finish() {
+        case .answer(let text): answer = text
+        case .cannot(let reason): answer = reason
+        case .text(let rest): answer = Self.askAnswer(from: passed + rest)
+        }
         guard !answer.isEmpty else {
             sessionState.fail("The model returned an empty response.")
             return
