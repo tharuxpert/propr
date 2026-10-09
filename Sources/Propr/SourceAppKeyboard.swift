@@ -26,6 +26,7 @@ struct SourceAppKeyboard {
 
     /// Text longer than this is refused rather than sent to a model.
     private static let maxCapturedCharacters = 8_000
+    private static var copyInProgress = false
 
     /// Pacing for synthesised keystrokes.
     ///
@@ -34,12 +35,13 @@ struct SourceAppKeyboard {
     /// unusable — 3,000 characters at 18ms is nearly a minute of the user watching
     /// their editor type by itself.
     private enum Pacing {
-        /// Comfortable spacing, used when the text is short enough to afford it.
-        static let relaxed = Duration.milliseconds(18)
+        /// Spacing used when the text is short enough to afford it. Quick enough that
+        /// a sentence lands in well under a second, while still reading as typing.
+        static let relaxed = Duration.milliseconds(6)
         /// Never go below this; apps start dropping events.
         static let floor = Duration.milliseconds(3)
         /// Roughly how long a whole run should take before pacing is compressed.
-        static let budget = Duration.seconds(4)
+        static let budget = Duration.milliseconds(1_500)
     }
 
     /// The delay to use between keystrokes for a run of `count` characters.
@@ -77,7 +79,11 @@ struct SourceAppKeyboard {
     /// Returns nil when nothing was selected or the copy did not take effect.
     func copySelectedText() async -> String? {
         print("[Propr Bar] fallback: trying selected-text copy from pid=\(pid)")
-        guard isTargetable else { return nil }
+        guard isTargetable, !Self.copyInProgress,
+            NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        else { return nil }
+        Self.copyInProgress = true
+        defer { Self.copyInProgress = false }
 
         let pasteboard = NSPasteboard.general
         // A copy of the data, not the item objects — see PasteboardSnapshot.
@@ -87,15 +93,23 @@ struct SourceAppKeyboard {
 
         activate()
         try? await Task.sleep(for: .milliseconds(90))
-        guard sendCommandKey(Key.c) else { return nil }
+        guard !Task.isCancelled,
+            NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+            sendCommandKey(Key.c)
+        else { return nil }
         try? await Task.sleep(for: .milliseconds(140))
 
         let copied = pasteboard.string(forType: .string)
-        // A changeCount bump alone is not proof: some apps rewrite identical contents.
-        let changed = pasteboard.changeCount != oldChangeCount || copied != oldString
-        saved.restore(to: pasteboard)
+        let copiedChangeCount = pasteboard.changeCount
+        let changed = copiedChangeCount != oldChangeCount || copied != oldString
+        let sourceStillActive = NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        if copiedChangeCount != oldChangeCount {
+            saved.restore(to: pasteboard, ifChangeCount: copiedChangeCount, ifString: copied)
+        }
 
-        guard changed, let copied, isUsable(copied) else { return nil }
+        guard !Task.isCancelled, sourceStillActive, changed, let copied, isUsable(copied) else {
+            return nil
+        }
         return copied
     }
 
@@ -108,33 +122,53 @@ struct SourceAppKeyboard {
     /// copy would overwrite the full text with a partial answer.
     func copyCurrentInput() async -> String? {
         print("[Propr Bar] fallback: trying select-all copy from pid=\(pid)")
-        guard isTargetable else { return nil }
+        guard isTargetable, !Self.copyInProgress,
+            NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        else { return nil }
+        Self.copyInProgress = true
+        defer { Self.copyInProgress = false }
 
         let pasteboard = NSPasteboard.general
         // A copy of the data, not the item objects — see PasteboardSnapshot.
         let saved = PasteboardSnapshot(of: pasteboard)
+        let oldChangeCount = pasteboard.changeCount
 
         activate()
         try? await Task.sleep(for: .milliseconds(90))
-        guard sendCommandKey(Key.a) else { return nil }
+        guard !Task.isCancelled,
+            NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+            sendCommandKey(Key.a)
+        else { return nil }
 
         // Everything in the field is now selected, which is one keystroke away from
         // destroying the user's work. Collapse it again however this function exits.
         // An arrow key does that reliably in text controls; Escape, which this used to
         // send, is not a deselect key on macOS and frequently left the selection live.
-        defer { sendPlainKey(Key.rightArrow) }
+        defer {
+            if NSWorkspace.shared.frontmostApplication?.processIdentifier == pid {
+                sendPlainKey(Key.rightArrow)
+            }
+        }
 
         try? await Task.sleep(for: .milliseconds(60))
-        guard sendCommandKey(Key.c) else {
-            saved.restore(to: pasteboard)
+        guard !Task.isCancelled,
+            NSWorkspace.shared.frontmostApplication?.processIdentifier == pid,
+            sendCommandKey(Key.c)
+        else {
             return nil
         }
         try? await Task.sleep(for: .milliseconds(140))
 
         let copied = pasteboard.string(forType: .string)
-        saved.restore(to: pasteboard)
+        let copiedChangeCount = pasteboard.changeCount
+        let sourceStillActive = NSWorkspace.shared.frontmostApplication?.processIdentifier == pid
+        if copiedChangeCount != oldChangeCount {
+            saved.restore(to: pasteboard, ifChangeCount: copiedChangeCount, ifString: copied)
+        }
 
-        guard let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+        guard !Task.isCancelled, sourceStillActive, copiedChangeCount != oldChangeCount,
+            let copied, !copied.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        else {
             return nil
         }
 

@@ -32,118 +32,38 @@ struct FloatingBarView: View {
         sessionState.latestAppliedText ?? snapshot.contextText
     }
 
-    private var displayedCharacterCount: Int {
-        sessionState.latestAppliedText?.count ?? snapshot.characterCount
-    }
-
     private var trimmedPrompt: String {
         prompt.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
+    /// One line of the text being refined. Newlines are flattened so a multi-line
+    /// field still previews as a single line; the prefix keeps layout cheap.
     private var textPreview: String {
-        let maxLength = 110
-        if displayedContextText.count > maxLength {
-            return String(displayedContextText.prefix(maxLength)) + "…"
-        }
-        return displayedContextText
+        String(displayedContextText.prefix(300))
+            .replacingOccurrences(of: "\n", with: " ")
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private var statusLabel: String? {
+        if sessionState.isThinking { return "Thinking…" }
+        if sessionState.isTyping { return "Typing…" }
+        return nil
     }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Minimal top bar
-            HStack(spacing: 8) {
-                HStack(spacing: 8) {
-                    Image(nsImage: appIcon(for: snapshot.pid))
-                        .resizable()
-                        .frame(width: 20, height: 20)
-                        .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+            // One even inset, roughly the corner radius, so the keys in the corners
+            // never crowd the rounding.
+            sourceStrip
+                .padding(.leading, 14)
+                .padding(.trailing, 12)
+                .padding(.top, 12)
 
-                    if snapshot.appName != "—" {
-                        Text(snapshot.appName)
-                            .font(.subheadline.weight(.medium))
-                            .foregroundStyle(.secondary)
-                    }
-                }
-
-                Spacer()
-
-                if displayedCharacterCount > 0 {
-                    Text("\(displayedCharacterCount)")
-                        .font(.caption.monospacedDigit())
-                        .foregroundStyle(.tertiary)
-                }
-
-                Button(action: onClose) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 24, height: 24)
-                }
-                .buttonStyle(.plain)
-                .keyboardShortcut(.escape, modifiers: [])
-            }
-            .padding(.horizontal, 14)
-            .padding(.vertical, 10)
-
-            Divider()
-                .opacity(0.25)
-
-            // Truncated preview of the text being refined (not the whole thing)
-            if !textPreview.isEmpty {
-                Text(textPreview)
-                    .font(.callout)
-                    .foregroundStyle(.secondary.opacity(0.85))
-                    .lineLimit(2)
-                    .multilineTextAlignment(.leading)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Divider()
-                    .opacity(0.2)
-            }
-
-            // Main instruction input. Once a result has been applied, make the
-            // ongoing conversation explicit instead of presenting a fresh composer.
-            VStack(alignment: .leading, spacing: 6) {
-                if sessionState.hasAppliedResult {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.turn.down.right")
-                        Text("Follow-up")
-                    }
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tint)
-                }
-
-                TextField(promptPlaceholder, text: $prompt)
-                    .textFieldStyle(.plain)
-                    .font(.title3)
-                    .focused($isPromptFocused)
-                    .onSubmit {
-                        submitPrompt()
-                    }
-                    .onAppear {
-                        // Auto-focus the input as soon as the bar appears
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                            isPromptFocused = true
-                        }
-                    }
-                    .onChange(of: sessionState.composerRevision) {
-                        prompt = ""
-                        DispatchQueue.main.async {
-                            isPromptFocused = true
-                        }
-                    }
-                    .disabled(sessionState.isBusy)
-            }
-                .padding(.horizontal, 14)
-                .padding(.vertical, 13)
-
-            if sessionState.isThinking {
-                RefineStatusRow(label: "Thinking…")
-            } else if sessionState.isTyping {
-                RefineStatusRow(label: "Typing…")
-            }
+            composerRow
+                .padding(.leading, 14)
+                .padding(.trailing, 12)
+                .padding(.top, 10)
+                .padding(.bottom, 12)
 
             if let error = sessionState.errorMessage {
                 RefineErrorBanner(message: error) { sessionState.clearError() }
@@ -152,32 +72,8 @@ struct FloatingBarView: View {
             if let notice = sessionState.noticeMessage {
                 RefineNoticeBanner(message: notice) { sessionState.clearNotice() }
             }
-
-            HStack(spacing: 12) {
-                if sessionState.hasAppliedResult && !sessionState.isBusy, let onUndo {
-                    Button("Undo", action: onUndo)
-                        .buttonStyle(.bordered)
-                        .controlSize(.regular)
-                }
-
-                Spacer()
-
-                Button(sessionState.isBusy ? "Stop" : "Send") {
-                    if sessionState.isBusy {
-                        onStop()
-                    } else {
-                        submitPrompt()
-                    }
-                }
-                .buttonStyle(.borderedProminent)
-                .controlSize(.regular)
-                .tint(sessionState.isBusy ? .red : .accentColor)
-                .disabled(!sessionState.isBusy && trimmedPrompt.isEmpty)
-            }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
         }
-        .frame(width: 470)
+        .frame(maxWidth: .infinity)
         .modifier(DraggablePanel())
         // A real behind-window vibrancy view, so the bar samples the desktop beneath
         // it the way Spotlight does. The panel itself is borderless and clear; the
@@ -191,18 +87,119 @@ struct FloatingBarView: View {
         )
         .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
         .overlay(
-            // The hairline macOS puts around floating panels: a light top edge over a
-            // separator, rather than a uniform white stroke.
             RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
                 .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
         )
+        .overlay(WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius))
         // No SwiftUI shadow: the panel sets `hasShadow`, and now that the content is
         // an opaque rounded shape the window shadow follows it correctly. Drawing
         // both stacked two shadows on top of each other.
     }
 
+    /// Where the text came from and what it is: the source app's icon, then the
+    /// captured text as a single quoted line.
+    private var sourceStrip: some View {
+        HStack(spacing: 9) {
+            Image(nsImage: appIcon(for: snapshot.pid))
+                .resizable()
+                .frame(width: 18, height: 18)
+                .help(snapshot.appName)
+
+            if textPreview.isEmpty {
+                Text(snapshot.appName == "—" ? "Writing at the cursor" : "Writing in \(snapshot.appName)")
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                // The accent rule marks this line as the text being worked on.
+                Capsule()
+                    .fill(Color.accentColor)
+                    .frame(width: 2, height: 14)
+
+                Text(textPreview)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Button("esc", action: onClose)
+                .buttonStyle(KeycapButtonStyle())
+                .keyboardShortcut(.escape, modifiers: [])
+                .help("Close")
+        }
+        .font(.callout)
+    }
+
+    /// The instruction field with its key: ↩ to send, or a stop key while busy.
+    /// Once a result has been applied, a turn arrow marks the field as a follow-up.
+    private var composerRow: some View {
+        HStack(spacing: 10) {
+            if sessionState.hasAppliedResult {
+                Image(systemName: "arrow.turn.down.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.tint)
+                    .help("Follow-up to the last change")
+            }
+
+            TextField(promptPlaceholder, text: $prompt)
+                .textFieldStyle(.plain)
+                .font(.system(size: 16))
+                .focused($isPromptFocused)
+                .onSubmit {
+                    submitPrompt()
+                }
+                .onAppear {
+                    // Auto-focus the input as soon as the bar appears
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+                        isPromptFocused = true
+                    }
+                }
+                .onChange(of: sessionState.composerRevision) {
+                    prompt = ""
+                    DispatchQueue.main.async {
+                        isPromptFocused = true
+                    }
+                }
+                .disabled(sessionState.isBusy)
+
+            if let statusLabel {
+                Text(statusLabel)
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                    .transition(.opacity)
+            }
+
+            if sessionState.hasAppliedResult && !sessionState.isBusy, let onUndo {
+                Button(action: onUndo) {
+                    Label("Undo", systemImage: "arrow.uturn.backward")
+                        .labelStyle(.titleAndIcon)
+                }
+                .buttonStyle(KeycapButtonStyle())
+                .help("Undo the last change")
+            }
+
+            if sessionState.isBusy {
+                Button(action: onStop) {
+                    Image(systemName: "stop.fill")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.red)
+                }
+                .buttonStyle(KeycapButtonStyle())
+                .help("Stop")
+            } else {
+                Button(action: submitPrompt) {
+                    Image(systemName: "return")
+                }
+                .buttonStyle(KeycapButtonStyle(tint: trimmedPrompt.isEmpty ? nil : .accentColor))
+                .disabled(trimmedPrompt.isEmpty)
+                .help("Send")
+            }
+        }
+        .animation(.easeOut(duration: 0.15), value: sessionState.isBusy)
+    }
+
     /// Matches the rounding macOS uses on floating panels of this size.
-    private static let cornerRadius: CGFloat = 12
+    private static let cornerRadius: CGFloat = 16
 
     private func submitPrompt() {
         guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }

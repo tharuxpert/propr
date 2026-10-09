@@ -54,4 +54,19 @@ struct PasteboardSnapshot {
             pasteboard.writeObjects(fresh)
         }
     }
+
+    /// Do not replace a newer clipboard item copied while our synthetic ⌘C was
+    /// in flight. Some pasteboards can replace a string without incrementing the
+    /// change count, so both the count and our copied string must still match.
+    @discardableResult
+    func restore(
+        to pasteboard: NSPasteboard,
+        ifChangeCount expected: Int,
+        ifString expectedString: String?
+    ) -> Bool {
+        guard pasteboard.changeCount == expected,
+            pasteboard.string(forType: .string) == expectedString else { return false }
+        restore(to: pasteboard)
+        return true
+    }
 }

@@ -73,8 +73,6 @@ final class FloatingBarController {
     var panel: FloatingPanel?
     var hostingView: FloatingPanelHostingView?
 
-    /// Reads the focused field on demand; holds no state between summons.
-    let detector = FocusedFieldDetector()
     var sessionState = FloatingBarSessionState()
     var refineTask: Task<Void, Never>?
 
@@ -147,21 +145,16 @@ final class FloatingBarController {
                 //
                 // Capture happens before the panel becomes key: for fallback targets
                 // such as terminals, the source app's selection can be gone after that.
-                if let snapshot = self.detector.snapshotOfFocusedElement() {
-                    // Show the real target even with no text to work on: the user asked
-                    // for the bar, and an empty context is a valid way to use it.
-                    let prepared = await self.prepareSnapshotForSummon(snapshot)
-                    self.showCentered(for: prepared)
-                } else {
-                    // Some editors (including ChatGPT's composer) do not expose a
-                    // focused AX text element. We still know the frontmost process,
-                    // so run the keyboard-copy fallback before the panel takes focus.
-                    // The old empty path skipped this step, which made a real text
-                    // selection look like an empty prompt.
-                    let snapshot = self.snapshotForFrontmostApp()
-                    let prepared = await self.prepareSnapshotForSummon(snapshot)
-                    self.showCentered(for: prepared)
-                }
+                guard let snapshot = SelectionCaptureService.shared.snapshotForCurrentFocus()
+                else { return }
+                let element = self.captureCurrentFocusedElement()
+                let fallback = self.strategy(
+                    for: element, role: snapshot.role, appName: snapshot.appName) == .clipboardPaste
+                let prepared = await SelectionCaptureService.shared.prepare(
+                    snapshot, policy: .refinementContext, allowKeyboardFallback: fallback)
+                guard NSWorkspace.shared.frontmostApplication?.processIdentifier == snapshot.pid
+                else { return }
+                self.showCentered(for: prepared)
             }
         }
     }

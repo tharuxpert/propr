@@ -6,6 +6,7 @@ enum AIError: Error, LocalizedError {
     case networkError
     case apiError(statusCode: Int, message: String)
     case invalidResponse
+    case responseIssue(String)
 
     var errorDescription: String? {
         switch self {
@@ -19,6 +20,8 @@ enum AIError: Error, LocalizedError {
             return "API error (\(statusCode)): \(message)"
         case .invalidResponse:
             return "Received an invalid response from the model provider."
+        case .responseIssue(let message):
+            return message
         }
     }
 }
