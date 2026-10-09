@@ -25,6 +25,10 @@ enum PillStyle {
 /// over the prose between its lines. Consecutive fenced-block lines merge into
 /// a single continuous block; the bounding box only ever covers trailing
 /// whitespace, which is invisible.
+///
+/// Rects are measured per line with newlines excluded and clamped to the
+/// glyphs' tight bounding box: a newline glyph's rect can stretch to the
+/// container edge, which once blew every block out to full panel width.
 final class PillBackgroundLayoutManager: NSLayoutManager {
     override func drawBackground(forGlyphRange glyphsToShow: NSRange, at origin: NSPoint) {
         drawCodePills(forGlyphRange: glyphsToShow, at: origin)
@@ -39,31 +43,46 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
             guard containerGlyphs.length > 0 else { continue }
             let chars = characterRange(forGlyphRange: containerGlyphs, actualGlyphRange: nil)
 
-            var spans: [(range: NSRange, isBlock: Bool)] = []
+            // A block is a group of line ranges; inline code stands on its own.
+            // Line ranges never include their newlines (see the class docs).
+            var groups: [(lines: [NSRange], isBlock: Bool, end: Int)] = []
             storage.enumerateAttribute(.proprCode, in: chars, options: []) { value, range, _ in
                 guard let isBlock = value as? Bool else { return }
-                if isBlock, let last = spans.last, last.isBlock,
-                   gapIsOnlyNewlines(fullText, from: last.range.upperBound, to: range.location) {
-                    spans[spans.count - 1].range = NSRange(
-                        location: last.range.location,
-                        length: range.upperBound - last.range.location)
+                if isBlock {
+                    let lines = lineRanges(in: range, text: fullText)
+                    if let last = groups.last, last.isBlock, !lines.isEmpty,
+                       gapIsOnlyNewlines(fullText, from: last.end, to: range.location) {
+                        groups[groups.count - 1].lines.append(contentsOf: lines)
+                        groups[groups.count - 1].end = range.upperBound
+                    } else {
+                        groups.append((lines, true, range.upperBound))
+                    }
                 } else {
-                    spans.append((range, isBlock))
+                    groups.append(([range], false, range.upperBound))
                 }
             }
 
-            for span in spans {
-                let glyphs = glyphRange(forCharacterRange: span.range, actualCharacterRange: nil)
+            for group in groups {
                 var rects: [NSRect] = []
-                enumerateEnclosingRects(
-                    forGlyphRange: glyphs,
-                    withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
-                    in: container
-                ) { rect, _ in
-                    rects.append(rect)
+                for line in group.lines {
+                    let glyphs = glyphRange(
+                        forCharacterRange: line, actualCharacterRange: nil)
+                    guard glyphs.length > 0 else { continue }
+                    let tight = boundingRect(forGlyphRange: glyphs, in: container)
+                    enumerateEnclosingRects(
+                        forGlyphRange: glyphs,
+                        withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
+                        in: container
+                    ) { rect, _ in
+                        // Full line height from the fragment rect, tight width
+                        // from the glyphs — never the fragment's full width.
+                        rects.append(NSRect(
+                            x: tight.minX, y: rect.minY,
+                            width: tight.width, height: rect.height))
+                    }
                 }
                 guard !rects.isEmpty else { continue }
-                if span.isBlock {
+                if group.isBlock {
                     var union = rects[0]
                     for rect in rects.dropFirst() { union = union.union(rect) }
                     fillPill(union, at: origin)
@@ -72,6 +91,23 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
                 }
             }
         }
+    }
+
+    /// Splits a marked range into its line ranges, dropping the newlines.
+    private func lineRanges(in range: NSRange, text: NSString) -> [NSRange] {
+        var lines: [NSRange] = []
+        var loc = range.location
+        while loc < range.upperBound {
+            var lineEnd = loc
+            while lineEnd < range.upperBound, text.character(at: lineEnd) != 10 {
+                lineEnd += 1
+            }
+            if lineEnd > loc {
+                lines.append(NSRange(location: loc, length: lineEnd - loc))
+            }
+            loc = lineEnd + 1
+        }
+        return lines
     }
 
     private func gapIsOnlyNewlines(_ text: NSString, from start: Int, to end: Int) -> Bool {

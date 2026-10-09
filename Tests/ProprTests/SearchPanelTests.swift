@@ -178,21 +178,7 @@ struct SearchPanelTests {
         let content = SearchAnswerFormatter.render(
             "Two options:\n\n```\nline one\nline two\n```\n\npick one")
         func paintedPixels(withPills pills: Bool) -> Int {
-            let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
-            if pills {
-                textView.textContainer?.replaceLayoutManager(PillBackgroundLayoutManager())
-            }
-            textView.drawsBackground = false
-            textView.textStorage?.setAttributedString(content)
-            guard let container = textView.textContainer else { return 0 }
-            textView.layoutManager?.ensureLayout(for: container)
-            let image = NSImage(size: NSSize(width: 400, height: 400))
-            image.lockFocus()
-            textView.draw(textView.bounds)
-            image.unlockFocus()
-            guard let tiff = image.tiffRepresentation,
-                  let rep = NSBitmapImageRep(data: tiff)
-            else { return 0 }
+            guard let rep = paintedAnswer(content: content, pills: pills) else { return 0 }
             var count = 0
             for x in 0..<rep.pixelsWide {
                 for y in 0..<rep.pixelsHigh {
@@ -204,6 +190,54 @@ struct SearchPanelTests {
             return count
         }
         #expect(paintedPixels(withPills: true) > paintedPixels(withPills: false))
+    }
+
+    @MainActor
+    @Test("Code block pills hug the code instead of spanning the panel")
+    func codeBlockPillHugsCode() {
+        let content = SearchAnswerFormatter.render("```\nline one\nline two\n```")
+        guard let pills = paintedAnswer(content: content, pills: true),
+              let plain = paintedAnswer(content: content, pills: false)
+        else {
+            Issue.record("could not paint answer offscreen")
+            return
+        }
+        // Pill-only pixels (painted with pills, absent without) must stay near
+        // the short code lines — "line two" ends around x=70 in a 400pt view.
+        // The newline-stretch bug painted them all the way to x=400.
+        var rightmostPillOnly = 0
+        for x in 0..<pills.pixelsWide {
+            for y in 0..<pills.pixelsHigh {
+                let pillAlpha = pills.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                let plainAlpha = plain.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                if pillAlpha > 0.01, plainAlpha <= 0.01 {
+                    rightmostPillOnly = x
+                }
+            }
+        }
+        #expect(rightmostPillOnly > 0)
+        #expect(rightmostPillOnly < 200)
+    }
+
+    /// Paints answer content offscreen at 400pt wide, with or without pills.
+    @MainActor
+    private func paintedAnswer(
+        content: NSAttributedString, pills: Bool
+    ) -> NSBitmapImageRep? {
+        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        if pills {
+            textView.textContainer?.replaceLayoutManager(PillBackgroundLayoutManager())
+        }
+        textView.drawsBackground = false
+        textView.textStorage?.setAttributedString(content)
+        guard let container = textView.textContainer else { return nil }
+        textView.layoutManager?.ensureLayout(for: container)
+        let image = NSImage(size: NSSize(width: 400, height: 400))
+        image.lockFocus()
+        textView.draw(textView.bounds)
+        image.unlockFocus()
+        guard let tiff = image.tiffRepresentation else { return nil }
+        return NSBitmapImageRep(data: tiff)
     }
 
     @MainActor
