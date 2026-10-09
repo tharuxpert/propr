@@ -20,17 +20,23 @@ struct KeystrokePacingTests {
         delayMilliseconds(count) * Double(count) / 1000
     }
 
-    @Test("Short replies keep the relaxed, readable pacing")
+    @Test("Short replies keep the relaxed pacing")
     func shortTextIsRelaxed() {
-        #expect(delayMilliseconds(20) == 18)
-        #expect(delayMilliseconds(100) == 18)
+        #expect(delayMilliseconds(20) == 6)
+        #expect(delayMilliseconds(100) == 6)
+    }
+
+    @Test("A sentence-length reply lands in under a second")
+    func sentenceIsQuick() {
+        #expect(runSeconds(100) < 1)
     }
 
     @Test("A long reply is compressed to stay near the budget")
     func longTextIsCompressed() {
         // The old flat 18ms put this at roughly 54 seconds.
-        #expect(runSeconds(3_000) < 12)
-        #expect(delayMilliseconds(3_000) < 18)
+        #expect(runSeconds(400) <= 1.5)
+        #expect(runSeconds(3_000) < 10)
+        #expect(delayMilliseconds(3_000) < 6)
     }
 
     @Test("Pacing never drops below the floor where apps drop events")
@@ -43,7 +49,7 @@ struct KeystrokePacingTests {
     @Test("Pacing never exceeds the relaxed delay")
     func neverAboveRelaxed() {
         for count in [0, 1, 2, 10, 500, 100_000] {
-            #expect(delayMilliseconds(count) <= 18)
+            #expect(delayMilliseconds(count) <= 6)
         }
     }
 

@@ -35,12 +35,13 @@ struct SourceAppKeyboard {
     /// unusable — 3,000 characters at 18ms is nearly a minute of the user watching
     /// their editor type by itself.
     private enum Pacing {
-        /// Comfortable spacing, used when the text is short enough to afford it.
-        static let relaxed = Duration.milliseconds(18)
+        /// Spacing used when the text is short enough to afford it. Quick enough that
+        /// a sentence lands in well under a second, while still reading as typing.
+        static let relaxed = Duration.milliseconds(6)
         /// Never go below this; apps start dropping events.
         static let floor = Duration.milliseconds(3)
         /// Roughly how long a whole run should take before pacing is compressed.
-        static let budget = Duration.seconds(4)
+        static let budget = Duration.milliseconds(1_500)
     }
 
     /// The delay to use between keystrokes for a run of `count` characters.
