@@ -21,10 +21,13 @@ struct ProviderLogo: View {
                 Image(nsImage: icon)
                     .resizable()
                     .interpolation(.high)
-                    .scaledToFit()
+                    // Full-bleed logos fill past the tile edge so the rounded clip
+                    // cuts through the logo itself. A white backing under them showed
+                    // through the anti-aliased edge as a light fringe.
+                    .aspectRatio(contentMode: isFullBleed ? .fill : .fit)
                     .padding(isFullBleed ? 0 : size * 0.14)
                     .frame(width: size, height: size)
-                    .background(shape.fill(.white))
+                    .background(shape.fill(isFullBleed ? Color.clear : .white))
                     .clipShape(shape)
                     .overlay(shape.strokeBorder(Color.primary.opacity(0.12), lineWidth: 0.5))
             } else {
