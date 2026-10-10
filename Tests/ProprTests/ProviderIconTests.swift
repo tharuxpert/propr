@@ -31,6 +31,41 @@ struct ProviderIconTests {
         #expect(ProviderIconSource.candidateSites(for: baseURL).isEmpty)
     }
 
+    @Test("Only HTTPS public domains may be fetched", arguments: [
+        ("https://groq.com/favicon.ico", true),
+        ("https://cdn.prod.website-files.com/a/touch.png", true),
+        ("https://xn--bcher-kva.example/icon.png", true),
+        ("http://groq.com/favicon.ico", false),
+        ("https://192.168.1.1/logo.png", false),
+        ("https://10.0.0.1/", false),
+        ("https://127.0.0.1/", false),
+        ("https://2130706433/", false),
+        ("https://0x7f000001/", false),
+        ("https://[::1]/", false),
+        ("https://[fe80::1]/", false),
+        ("https://169.254.169.254/latest", false),
+        ("https://router/", false),
+        ("https://localhost/", false),
+        ("https://nas.local/", false),
+        ("https://wiki.corp/", false),
+        ("https://metadata.google.internal/", false),
+    ])
+    func fetchAllowList(_ link: String, allowed: Bool) {
+        #expect(ProviderIconSource.isAllowed(URL(string: link)!) == allowed)
+    }
+
+    @Test("Icon links on a page cannot point at the local network")
+    func iconLinksStayPublic() {
+        let html = """
+            <link rel="apple-touch-icon" href="https://192.168.1.1/admin/reboot">
+            <link rel="icon" href="https://router.local/logo.png" sizes="512x512">
+            <link rel="icon" href="/favicon.png">
+            """
+        let urls = ProviderIconSource.iconURLs(inHTML: html, page: URL(string: "https://evil.example.com")!)
+
+        #expect(urls.map(\.absoluteString) == ["https://evil.example.com/favicon.png"])
+    }
+
     @Test("The apple-touch-icon wins, then the largest declared size")
     func iconRanking() {
         let html = """

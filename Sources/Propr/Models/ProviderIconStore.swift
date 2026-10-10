@@ -11,10 +11,8 @@ enum ProviderIconSource {
     /// came from one, then the API host and its parent domain (`api.groq.com` serves
     /// no icon, `groq.com` does). Empty for local and non-HTTPS endpoints.
     static func candidateSites(for baseURL: String) -> [URL] {
-        guard let url = URL(string: baseURL),
-            url.scheme?.lowercased() == "https",
-            let host = url.host()?.lowercased(),
-            !isLocal(host)
+        guard let url = URL(string: baseURL), isAllowed(url),
+            let host = url.host()?.lowercased()
         else { return [] }
 
         var sites: [URL] = []
@@ -45,7 +43,7 @@ enum ProviderIconSource {
                 rel.contains("icon"), !rel.contains("mask-icon"),
                 let href = attribute("href", in: tag),
                 let url = URL(string: href, relativeTo: page)?.absoluteURL,
-                url.scheme?.lowercased() == "https"
+                isAllowed(url)
             else { continue }
 
             let score = rel.contains("apple-touch-icon") ? 1_000 : declaredSize(in: tag)
@@ -58,10 +56,30 @@ enum ProviderIconSource {
             .map(\.element.url)
     }
 
-    private static func isLocal(_ host: String) -> Bool {
-        host == "localhost" || host.hasSuffix(".local") || host.hasPrefix("127.")
-            || host.hasPrefix("10.") || host.hasPrefix("192.168.") || host == "::1"
-            || host.hasPrefix("[")
+    /// Whether a URL may be fetched: HTTPS to a public domain name.
+    ///
+    /// The page that lists icons is untrusted, so every icon link and redirect
+    /// passes through here too. Otherwise a hostile provider site could aim Propr's
+    /// requests at the user's router or intranet. Rejects IP literals in every
+    /// notation (dotted, decimal, hex, IPv6) by requiring an alphabetic top-level
+    /// domain, and with it single-label intranet names.
+    nonisolated static func isAllowed(_ url: URL) -> Bool {
+        guard url.scheme?.lowercased() == "https",
+            let host = url.host()?.lowercased(),
+            let tld = host.split(separator: ".").last,
+            host.contains("."), !host.hasSuffix(".")
+        else { return false }
+
+        let isAlphabeticTLD =
+            tld.hasPrefix("xn--")
+            || (tld.count >= 2 && tld.allSatisfy { $0.isASCII && $0.isLetter })
+        guard isAlphabeticTLD else { return false }
+
+        let privateSuffixes = [
+            "localhost", "local", "localdomain", "internal", "intranet", "lan", "home",
+            "corp", "private", "home.arpa", "test", "invalid",
+        ]
+        return !privateSuffixes.contains { host == $0 || host.hasSuffix("." + $0) }
     }
 
     /// The largest side named in `sizes`, 512 for a scalable `any`, and 16 when the
@@ -145,7 +163,8 @@ final class ProviderIconStore {
     // MARK: - Network
 
     nonisolated private static func fetchIconData(sites: [URL]) async -> Data? {
-        let session = URLSession(configuration: .ephemeral)
+        let session = URLSession(
+            configuration: .ephemeral, delegate: RedirectGuard(), delegateQueue: nil)
         defer { session.finishTasksAndInvalidate() }
 
         for site in sites {
@@ -174,12 +193,13 @@ final class ProviderIconStore {
     nonisolated private static func download(
         _ url: URL, from session: URLSession, limit: Int
     ) async -> (Data, URL)? {
+        guard ProviderIconSource.isAllowed(url) else { return nil }
         var request = URLRequest(url: url, timeoutInterval: 8)
         request.setValue("image/*,text/html;q=0.9,*/*;q=0.5", forHTTPHeaderField: "Accept")
 
         guard let (bytes, response) = try? await session.bytes(for: request),
             let http = response as? HTTPURLResponse, http.statusCode == 200,
-            let finalURL = http.url, finalURL.scheme?.lowercased() == "https",
+            let finalURL = http.url, ProviderIconSource.isAllowed(finalURL),
             http.expectedContentLength <= Int64(limit)
         else { return nil }
 
@@ -209,5 +229,19 @@ final class ProviderIconStore {
         guard let directory, let file = file(for: key) else { return }
         try? FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try? data.write(to: file, options: .atomic)
+    }
+}
+
+/// Refuses any redirect to a URL `ProviderIconSource.isAllowed` rejects, before the
+/// request is made, so a public page cannot bounce a fetch onto the local network.
+private final class RedirectGuard: NSObject, URLSessionTaskDelegate, Sendable {
+    func urlSession(
+        _ session: URLSession,
+        task: URLSessionTask,
+        willPerformHTTPRedirection response: HTTPURLResponse,
+        newRequest request: URLRequest
+    ) async -> URLRequest? {
+        guard let url = request.url, ProviderIconSource.isAllowed(url) else { return nil }
+        return request
     }
 }
