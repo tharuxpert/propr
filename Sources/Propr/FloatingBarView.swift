@@ -206,7 +206,7 @@ struct FloatingBarView: View {
     private static let cornerRadius: CGFloat = 16
 
     /// How much darker than the raw material the composer sits.
-    private static let backgroundDim: CGFloat = 0.15
+    private static let backgroundDim: CGFloat = 0.3
 
     private func submitPrompt() {
         guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }
