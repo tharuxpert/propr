@@ -20,7 +20,9 @@ struct FloatingBarView: View {
     /// instead, so the prompt asks for that.
     private var promptPlaceholder: String {
         if sessionState.isAskMode {
-            return snapshot.contextText.isEmpty ? "Ask anything…" : "Ask anything about it…"
+            // The source strip above already shows the captured text, so the
+            // prompt needn't point at it.
+            return "Ask anything…"
         }
         if sessionState.hasAppliedResult {
             return "What should change next?"
