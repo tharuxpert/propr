@@ -68,28 +68,14 @@ struct ModelsSettingsView: View {
     private var form: some View {
         Form {
             Section {
-                Picker(selection: selectedModelBinding) {
-                    if modelStore.selectedModel() == nil {
-                        Text("None").tag(UUID?.none)
-                    }
-                    ForEach(modelStore.customEndpoints) { endpoint in
-                        if !endpoint.models.isEmpty {
-                            Section(endpoint.name) {
-                                ForEach(endpoint.models) { model in
-                                    Text(model.displayName).tag(UUID?.some(model.id))
-                                }
-                            }
-                        }
-                    }
-                } label: {
-                    SettingsRowLabel(
-                        title: "Default Model",
-                        systemImage: "sparkles",
-                        color: .indigo,
-                        subtitle: "Used each time you summon Propr."
-                    )
+                SettingsRow(
+                    title: "Default Model",
+                    systemImage: "star.fill",
+                    color: .orange,
+                    subtitle: "Used each time you summon Propr."
+                ) {
+                    defaultModelPicker
                 }
-                .disabled(modelStore.allAvailableModels.isEmpty)
             } footer: {
                 Text("You can also switch models from the Propr menu bar icon.")
             }
@@ -112,6 +98,26 @@ struct ModelsSettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private var defaultModelPicker: some View {
+        Picker("Default Model", selection: selectedModelBinding) {
+            if modelStore.selectedModel() == nil {
+                Text("None").tag(UUID?.none)
+            }
+            ForEach(modelStore.customEndpoints) { endpoint in
+                if !endpoint.models.isEmpty {
+                    Section(endpoint.name) {
+                        ForEach(endpoint.models) { model in
+                            Text(model.displayName).tag(UUID?.some(model.id))
+                        }
+                    }
+                }
+            }
+        }
+        .labelsHidden()
+        .fixedSize()
+        .disabled(modelStore.allAvailableModels.isEmpty)
     }
 
     private var emptyState: some View {
