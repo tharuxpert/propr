@@ -250,6 +250,58 @@ struct SearchPanelTests {
         #expect(edgePillOnly == 0)
     }
 
+    @MainActor
+    @Test("Redrawing part of a code block paints the same pill as a full draw")
+    func partialRedrawKeepsBlockWhole() {
+        let content = SearchAnswerFormatter.render(
+            "```\nline one\nline two\n\nline four\nline five\n```")
+        let storage = NSTextStorage(attributedString: content)
+        let layout = PillBackgroundLayoutManager()
+        storage.addLayoutManager(layout)
+        let container = NSTextContainer(size: NSSize(width: 400, height: 1000))
+        container.lineFragmentPadding = 0
+        layout.addTextContainer(container)
+        layout.ensureLayout(for: container)
+
+        // Scrolling or selecting redraws only some lines: here, from "line four".
+        let start = (storage.string as NSString).range(of: "line four").location
+        let partial = layout.glyphRange(
+            forCharacterRange: NSRange(location: start, length: storage.length - start),
+            actualCharacterRange: nil)
+        let redrawTop = Int(layout.lineFragmentRect(forGlyphAt: partial.location, effectiveRange: nil).minY)
+
+        func paint(_ glyphs: NSRange) -> NSBitmapImageRep? {
+            guard let rep = NSBitmapImageRep(
+                bitmapDataPlanes: nil, pixelsWide: 420, pixelsHigh: 200,
+                bitsPerSample: 8, samplesPerPixel: 4, hasAlpha: true, isPlanar: false,
+                colorSpaceName: .deviceRGB, bytesPerRow: 0, bitsPerPixel: 0),
+                  let context = NSGraphicsContext(bitmapImageRep: rep)
+            else { return nil }
+            NSGraphicsContext.saveGraphicsState()
+            context.cgContext.translateBy(x: 0, y: 200)
+            context.cgContext.scaleBy(x: 1, y: -1)
+            NSGraphicsContext.current = NSGraphicsContext(cgContext: context.cgContext, flipped: true)
+            layout.drawBackground(forGlyphRange: glyphs, at: NSPoint(x: 10, y: 0))
+            NSGraphicsContext.restoreGraphicsState()
+            return rep
+        }
+        guard let full = paint(layout.glyphRange(for: container)), let part = paint(partial) else {
+            Issue.record("could not paint pills offscreen")
+            return
+        }
+        // Within the redrawn rows the pill must match the full draw exactly;
+        // the old code rounded fresh corners at the top of the redraw.
+        var mismatches = 0
+        for y in redrawTop..<200 {
+            for x in 0..<420 {
+                let a = full.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                let b = part.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                if abs(a - b) > 0.01 { mismatches += 1 }
+            }
+        }
+        #expect(mismatches == 0)
+    }
+
     /// Paints answer content offscreen at 400pt wide, with or without pills.
     @MainActor
     private func paintedAnswer(

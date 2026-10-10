@@ -16,20 +16,15 @@ struct AnswerSection: View {
     /// minus this section's leading and trailing insets.
     @State private var textWidth: CGFloat = 500 - 42 - 12
 
-    /// The model's lightweight Markdown, rendered the same way as lookup answers.
-    /// Unfinished markup mid-stream falls back to plain text per line inside the
-    /// formatter, so this is safe to call on every streamed token.
-    private var content: NSAttributedString {
-        SearchAnswerFormatter.render(answer.text)
-    }
-
-    /// What lands on the clipboard: the answer without markup characters, so
-    /// `python hello.py` copies without its backticks.
-    private var plainAnswer: String {
-        SearchAnswerFormatter.render(answer.text).string
-    }
-
     var body: some View {
+        // The model's lightweight Markdown, rendered the same way as lookup answers.
+        // Unfinished markup mid-stream falls back to plain text per line inside the
+        // formatter, so this is safe on every streamed token. Rendered and measured
+        // once per update, then shared by the view, its frame and the copy button.
+        let content = SearchAnswerFormatter.render(answer.text)
+        let fittedHeight = AnswerTextSizing.height(
+            for: content, width: textWidth, maxHeight: Self.maxAnswerHeight)
+
         VStack(alignment: .leading, spacing: 10) {
             // The prompt clears once the answer is in, so keep what was asked in view.
             Text(answer.question)
@@ -43,9 +38,9 @@ struct AnswerSection: View {
             // answer; a long one (lists, reflowed tables) scrolls once it reaches
             // the cap instead of being cut off. The height is measured with the
             // same insets the view uses, so the panel grows to fit it.
-            AnswerTextView(content: content, width: textWidth, maxHeight: Self.maxAnswerHeight)
-                .frame(height: AnswerTextSizing.height(
-                    for: content, width: textWidth, maxHeight: Self.maxAnswerHeight))
+            AnswerTextView(
+                content: content, fittedHeight: fittedHeight, maxHeight: Self.maxAnswerHeight)
+                .frame(height: fittedHeight)
                 .background(
                     GeometryReader { proxy in
                         Color.clear
@@ -60,7 +55,9 @@ struct AnswerSection: View {
 
                     Button {
                         NSPasteboard.general.clearContents()
-                        NSPasteboard.general.setString(plainAnswer, forType: .string)
+                        // Without markup characters, so `python hello.py`
+                        // copies without its backticks.
+                        NSPasteboard.general.setString(content.string, forType: .string)
                     } label: {
                         Label("Copy", systemImage: "doc.on.doc")
                     }

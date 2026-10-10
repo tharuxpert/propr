@@ -45,20 +45,22 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
 
             // A block is a group of line ranges; inline code stands on its own.
             // Line ranges never include their newlines (see the class docs).
-            var groups: [(lines: [NSRange], isBlock: Bool, end: Int)] = []
+            //
+            // Blocks are widened to their full extent, not just the redrawn
+            // lines: a partial redraw (scrolling, selecting) otherwise rounds
+            // the pill's corners mid-block and leaves a notch.
+            var groups: [(lines: [NSRange], isBlock: Bool)] = []
+            var coveredBlockEnd = 0
             storage.enumerateAttribute(.proprCode, in: chars, options: []) { value, range, _ in
                 guard let isBlock = value as? Bool else { return }
                 if isBlock {
-                    let lines = lineRanges(in: range, text: fullText)
-                    if let last = groups.last, last.isBlock, !lines.isEmpty,
-                       gapIsOnlyNewlines(fullText, from: last.end, to: range.location) {
-                        groups[groups.count - 1].lines.append(contentsOf: lines)
-                        groups[groups.count - 1].end = range.upperBound
-                    } else {
-                        groups.append((lines, true, range.upperBound))
-                    }
+                    guard range.location >= coveredBlockEnd else { return }
+                    let extent = blockExtent(around: range, in: storage)
+                    coveredBlockEnd = extent.upperBound
+                    let lines = lineRanges(in: extent, text: fullText)
+                    if !lines.isEmpty { groups.append((lines, true)) }
                 } else {
-                    groups.append(([range], false, range.upperBound))
+                    groups.append(([range], false))
                 }
             }
 
@@ -132,10 +134,34 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
         return pills
     }
 
-    private func gapIsOnlyNewlines(_ text: NSString, from start: Int, to end: Int) -> Bool {
-        guard start <= end, end <= text.length else { return false }
-        let gap = text.substring(with: NSRange(location: start, length: end - start))
-        return gap.allSatisfy { $0 == "\n" }
+    /// Grows a block-line run to the whole block: neighbouring block lines
+    /// separated only by newlines (blank lines inside a block included).
+    private func blockExtent(around range: NSRange, in storage: NSTextStorage) -> NSRange {
+        let text = storage.string as NSString
+        func isBlock(at index: Int) -> Bool {
+            storage.attribute(.proprCode, at: index, effectiveRange: nil) as? Bool == true
+        }
+        var lower = range.location
+        var upper = range.upperBound
+        while true {
+            var gapStart = lower
+            while gapStart > 0, text.character(at: gapStart - 1) == 10 { gapStart -= 1 }
+            guard gapStart < lower, gapStart > 0, isBlock(at: gapStart - 1) else { break }
+            var run = NSRange(location: 0, length: 0)
+            storage.attribute(.proprCode, at: gapStart - 1, longestEffectiveRange: &run,
+                              in: NSRange(location: 0, length: gapStart))
+            lower = run.location
+        }
+        while true {
+            var gapEnd = upper
+            while gapEnd < text.length, text.character(at: gapEnd) == 10 { gapEnd += 1 }
+            guard gapEnd > upper, gapEnd < text.length, isBlock(at: gapEnd) else { break }
+            var run = NSRange(location: 0, length: 0)
+            storage.attribute(.proprCode, at: gapEnd, longestEffectiveRange: &run,
+                              in: NSRange(location: gapEnd, length: text.length - gapEnd))
+            upper = run.upperBound
+        }
+        return NSRange(location: lower, length: upper - lower)
     }
 
     private func fillPill(_ rect: NSRect, at origin: NSPoint) {
@@ -180,9 +206,12 @@ enum AnswerTextSizing {
 
 /// The answer body as a real text view, so code pills draw rounded and text
 /// stays selectable. Mirrors the insets `AnswerTextSizing` measures with.
+///
+/// The caller measures once and passes `fittedHeight` in; the text view sizes
+/// its own document height from layout, so long answers stay scrollable.
 struct AnswerTextView: NSViewRepresentable {
     var content: NSAttributedString
-    var width: CGFloat
+    var fittedHeight: CGFloat
     var maxHeight: CGFloat
 
     func makeNSView(context: Context) -> NSScrollView {
@@ -226,8 +255,6 @@ struct AnswerTextView: NSViewRepresentable {
             $0.rangeValue.upperBound <= content.length
         }
         textView.scrollToVisible(visible)
-        let fitted = AnswerTextSizing.height(for: content, width: width, maxHeight: maxHeight)
-        textView.frame = NSRect(x: 0, y: 0, width: max(width, 1), height: max(fitted, 1))
-        scrollView.hasVerticalScroller = fitted >= maxHeight && content.length > 0
+        scrollView.hasVerticalScroller = fittedHeight >= maxHeight && content.length > 0
     }
 }
