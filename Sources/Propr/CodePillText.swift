@@ -65,21 +65,8 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
             for group in groups {
                 var rects: [NSRect] = []
                 for line in group.lines {
-                    let glyphs = glyphRange(
-                        forCharacterRange: line, actualCharacterRange: nil)
-                    guard glyphs.length > 0 else { continue }
-                    let tight = boundingRect(forGlyphRange: glyphs, in: container)
-                    enumerateEnclosingRects(
-                        forGlyphRange: glyphs,
-                        withinSelectedGlyphRange: NSRange(location: NSNotFound, length: 0),
-                        in: container
-                    ) { rect, _ in
-                        // Full line height from the fragment rect, tight width
-                        // from the glyphs — never the fragment's full width.
-                        rects.append(NSRect(
-                            x: tight.minX, y: rect.minY,
-                            width: tight.width, height: rect.height))
-                    }
+                    rects.append(contentsOf: pills(
+                        forLineCharacters: line, in: container))
                 }
                 guard !rects.isEmpty else { continue }
                 if group.isBlock {
@@ -110,6 +97,41 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
         return lines
     }
 
+    /// One pill per line fragment in a marked line range. Each pill hugs its
+    /// own glyphs — full line boxes made the pills tall and heavy — and stays
+    /// centered on its line, so the gaps between lines and the words beside
+    /// the code are untouched. Walking fragments explicitly (instead of
+    /// `enumerateEnclosingRects`) keeps a wrapped run's pills tight to each
+    /// fragment rather than smearing across the whole line width.
+    private func pills(
+        forLineCharacters line: NSRange, in container: NSTextContainer
+    ) -> [NSRect] {
+        let glyphs = glyphRange(forCharacterRange: line, actualCharacterRange: nil)
+        guard glyphs.length > 0 else { return [] }
+        var pills: [NSRect] = []
+        var loc = glyphs.location
+        while loc < glyphs.upperBound {
+            var fragmentGlyphs = NSRange(location: 0, length: 0)
+            let fragment = lineFragmentRect(forGlyphAt: loc, effectiveRange: &fragmentGlyphs)
+            guard fragmentGlyphs.length > 0 else { break }
+            let part = NSIntersectionRange(fragmentGlyphs, glyphs)
+            guard part.length > 0 else { break }
+            let tight = boundingRect(forGlyphRange: part, in: container)
+            if tight.width > 0, tight.height > 0 {
+                // Hug the glyphs but never leave the line box: an overhang
+                // past the first fragment's top is exactly what reads as a
+                // pill clipped from above.
+                let height = min(
+                    tight.height + PillStyle.verticalPadding * 2, fragment.height)
+                pills.append(NSRect(
+                    x: tight.minX, y: fragment.midY - height / 2,
+                    width: tight.width, height: height))
+            }
+            loc = part.upperBound
+        }
+        return pills
+    }
+
     private func gapIsOnlyNewlines(_ text: NSString, from start: Int, to end: Int) -> Bool {
         guard start <= end, end <= text.length else { return false }
         let gap = text.substring(with: NSRange(location: start, length: end - start))
@@ -117,7 +139,9 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
     }
 
     private func fillPill(_ rect: NSRect, at origin: NSPoint) {
-        var padded = rect.insetBy(dx: -PillStyle.sidePadding, dy: -PillStyle.verticalPadding)
+        // Pills arrive with their vertical extent final; only the side
+        // breathing room is added here.
+        var padded = rect.insetBy(dx: -PillStyle.sidePadding, dy: 0)
         padded.origin.x += origin.x
         padded.origin.y += origin.y
         PillStyle.background.setFill()
@@ -130,6 +154,11 @@ final class PillBackgroundLayoutManager: NSLayoutManager {
 
 /// Measures answer text with the same insets the live view uses, so the panel
 /// can size to fit without a layout feedback loop.
+///
+/// Measured to the last line fragment's edge, not the glyph bounding box:
+/// the glyph box skips line leading and comes up a few points short, and a
+/// short frame shaves the top — which is exactly where a first-line code
+/// pill sits.
 enum AnswerTextSizing {
     static let horizontalInset: CGFloat = 4
     static let verticalInset: CGFloat = 5

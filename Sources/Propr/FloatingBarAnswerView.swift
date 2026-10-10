@@ -37,7 +37,6 @@ struct AnswerSection: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .truncationMode(.tail)
-                .padding(.bottom, -4)
 
             // A real text view so code pills draw rounded with side padding —
             // SwiftUI Text can only paint sharp, padding-less fills. Hugs a short

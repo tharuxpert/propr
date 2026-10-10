@@ -219,12 +219,50 @@ struct SearchPanelTests {
         #expect(rightmostPillOnly < 200)
     }
 
+    @MainActor
+    @Test("First-line code is not clipped from the top")
+    func firstLineCodeNotClipped() {
+        let content = SearchAnswerFormatter.render("`print()` writes text to the console")
+        let height = AnswerTextSizing.height(for: content, width: 400, maxHeight: 2000)
+        #expect(height > 0)
+        guard let pills = paintedAnswer(content: content, pills: true, height: height),
+              let plain = paintedAnswer(content: content, pills: false, height: height)
+        else {
+            Issue.record("could not paint answer offscreen")
+            return
+        }
+        // Pill-only pixels must exist but touch neither horizontal edge: a
+        // short frame shaves the top, right where a first-line pill sits.
+        var anyPillOnly = false
+        var edgePillOnly = 0
+        for x in 0..<pills.pixelsWide {
+            for y in 0..<pills.pixelsHigh {
+                let pillAlpha = pills.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                let plainAlpha = plain.colorAt(x: x, y: y)?.alphaComponent ?? 0
+                guard pillAlpha > 0.01, plainAlpha <= 0.01 else { continue }
+                anyPillOnly = true
+                if y == 0 || y == pills.pixelsHigh - 1 {
+                    edgePillOnly += 1
+                }
+            }
+        }
+        #expect(anyPillOnly)
+        #expect(edgePillOnly == 0)
+    }
+
     /// Paints answer content offscreen at 400pt wide, with or without pills.
     @MainActor
     private func paintedAnswer(
-        content: NSAttributedString, pills: Bool
+        content: NSAttributedString, pills: Bool, height: CGFloat = 400
     ) -> NSBitmapImageRep? {
-        let textView = NSTextView(frame: NSRect(x: 0, y: 0, width: 400, height: 400))
+        let size = NSSize(width: 400, height: max(height, 1))
+        let textView = NSTextView(frame: NSRect(origin: .zero, size: size))
+        // Same geometry as the live answer view: the insets are what keep a
+        // first-line pill clear of the edges.
+        textView.textContainerInset = NSSize(
+            width: AnswerTextSizing.horizontalInset,
+            height: AnswerTextSizing.verticalInset)
+        textView.textContainer?.lineFragmentPadding = 0
         if pills {
             textView.textContainer?.replaceLayoutManager(PillBackgroundLayoutManager())
         }
@@ -232,7 +270,7 @@ struct SearchPanelTests {
         textView.textStorage?.setAttributedString(content)
         guard let container = textView.textContainer else { return nil }
         textView.layoutManager?.ensureLayout(for: container)
-        let image = NSImage(size: NSSize(width: 400, height: 400))
+        let image = NSImage(size: size)
         image.lockFocus()
         textView.draw(textView.bounds)
         image.unlockFocus()
