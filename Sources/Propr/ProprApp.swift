@@ -59,6 +59,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     static let summonFloatingBarNotification = Notification.Name("ProprSummonFloatingBar")
 
+    /// True when Xcode launched this process as the host for the unit tests.
+    static var isHostingTests: Bool {
+        ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] != nil
+            || NSClassFromString("XCTestCase") != nil
+    }
+
     // Allow the AppKit menu controller to trigger onboarding/permission UI without tight coupling.
     static weak var shared: AppDelegate?
 
@@ -70,6 +76,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         AppDelegate.shared = self
+
+        // The test suite runs inside a copy of the app. Without this it would add a
+        // second menu bar icon and a second ⌘⌘ listener for the length of the run.
+        guard !Self.isHostingTests else { return }
 
         // Kick an initial permission check
         accessibility.startMonitoring()
