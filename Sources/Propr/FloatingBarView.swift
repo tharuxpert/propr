@@ -15,9 +15,9 @@ struct FloatingBarView: View {
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
 
-    /// Asking "what do you want to do with this text?" when no text was captured
-    /// points at nothing. With an empty context the bar writes at the cursor instead,
-    /// so the prompt asks for that.
+    /// With text captured the bar can edit it or answer about it, so the fresh
+    /// prompt stays open-ended. With an empty context the bar writes at the cursor
+    /// instead, so the prompt asks for that.
     private var promptPlaceholder: String {
         if sessionState.isAskMode {
             return snapshot.contextText.isEmpty ? "Ask anything" : "Ask about this text"
@@ -28,7 +28,7 @@ struct FloatingBarView: View {
 
         return snapshot.contextText.isEmpty
             ? "What do you want to write?"
-            : "What do you want to do with this text?"
+            : "What do you need?"
     }
 
     private var displayedContextText: String {
