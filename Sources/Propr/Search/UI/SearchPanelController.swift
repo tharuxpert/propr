@@ -412,10 +412,23 @@ extension SearchPanelController: WKNavigationDelegate {
         if navigationAction.navigationType == .linkActivated,
             let url = navigationAction.request.url
         {
-            NSWorkspace.shared.open(url)
+            if Self.canOpenExternally(url) {
+                NSWorkspace.shared.open(url)
+            }
             return .cancel
         }
         return .allow
+    }
+
+    /// The results page is untrusted web content, so a clicked link is handed to the
+    /// system only when it is an ordinary web link. Anything else (`file:`, `smb:`,
+    /// or another app's URL scheme) could open local files, leak credentials to a
+    /// remote share, or launch apps, so it is dropped.
+    nonisolated static func canOpenExternally(_ url: URL) -> Bool {
+        guard let scheme = url.scheme?.lowercased(), scheme == "https" || scheme == "http" else {
+            return false
+        }
+        return !(url.host() ?? "").isEmpty
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
