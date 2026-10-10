@@ -101,18 +101,33 @@ final class AIService {
                         return
                     }
 
-                    for try await line in bytes.lines {
+                    var yieldedText = false
+                    var truncated = false
+                    streamLoop: for try await line in bytes.lines {
                         switch ChatCompletionResponse.streamEvent(from: line) {
                         case .delta(let content):
+                            if !content.isEmpty { yieldedText = true }
                             continuation.yield(content)
-                        case .done:
-                            continuation.finish()
+                        case .truncated(let content):
+                            if !content.isEmpty { yieldedText = true }
+                            continuation.yield(content)
+                            truncated = true
+                        case .failed(let message):
+                            continuation.finish(throwing: AIError.responseIssue(message))
                             return
+                        case .done:
+                            break streamLoop
                         case .ignored:
                             continue
                         }
                     }
 
+                    if truncated {
+                        continuation.finish(throwing: AIError.responseIssue(yieldedText
+                            ? "The reply was cut off at the model's output limit."
+                            : "The model used up its output limit before writing anything, likely while thinking. Try again, or pick a model that doesn't reason."))
+                        return
+                    }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)

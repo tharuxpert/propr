@@ -352,6 +352,34 @@ struct ChatCompletionTests {
         #expect(ChatCompletionResponse.streamEvent(from: line) == .ignored)
     }
 
+    /// OpenRouter's documented shape for a provider failing after streaming starts:
+    /// the HTTP status stays 200 and the error rides in a data chunk.
+    @Test("An error inside the stream surfaces the provider's message")
+    func parsesMidStreamError() {
+        let line = #"data: {"error":{"code":"server_error","message":"Provider disconnected unexpectedly"},"choices":[{"index":0,"delta":{"content":""},"finish_reason":"error"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: line)
+            == .failed("Provider disconnected unexpectedly"))
+    }
+
+    @Test("Hitting the output limit is reported, with any final text")
+    func parsesLengthFinish() {
+        let empty = #"data: {"choices":[{"delta":{},"finish_reason":"length"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: empty) == .truncated(""))
+        let withText = #"data: {"choices":[{"delta":{"content":"end"},"finish_reason":"length"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: withText) == .truncated("end"))
+    }
+
+    @Test("A normal stop with final text is still a delta")
+    func parsesStopFinish() {
+        let line = #"data: {"choices":[{"delta":{"content":"!"},"finish_reason":"stop"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: line) == .delta("!"))
+    }
+
+    @Test("Refine requests leave the output limit to the provider")
+    func refineOmitsMaxTokens() {
+        #expect(request(stream: true).payload["max_tokens"] == nil)
+    }
+
     // MARK: - Error messages
 
     /// The shape that previously reached the floating bar as raw JSON.

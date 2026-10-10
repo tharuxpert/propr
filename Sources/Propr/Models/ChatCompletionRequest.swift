@@ -179,8 +179,10 @@ struct ChatCompletionRequest {
         var payload: [String: Any] = [
             "model": selection.modelName,
             "messages": messages,
+            // No max_tokens: reasoning models count their thinking toward it, and
+            // 2048 let them spend it all before writing a word. The provider's own
+            // per-model limit applies instead.
             "temperature": 0.4,
-            "max_tokens": 2048,
         ]
         if stream {
             payload["stream"] = true
@@ -312,6 +314,13 @@ enum ChatCompletionResponse {
         case done
         /// Keep-alives, comments and chunks carrying no content.
         case ignored
+        /// The provider reported an error inside a 200 stream (OpenRouter does this
+        /// when a provider fails after streaming starts).
+        case failed(String)
+        /// The reply hit the output-token limit (`finish_reason: "length"`). Carries
+        /// any final text in the same chunk. Reasoning models count their thinking
+        /// toward the limit, so this can arrive with no text at all.
+        case truncated(String)
     }
 
     static func streamEvent(from line: String) -> StreamEvent {
@@ -324,15 +333,27 @@ enum ChatCompletionResponse {
 
         guard
             let data = payload.data(using: .utf8),
-            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-            let choices = json["choices"] as? [[String: Any]],
-            let first = choices.first,
-            let delta = first["delta"] as? [String: Any],
-            let content = delta["content"] as? String
+            let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any]
         else {
             return .ignored
         }
 
+        if json["error"] != nil {
+            return .failed(AIError.message(fromResponseBody: data))
+        }
+
+        guard
+            let choices = json["choices"] as? [[String: Any]],
+            let first = choices.first
+        else {
+            return .ignored
+        }
+
+        let content = (first["delta"] as? [String: Any])?["content"] as? String
+        if first["finish_reason"] as? String == "length" {
+            return .truncated(content ?? "")
+        }
+        guard let content else { return .ignored }
         return .delta(content)
     }
 }
