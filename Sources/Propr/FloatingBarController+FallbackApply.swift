@@ -9,6 +9,7 @@ extension FloatingBarController {
         history: [RefinementTurn],
         selection: ModelSelection,
         apiKey: String,
+        intent: RefineIntent,
         targetPID: pid_t,
         appName: String,
         previousRevision: AppliedRevision?,
@@ -20,7 +21,8 @@ extension FloatingBarController {
                 instruction: instruction,
                 history: history,
                 selection: selection,
-                apiKey: apiKey
+                apiKey: apiKey,
+                intent: intent
             )
         }
         try Task.checkCancellation()
@@ -28,7 +30,10 @@ extension FloatingBarController {
         let rawAnswer: String
         switch ModelReply.parse(reply) {
         case .cannot(let reason):
-            sessionState.showNotice(reason)
+            recordCannot(reason, to: instruction)
+            return nil
+        case .answer(let answer):
+            recordAnswer(answer, to: instruction)
             return nil
         case .text(let text):
             rawAnswer = text

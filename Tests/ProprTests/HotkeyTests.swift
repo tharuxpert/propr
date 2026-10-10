@@ -13,6 +13,11 @@ struct HotkeyTests {
     private static let shift: UInt16 = 56
     private static let option: UInt16 = 58
 
+    @Test("The test host knows it is hosting tests, so it skips the ⌘⌘ listener")
+    func testHostSkipsLaunchSetup() {
+        #expect(AppDelegate.isHostingTests)
+    }
+
     /// Presses and releases left Command, returning whether the release summoned.
     private func tap(_ detector: CommandDoubleTapDetector, at time: TimeInterval) -> Bool {
         _ = detector.flagsChanged(keyCode: Self.leftCommand, flags: [.command], at: time)

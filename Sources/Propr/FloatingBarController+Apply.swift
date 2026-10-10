@@ -11,12 +11,12 @@ extension FloatingBarController {
         refineTask?.cancel()
     }
 
-    func performRefine(context: String, snapshot: FieldSnapshot) {
+    func performRefine(context: String, snapshot: FieldSnapshot, intent: RefineIntent = .auto) {
         let target = capturedTargetForApply()
         let element = target.element
         let targetPID = target.pid
         let strategy = target.strategy
-        let history = appliedRevisions.map(\.turn)
+        let history = conversation
         let previousRevision = appliedRevisions.last
 
         refineTask?.cancel()
@@ -50,6 +50,19 @@ extension FloatingBarController {
                 let originalText = sanitizedModelContext(
                     hasSelection ? selectedText : snapshot.fullText)
 
+                // Ask mode never reaches the write paths below, so the source app's
+                // text, selection and clipboard cannot be touched whatever the reply.
+                if intent == .ask {
+                    try await answerInBar(
+                        originalText: originalText,
+                        question: context,
+                        history: history,
+                        selection: selection,
+                        apiKey: key
+                    )
+                    return
+                }
+
                 switch strategy {
                 case .accessibility:
                     guard let element else {
@@ -77,6 +90,7 @@ extension FloatingBarController {
                         history: history,
                         selection: selection,
                         apiKey: key,
+                        intent: intent,
                         element: element,
                         replaceSelectionOnly: hasSelection,
                         previousRevision: previousRevision,
@@ -111,7 +125,7 @@ extension FloatingBarController {
                             accessibilityRange: range,
                             cursorUTF16Offset: answer.cursorUTF16Offset
                         )
-                        self.appliedRevisions.append(revision)
+                        self.recordEdit(revision)
                         self.lastApplyUndo = undo
                         pendingAXUndo = nil
                         self.panel?.makeKey()
@@ -125,12 +139,13 @@ extension FloatingBarController {
                         history: history,
                         selection: selection,
                         apiKey: key,
+                        intent: intent,
                         targetPID: targetPID,
                         appName: snapshot.appName,
                         previousRevision: previousRevision,
                         replaceExistingInput: fallbackReplacesExistingInput
                     ) {
-                        self.appliedRevisions.append(revision)
+                        self.recordEdit(revision)
                         self.lastApplyUndo = revision.undo
                         self.panel?.makeKey()
                         self.sessionState.finishRequest(appliedText: revision.turn.output)
@@ -159,92 +174,6 @@ extension FloatingBarController {
                 }
                 // Never write error text into the target application
             }
-        }
-    }
-
-    func applyWithAccessibilityStreaming(
-        originalText: String,
-        instruction: String,
-        history: [RefinementTurn],
-        selection: ModelSelection,
-        apiKey: String,
-        element: AXUIElement,
-        replaceSelectionOnly: Bool,
-        previousRevision: AppliedRevision?,
-        onWillWrite: () -> Void
-    ) async throws -> CursorMarkedText? {
-        let writer = AXTextWriter(element: element)
-        var wroteAnything = false
-        var writtenText = ""
-
-        // Clears the selection (or the whole field) only once there is real text to
-        // put in its place — so a reply the model marks as "cannot" leaves the user's
-        // document exactly as it was.
-        func write(_ text: String) async throws {
-            guard !text.isEmpty else { return }
-            if !wroteAnything {
-                wroteAnything = true
-                sessionState.startTyping()
-                onWillWrite()
-                if let previousRevision,
-                    let range = previousRevision.accessibilityRange
-                {
-                    try writer.selectPreviouslyAppliedText(
-                        previousRevision.turn.output,
-                        range: range
-                    )
-                }
-                try writer.prepareForReplacement(
-                    replacingWholeValue: previousRevision == nil
-                        && !replaceSelectionOnly && !originalText.isEmpty
-                )
-                try? await Task.sleep(for: .milliseconds(25))
-            }
-            try await writer.append(text)
-            writtenText += text
-        }
-
-        // Holds output back only while it could still be the "cannot" marker.
-        var filter = StreamingReplyFilter()
-        // Independently holds a possible cursor marker so none of it is ever typed.
-        var cursorFilter = StreamingCursorMarkerFilter()
-
-        for try await token in AIService.shared.refineStream(
-            original: originalText,
-            instruction: instruction,
-            history: history,
-            selection: selection,
-            apiKey: apiKey
-        ) {
-            // Throws rather than returning: a bare return here would leave the bar
-            // showing "Thinking…" forever with its input disabled.
-            try Task.checkCancellation()
-            try await write(cursorFilter.receive(filter.receive(token)))
-        }
-
-        // Cancelling an AsyncThrowingStream can end iteration without throwing.
-        // Treat that as cancellation before an empty or partial reply is validated.
-        try Task.checkCancellation()
-
-        switch filter.finish() {
-        case .cannot(let reason):
-            // The model says it can't do this. Its reason goes in the bar; nothing was
-            // written to the document.
-            sessionState.showNotice(reason)
-            return nil
-        case .text(let remaining):
-            try await write(cursorFilter.receive(remaining))
-        }
-        try await write(cursorFilter.finish())
-
-        if wroteAnything {
-            return CursorMarkedText(
-                text: writtenText,
-                cursorUTF16Offset: cursorFilter.cursorUTF16Offset
-            )
-        } else {
-            sessionState.fail("The model returned an empty response.")
-            return nil
         }
     }
 

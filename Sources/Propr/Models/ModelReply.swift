@@ -1,29 +1,46 @@
 import Foundation
 
-/// What the model sent back: text to put into the user's document, or a message
-/// explaining that it could not do what was asked.
+/// What the model sent back: text to put into the user's document, a message
+/// explaining that it could not do what was asked, or an answer to a question.
 ///
 /// Without this distinction, a reply like "I'm sorry, I need more context" was
 /// written straight into the user's editor as if it were the answer. The model is
-/// told (see `ChatCompletionRequest`) to start such replies with `cannotMarker`, and
-/// those are shown in the bar instead. Guessing from wording ("starts with I'm
-/// sorry…") would be wrong: the user may well have asked for an apology.
+/// told (see `ChatCompletionRequest`) to start such replies with a marker, and those
+/// are shown in the bar instead. Guessing from wording ("starts with I'm sorry…",
+/// "ends with ?") would be wrong: the user may well have asked for an apology, and
+/// "can you make this shorter?" is an edit.
 enum ModelReply: Equatable {
     case text(String)
     case cannot(reason: String)
+    /// The user asked about the text rather than for a change to it.
+    case answer(String)
 
     /// ASCII, so models reproduce it exactly rather than paraphrasing it.
     static let cannotMarker = "PROPR_CANNOT:"
+    static let answerMarker = "PROPR_ANSWER:"
 
     static let defaultReason = "The model couldn't complete this request."
 
     /// Classifies a complete reply.
     static func parse(_ reply: String) -> ModelReply {
         let lead = leadingSkipped(reply)
-        guard lead.lowercased().hasPrefix(cannotMarker.lowercased()) else {
-            return .text(reply)
+        if hasMarker(cannotMarker, lead) {
+            return .cannot(reason: reason(afterMarkerIn: lead))
         }
-        return .cannot(reason: reason(afterMarkerIn: lead))
+        if hasMarker(answerMarker, lead) {
+            return .answer(answerBody(afterMarkerIn: lead))
+        }
+        return .text(reply)
+    }
+
+    static func hasMarker(_ marker: String, _ lead: Substring) -> Bool {
+        lead.lowercased().hasPrefix(marker.lowercased())
+    }
+
+    /// The answer after its marker. Only whitespace is trimmed: unlike a one-line
+    /// reason, an answer may legitimately open or close with a quote or backtick.
+    static func answerBody(afterMarkerIn lead: Substring) -> String {
+        lead.dropFirst(answerMarker.count).trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// Characters a model may put before the marker without meaning anything by it:
@@ -152,20 +169,33 @@ struct StreamingCursorMarkerFilter {
 }
 
 /// Streams a reply through, holding back output only while it could still turn out to
-/// be the "cannot" marker — so a refusal is never half-written into the user's
+/// be a marker — so a refusal or an answer is never half-written into the user's
 /// document before it is recognised.
 ///
-/// Holds at most the length of the marker, and usually a single character: most
-/// replies stop matching the marker on their first letter.
+/// Holds at most the length of a marker, and usually a single character: most
+/// replies stop matching both markers on their first letter.
 struct StreamingReplyFilter {
     private enum State {
         case undecided
         case passing
         case cannot
+        case answer
     }
+
+    private static let markers: [(marker: String, state: State)] = [
+        (ModelReply.cannotMarker.lowercased(), .cannot),
+        (ModelReply.answerMarker.lowercased(), .answer),
+    ]
 
     private var state = State.undecided
     private var held = ""
+
+    /// The answer received so far, once the reply is known to be one, so the bar
+    /// can show it as it streams in.
+    var partialAnswer: String? {
+        guard state == .answer else { return nil }
+        return ModelReply.answerBody(afterMarkerIn: ModelReply.leadingSkipped(held))
+    }
 
     /// Takes the next chunk from the model; returns the text that is safe to write now.
     mutating func receive(_ chunk: String) -> String {
@@ -173,21 +203,20 @@ struct StreamingReplyFilter {
         case .passing:
             return chunk
 
-        case .cannot:
+        case .cannot, .answer:
             held += chunk
             return ""
 
         case .undecided:
             held += chunk
             let lead = ModelReply.leadingSkipped(held).lowercased()
-            let marker = ModelReply.cannotMarker.lowercased()
 
-            if lead.hasPrefix(marker) {
-                state = .cannot
+            if let match = Self.markers.first(where: { lead.hasPrefix($0.marker) }) {
+                state = match.state
                 return ""
             }
-            if marker.hasPrefix(lead) {
-                // Still could be the marker (or nothing but leading whitespace yet).
+            if Self.markers.contains(where: { $0.marker.hasPrefix(lead) }) {
+                // Still could be a marker (or nothing but leading whitespace yet).
                 return ""
             }
 
@@ -197,13 +226,17 @@ struct StreamingReplyFilter {
         }
     }
 
-    /// Call once the stream has ended. `.cannot` means nothing was written and the
-    /// reason belongs in the bar; `.text` carries anything still held back, to write.
+    /// Call once the stream has ended. `.cannot` and `.answer` mean nothing was
+    /// written and the reply belongs in the bar; `.text` carries anything still held
+    /// back, to write.
     mutating func finish() -> ModelReply {
         defer { held = "" }
+        let lead = ModelReply.leadingSkipped(held)
         switch state {
         case .cannot:
-            return .cannot(reason: ModelReply.reason(afterMarkerIn: ModelReply.leadingSkipped(held)))
+            return .cannot(reason: ModelReply.reason(afterMarkerIn: lead))
+        case .answer:
+            return .answer(ModelReply.answerBody(afterMarkerIn: lead))
         case .undecided:
             // A reply short enough to be ambiguous the whole way through is still text.
             return .text(held)

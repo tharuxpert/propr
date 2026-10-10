@@ -162,8 +162,41 @@ struct ChatCompletionTests {
 
     @Test("The system prompt switches between rewriting and writing")
     func systemPromptSwitches() {
-        #expect(request(original: "some text").systemPrompt == ChatCompletionRequest.refineSystemPrompt)
-        #expect(request(original: "").systemPrompt == ChatCompletionRequest.generateSystemPrompt)
+        #expect(request(original: "some text").systemPrompt.hasPrefix(ChatCompletionRequest.refineSystemPrompt))
+        #expect(request(original: "").systemPrompt.hasPrefix(ChatCompletionRequest.generateSystemPrompt))
+    }
+
+    // MARK: - Intent
+
+    @Test("By default the model may answer a question in the bar instead of editing")
+    func autoAllowsAnswers() {
+        for original in ["some text", ""] {
+            #expect(request(original: original).systemPrompt.contains(ModelReply.answerMarker))
+        }
+    }
+
+    @Test("Ask intent uses the answer-only prompt, still delimiting the source")
+    func askUsesAnswerPrompt() {
+        var ask = request(original: "some text", instruction: "is this correct?")
+        ask.intent = .ask
+        #expect(ask.systemPrompt == ChatCompletionRequest.askSystemPrompt)
+        #expect(ask.systemPrompt.contains("never inserted"))
+        #expect(ask.userPrompt.contains("<source_text>"))
+    }
+
+    @Test("A question phrased edit is still called an edit in the prompt")
+    func answerInstructionGuardsEdits() {
+        #expect(ChatCompletionRequest.answerInstruction.contains("can you make this shorter?"))
+    }
+
+    @Test("Answers may use lightweight Markdown instead of plain text")
+    func answersAllowMarkdown() {
+        #expect(ChatCompletionRequest.answerInstruction.contains("Markdown"))
+        #expect(ChatCompletionRequest.askSystemPrompt.contains("Markdown"))
+        #expect(!ChatCompletionRequest.askSystemPrompt.contains("without headings or Markdown"))
+        // Both say what will not render, so dead image or footnote text is never produced.
+        #expect(ChatCompletionRequest.answerInstruction.contains("not images or footnotes"))
+        #expect(ChatCompletionRequest.askSystemPrompt.contains("not images or"))
     }
 
     @Test("The generate prompt actually reaches the payload")
@@ -173,7 +206,7 @@ struct ChatCompletionTests {
         let json = try #require(try JSONSerialization.jsonObject(with: body) as? [String: Any])
         let messages = try #require(json["messages"] as? [[String: String]])
 
-        #expect(messages[0]["content"] == ChatCompletionRequest.generateSystemPrompt)
+        #expect(messages[0]["content"]?.hasPrefix(ChatCompletionRequest.generateSystemPrompt) == true)
         #expect(
             messages[1]["content"] == """
                 <instruction>
@@ -201,13 +234,79 @@ struct ChatCompletionTests {
             "system", "user", "assistant", "user", "assistant", "user",
         ])
         #expect(messages[1]["content"]?.contains("write a poem") == true)
-        #expect(messages[0]["content"]?.contains("multi-turn editing session") == true)
+        #expect(messages[0]["content"]?.contains("multi-turn session") == true)
         #expect(messages[1]["content"]?.contains("do it") == true)
         #expect(messages[2]["content"] == "A quiet moon above the hill")
         #expect(messages[3]["content"]?.contains("make it two lines") == true)
         #expect(messages[4]["content"]?.contains("town lies still") == true)
         #expect(messages[5]["content"]?.contains("make it funny") == true)
         #expect(messages[5]["content"]?.contains("source_text") == false)
+    }
+
+    /// A temp chat: the model must see its own question to make sense of the reply.
+    @Test("Answers and refusals stay in the history, marked as such")
+    func historyKeepsAnswersAndRefusals() {
+        let followUp = request(
+            original: "Hello there",
+            instruction: "Spanish",
+            history: [
+                RefinementTurn(instruction: "translate this", output: "Which language?", kind: .cannot),
+                RefinementTurn(instruction: "is it formal?", output: "No, it is casual.", kind: .answer),
+            ]
+        )
+        let messages = followUp.messages
+
+        #expect(messages.map { $0["role"] } == ["system", "user", "assistant", "user", "assistant", "user"])
+        #expect(messages[1]["content"]?.contains("<source_text>\nHello there") == true)
+        #expect(messages[2]["content"] == "PROPR_CANNOT: Which language?")
+        #expect(messages[4]["content"] == "PROPR_ANSWER: No, it is casual.")
+        // Nothing has been written yet, so the current text is still the original.
+        #expect(messages[5]["content"]?.contains("<current_text>\nHello there\n</current_text>") == true)
+    }
+
+    @Test("The current text is the latest edit, not a later answer")
+    func currentTextIsLatestEdit() {
+        let followUp = request(
+            original: "hi",
+            history: [
+                RefinementTurn(instruction: "formal", output: "Good afternoon."),
+                RefinementTurn(instruction: "is it polite?", output: "Yes.", kind: .answer),
+            ]
+        )
+        #expect(followUp.currentText == "Good afternoon.")
+    }
+
+    @Test("With no text ever written or captured, follow-ups carry no current text")
+    func noCurrentTextWhenNothingExists() {
+        let followUp = request(
+            original: "",
+            instruction: "and in Python?",
+            history: [RefinementTurn(instruction: "how do I list files?", output: "Use ls.", kind: .answer)]
+        )
+        #expect(followUp.currentText == nil)
+        #expect(followUp.messages.last?["content"]?.contains("current_text") == false)
+    }
+
+    /// The reported bug: "what does this mean?" on a follow-up reached the model with
+    /// no text in the message, and it replied that nothing had been provided.
+    @Test("A follow-up carries the current text, so \"this\" has a referent")
+    func followUpCarriesCurrentText() {
+        for intent in [RefineIntent.auto, .ask] {
+            var followUp = request(
+                original: "",
+                instruction: "what does this mean?",
+                history: [
+                    RefinementTurn(
+                        instruction: "write a line about winning",
+                        output: "He crushed the competition with relentless, brutal force."),
+                ]
+            )
+            followUp.intent = intent
+            let last = followUp.messages.last?["content"] ?? ""
+
+            #expect(last.contains("<current_text>\nHe crushed the competition with relentless, brutal force.\n</current_text>"))
+            #expect(followUp.systemPrompt.contains("<current_text>"))
+        }
     }
 
     // MARK: - Non-streaming response
@@ -251,6 +350,34 @@ struct ChatCompletionTests {
     ])
     func ignoresNonContentLines(_ line: String) {
         #expect(ChatCompletionResponse.streamEvent(from: line) == .ignored)
+    }
+
+    /// OpenRouter's documented shape for a provider failing after streaming starts:
+    /// the HTTP status stays 200 and the error rides in a data chunk.
+    @Test("An error inside the stream surfaces the provider's message")
+    func parsesMidStreamError() {
+        let line = #"data: {"error":{"code":"server_error","message":"Provider disconnected unexpectedly"},"choices":[{"index":0,"delta":{"content":""},"finish_reason":"error"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: line)
+            == .failed("Provider disconnected unexpectedly"))
+    }
+
+    @Test("Hitting the output limit is reported, with any final text")
+    func parsesLengthFinish() {
+        let empty = #"data: {"choices":[{"delta":{},"finish_reason":"length"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: empty) == .truncated(""))
+        let withText = #"data: {"choices":[{"delta":{"content":"end"},"finish_reason":"length"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: withText) == .truncated("end"))
+    }
+
+    @Test("A normal stop with final text is still a delta")
+    func parsesStopFinish() {
+        let line = #"data: {"choices":[{"delta":{"content":"!"},"finish_reason":"stop"}]}"#
+        #expect(ChatCompletionResponse.streamEvent(from: line) == .delta("!"))
+    }
+
+    @Test("Refine requests leave the output limit to the provider")
+    func refineOmitsMaxTokens() {
+        #expect(request(stream: true).payload["max_tokens"] == nil)
     }
 
     // MARK: - Error messages

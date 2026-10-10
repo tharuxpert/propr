@@ -11,6 +11,11 @@ extension FloatingBarController {
             do {
                 try await applyUndo(revision.undo)
                 appliedRevisions.removeLast()
+                // The chat rewinds with the document: the undone edit and anything
+                // asked about it afterwards no longer describe the text.
+                if let index = conversation.lastIndex(of: revision.turn) {
+                    conversation.removeSubrange(index...)
+                }
                 lastApplyUndo = appliedRevisions.last?.undo
 
                 // Keyboard fallbacks temporarily reactivate the source app. Bring the

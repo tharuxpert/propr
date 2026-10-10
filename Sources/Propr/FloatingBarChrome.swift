@@ -41,6 +41,35 @@ struct KeycapButtonStyle: ButtonStyle {
     }
 }
 
+/// The quiet "tab Ask" hint in an empty composer: names the mode Tab switches to,
+/// since nothing else says Tab does anything. Clicking it switches too.
+struct ModeSwitchHint: View {
+    /// The mode Tab would switch to, such as "Ask".
+    let target: String
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 5) {
+                Text("tab")
+                    .font(.system(size: 10, weight: .semibold))
+                    .padding(.horizontal, 4)
+                    .frame(minHeight: 16)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 4, style: .continuous)
+                            .strokeBorder(Color.primary.opacity(0.18), lineWidth: 0.5)
+                    )
+                Text(target)
+                    .font(.callout)
+            }
+            .foregroundStyle(.tertiary)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help("Press Tab to switch to \(target)")
+    }
+}
+
 /// A light streak that travels around the bar's edge while a request is running.
 ///
 /// The bar's one moment of motion, and it only plays while Propr is actually
@@ -91,6 +120,36 @@ struct WorkingEdge: View {
             center: .center,
             angle: angle
         )
+    }
+}
+
+/// Lets the bar be dragged around by any part that is not a control.
+///
+/// SwiftUI content does not reliably take part in AppKit's
+/// `isMovableByWindowBackground`, which is all the bar relied on. From macOS 15 the
+/// documented way to drag a window by a SwiftUI view is `WindowDragGesture`, and
+/// `allowsWindowActivationEvents()` is what lets that work on a window whose app is
+/// not active — which, for this non-activating panel, is always.
+///
+/// It sits on the whole bar so the header (icon and app name) drags too. The text
+/// field keeps selecting text normally: it is an AppKit field that handles its own
+/// mouse events before SwiftUI gestures see them. A plain click on a button still
+/// goes to the button, since a child's tap outranks a parent's drag.
+///
+/// On macOS 14 the panel's `isMovableByWindowBackground` remains the only path.
+struct DraggablePanel: ViewModifier {
+    func body(content: Content) -> some View {
+        if #available(macOS 15.0, *) {
+            content
+                // Without this SwiftUI only hit-tests actual child views, so padding
+                // and the header's Spacer — the blank areas you would naturally grab —
+                // would not start a drag.
+                .contentShape(Rectangle())
+                .gesture(WindowDragGesture())
+                .allowsWindowActivationEvents()
+        } else {
+            content
+        }
     }
 }
 

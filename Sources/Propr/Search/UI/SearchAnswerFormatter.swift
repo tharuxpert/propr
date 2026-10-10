@@ -10,29 +10,69 @@ enum SearchAnswerFormatter {
         let output = NSMutableAttributedString(string: "")
         let lines = normalizeBreaks(reflowTables(answer)).components(separatedBy: "\n")
         var inCodeBlock = false
+        var needsNewline = false
+        var lastWasBlank = true
 
-        for (index, originalLine) in lines.enumerated() {
+        /// Fence markers emit nothing at all (not even a separator), and runs of
+        /// blank lines collapse to one — otherwise a fenced block surrounded by
+        /// blank lines renders with double gaps above and below the code.
+        func append(_ part: NSAttributedString, collapseBlanks: Bool = true) {
+            let isBlank = part.length == 0
+            if collapseBlanks, isBlank, lastWasBlank { return }
+            if needsNewline {
+                output.append(NSAttributedString(string: "\n"))
+            }
+            output.append(part)
+            needsNewline = true
+            lastWasBlank = isBlank
+        }
+
+        for originalLine in lines {
             let trimmed = originalLine.trimmingCharacters(in: .whitespaces)
             if trimmed.hasPrefix("```") {
                 inCodeBlock.toggle()
             } else if inCodeBlock {
-                output.append(NSAttributedString(
+                // Blank lines inside a block are content, not gaps: keep them so
+                // the pill draws one continuous block around the code as written.
+                append(NSAttributedString(
                     string: originalLine,
                     attributes: [.font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
-                                 .foregroundColor: NSColor.labelColor]))
+                                 .foregroundColor: NSColor.labelColor,
+                                 .proprCode: true]),
+                       collapseBlanks: false)
             } else {
                 var line = originalLine
-                var font = bodyFont
-                if let heading = line.range(of: #"^\s{0,3}#{1,6}\s+"#, options: .regularExpression) {
+                let font = bodyFont
+                if line.range(
+                    of: #"^\s{0,3}(-{3,}|_{3,}|\*{3,})\s*$"#,
+                    options: .regularExpression
+                ) != nil {
+                    append(NSAttributedString(
+                        string: String(repeating: "─", count: 16),
+                        attributes: [.font: font, .foregroundColor: NSColor.secondaryLabelColor]))
+                } else if let heading = line.range(of: #"^\s{0,3}#{1,6}\s+"#, options: .regularExpression) {
                     line.removeSubrange(heading)
-                    font = .systemFont(ofSize: 15, weight: .semibold)
+                    append(inline(line, baseFont: .systemFont(ofSize: 15, weight: .semibold)))
+                } else if let task = line.range(
+                    of: #"^\s*[-*+]\s+\[[ xX]\]\s+"#, options: .regularExpression
+                ) {
+                    let box = line[task].contains("x") || line[task].contains("X") ? "☑ " : "☐ "
+                    line.replaceSubrange(task, with: indent(of: line, in: task) + box)
+                    append(inline(line, baseFont: font))
                 } else if let bullet = line.range(of: #"^\s*[-*+]\s+"#, options: .regularExpression) {
-                    line.replaceSubrange(bullet, with: "• ")
+                    line.replaceSubrange(bullet, with: indent(of: line, in: bullet) + "• ")
+                    append(inline(line, baseFont: font))
+                } else if let quote = line.range(of: #"^\s{0,3}>\s?"#, options: .regularExpression) {
+                    line.removeSubrange(quote)
+                    let quoted = NSMutableAttributedString(string: "│ ", attributes: [
+                        .font: font, .foregroundColor: NSColor.secondaryLabelColor])
+                    quoted.append(inline(line, baseFont: font))
+                    append(quoted)
+                } else {
+                    // Numbered lists need no rewriting: "1. ..." reads as-is and the
+                    // inline pass below still styles any emphasis or code inside.
+                    append(inline(line, baseFont: font))
                 }
-                output.append(inline(line, baseFont: font))
-            }
-            if index < lines.count - 1 {
-                output.append(NSAttributedString(string: "\n"))
             }
         }
 
@@ -70,6 +110,12 @@ enum SearchAnswerFormatter {
             var attributes: [NSAttributedString.Key: Any] = [
                 .font: font, .foregroundColor: NSColor.labelColor
             ]
+            if let intent = run.inlinePresentationIntent, intent.contains(.code) {
+                attributes[.proprCode] = false
+            }
+            if let intent = run.inlinePresentationIntent, intent.contains(.strikethrough) {
+                attributes[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
+            }
             if let url = run.link, ["http", "https"].contains(url.scheme?.lowercased() ?? "") {
                 attributes[.link] = url
                 attributes[.foregroundColor] = NSColor.linkColor
@@ -83,6 +129,12 @@ enum SearchAnswerFormatter {
     private static func normalizeBreaks(_ text: String) -> String {
         text.replacingOccurrences(
             of: #"(?i)<br\s*/?>"#, with: "\n", options: .regularExpression)
+    }
+
+    /// Leading whitespace of a matched list marker, so nested items keep their
+    /// depth instead of flattening to the left edge.
+    private static func indent(of line: String, in match: Range<String.Index>) -> String {
+        String(line[match].prefix(while: { $0 == " " || $0 == "\t" }))
     }
 
     /// Tables are reformatted into stacked label/value lines so they remain

@@ -28,7 +28,8 @@ final class AIService {
         instruction: String,
         history: [RefinementTurn] = [],
         selection: ModelSelection,
-        apiKey: String
+        apiKey: String,
+        intent: RefineIntent = .auto
     ) async throws -> String {
         let request = try ChatCompletionRequest(
             original: original,
@@ -36,7 +37,8 @@ final class AIService {
             history: history,
             selection: selection,
             apiKey: apiKey,
-            stream: false
+            stream: false,
+            intent: intent
         ).makeURLRequest()
 
         let (data, response) = try await session.data(for: request)
@@ -65,7 +67,8 @@ final class AIService {
         instruction: String,
         history: [RefinementTurn] = [],
         selection: ModelSelection,
-        apiKey: String
+        apiKey: String,
+        intent: RefineIntent = .auto
     ) -> AsyncThrowingStream<String, Error> {
         AsyncThrowingStream { continuation in
             let requestTask = Task {
@@ -76,7 +79,8 @@ final class AIService {
                         history: history,
                         selection: selection,
                         apiKey: apiKey,
-                        stream: true
+                        stream: true,
+                        intent: intent
                     ).makeURLRequest()
 
                     let (bytes, response) = try await session.bytes(for: request)
@@ -97,18 +101,33 @@ final class AIService {
                         return
                     }
 
-                    for try await line in bytes.lines {
+                    var yieldedText = false
+                    var truncated = false
+                    streamLoop: for try await line in bytes.lines {
                         switch ChatCompletionResponse.streamEvent(from: line) {
                         case .delta(let content):
+                            if !content.isEmpty { yieldedText = true }
                             continuation.yield(content)
-                        case .done:
-                            continuation.finish()
+                        case .truncated(let content):
+                            if !content.isEmpty { yieldedText = true }
+                            continuation.yield(content)
+                            truncated = true
+                        case .failed(let message):
+                            continuation.finish(throwing: AIError.responseIssue(message))
                             return
+                        case .done:
+                            break streamLoop
                         case .ignored:
                             continue
                         }
                     }
 
+                    if truncated {
+                        continuation.finish(throwing: AIError.responseIssue(yieldedText
+                            ? "The reply was cut off at the model's output limit."
+                            : "The reply ran out of room before any text came back. Try again, or ask for something shorter."))
+                        return
+                    }
                     continuation.finish()
                 } catch {
                     continuation.finish(throwing: error)
