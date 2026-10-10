@@ -37,15 +37,12 @@ struct EndpointRow: View {
 
             Button("Edit…", action: onEdit)
 
-            Menu {
-                Button("Remove Provider…", role: .destructive, action: onRemove)
-            } label: {
-                Image(systemName: "ellipsis")
+            Button(role: .destructive, action: onRemove) {
+                Image(systemName: "trash")
             }
-            .menuStyle(.borderlessButton)
-            .menuIndicator(.hidden)
-            .fixedSize()
-            .help("More")
+            .buttonStyle(.borderless)
+            .help("Remove \(endpoint.name)")
+            .accessibilityLabel("Remove \(endpoint.name)")
         }
         .padding(.vertical, 2)
         .contentShape(Rectangle())
