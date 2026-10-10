@@ -125,7 +125,7 @@ final class AIService {
                     if truncated {
                         continuation.finish(throwing: AIError.responseIssue(yieldedText
                             ? "The reply was cut off at the model's output limit."
-                            : "The model used up its output limit before writing anything, likely while thinking. Try again, or pick a model that doesn't reason."))
+                            : "The reply ran out of room before any text came back. Try again, or ask for something shorter."))
                         return
                     }
                     continuation.finish()
