@@ -28,7 +28,7 @@ struct FloatingBarView: View {
 
         return snapshot.contextText.isEmpty
             ? "What do you want to write?"
-            : "What do you need?"
+            : "Ask or edit anything…"
     }
 
     private var displayedContextText: String {
