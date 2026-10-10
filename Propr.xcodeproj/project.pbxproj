@@ -58,8 +58,8 @@
 		AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */; };
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
-		4561D4A5723C42B3A8ED9C08 /* CodePillText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59BEFF8F15A540BF82A4A299 /* CodePillText.swift */; };
 		B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */; };
+		B56A93F42D056DE80E32F0EE /* CodePillText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00EB587E9A4F59D1562D8253 /* CodePillText.swift */; };
 		B6E6A1DE7FA20F95EC7BEB75 /* ModelReply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 943FE8B0546E576D52251F40 /* ModelReply.swift */; };
 		BDA200A0538074009E49888B /* AILookupResponseTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */; };
 		BEF5D76A239AF194CAD69CB2 /* PointerOCRService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8518B3BA6A0D090FBC44919A /* PointerOCRService.swift */; };
@@ -95,6 +95,7 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		00EB587E9A4F59D1562D8253 /* CodePillText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodePillText.swift; sourceTree = "<group>"; };
 		051988735931571C55E220DD /* KeystrokePacingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokePacingTests.swift; sourceTree = "<group>"; };
 		073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarController.swift; sourceTree = "<group>"; };
 		078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Duration+Nanoseconds.swift"; sourceTree = "<group>"; };
@@ -148,7 +149,6 @@
 		9ECBAA31B8DFE7F9B2A25B02 /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
-		59BEFF8F15A540BF82A4A299 /* CodePillText.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CodePillText.swift; sourceTree = "<group>"; };
 		B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarAnswerView.swift; sourceTree = "<group>"; };
 		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
 		B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectBackground.swift; sourceTree = "<group>"; };
@@ -196,7 +196,7 @@
 				2F6EF88BB1DC3E553F6B94CA /* AIService.swift */,
 				7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */,
 				4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */,
-				59BEFF8F15A540BF82A4A299 /* CodePillText.swift */,
+				00EB587E9A4F59D1562D8253 /* CodePillText.swift */,
 				3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */,
 				078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */,
 				B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */,
@@ -529,9 +529,9 @@
 				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */,
+				B56A93F42D056DE80E32F0EE /* CodePillText.swift in Sources */,
 				26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */,
 				01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */,
-				4561D4A5723C42B3A8ED9C08 /* CodePillText.swift in Sources */,
 				12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */,
 				AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */,
 				C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */,
