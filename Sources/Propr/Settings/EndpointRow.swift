@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One configured provider in the Models pane: a lettered badge, its name and host,
+/// One configured provider in the Models pane: its logo, its name and host,
 /// and how many models it offers, with Edit and Remove at the trailing edge.
 struct EndpointRow: View {
     let endpoint: CustomEndpoint
@@ -20,26 +20,9 @@ struct EndpointRow: View {
         }
     }
 
-    /// A stable color per provider name, so a provider keeps its badge across launches.
-    private var badgeColor: Color {
-        let palette: [Color] = [.blue, .purple, .pink, .orange, .teal, .green, .indigo, .red]
-        let sum = endpoint.name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
-        return palette[sum % palette.count]
-    }
-
-    private var initial: String {
-        endpoint.name.trimmingCharacters(in: .whitespaces).first.map { String($0).uppercased() } ?? "?"
-    }
-
     var body: some View {
         HStack(spacing: 10) {
-            Text(initial)
-                .font(.system(size: 13, weight: .bold, design: .rounded))
-                .foregroundStyle(.white)
-                .frame(width: 28, height: 28)
-                .background(
-                    RoundedRectangle(cornerRadius: 7, style: .continuous).fill(badgeColor.gradient)
-                )
+            ProviderLogo(name: endpoint.name, baseURL: endpoint.baseURL)
 
             VStack(alignment: .leading, spacing: 1) {
                 Text(endpoint.name)
