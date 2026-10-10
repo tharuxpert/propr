@@ -1,28 +1,36 @@
 import SwiftUI
 
-/// The Models pane: the endpoints you have configured, and the models each exposes.
+/// The Models pane: which model Propr uses, and the providers that supply them.
 ///
-/// A `List` with the standard add/remove buttons beneath it — the layout Mail, Xcode
-/// and System Settings use for account lists. Adding and editing happen in a sheet
-/// rather than in forms that expand inline inside a scroll view.
+/// A grouped `Form` like the General pane, so both panes share one look. Each
+/// provider row carries its own Edit and Remove, and adding or editing happens in
+/// a sheet rather than in forms that expand inline inside a scroll view.
 struct ModelsSettingsView: View {
     @State private var modelStore = ModelStore.shared
 
-    @State private var selection: CustomEndpoint.ID?
     @State private var editingEndpoint: CustomEndpoint?
     @State private var isAddingEndpoint = false
+    @State private var removingEndpoint: CustomEndpoint?
     @State private var keychainErrorMessage: String?
 
     var body: some View {
-        VStack(spacing: 0) {
+        Group {
             if modelStore.customEndpoints.isEmpty {
                 emptyState
             } else {
-                endpointList
+                form
             }
-
-            Divider()
-            listControls
+        }
+        .confirmationDialog(
+            "Remove \(removingEndpoint?.name ?? "this provider")?",
+            isPresented: Binding(
+                get: { removingEndpoint != nil },
+                set: { if !$0 { removingEndpoint = nil } }),
+            presenting: removingEndpoint
+        ) { endpoint in
+            Button("Remove", role: .destructive) { delete(endpoint.id) }
+        } message: { _ in
+            Text("Its models and saved API key will be deleted.")
         }
         .sheet(isPresented: $isAddingEndpoint) {
             EndpointEditorSheet(
@@ -57,68 +65,78 @@ struct ModelsSettingsView: View {
 
     // MARK: - Pieces
 
-    private var endpointList: some View {
-        List(selection: $selection) {
-            ForEach(modelStore.customEndpoints) { endpoint in
-                EndpointRow(endpoint: endpoint)
-                    .tag(endpoint.id)
-                    .contextMenu {
-                        Button("Edit…") { editingEndpoint = endpoint }
-                        Button("Remove", role: .destructive) { delete(endpoint.id) }
+    private var form: some View {
+        Form {
+            Section {
+                Picker(selection: selectedModelBinding) {
+                    if modelStore.selectedModel() == nil {
+                        Text("None").tag(UUID?.none)
                     }
+                    ForEach(modelStore.customEndpoints) { endpoint in
+                        if !endpoint.models.isEmpty {
+                            Section(endpoint.name) {
+                                ForEach(endpoint.models) { model in
+                                    Text(model.displayName).tag(UUID?.some(model.id))
+                                }
+                            }
+                        }
+                    }
+                } label: {
+                    SettingsRowLabel(
+                        title: "Default Model",
+                        systemImage: "sparkles",
+                        color: .indigo,
+                        subtitle: "Used each time you summon Propr."
+                    )
+                }
+                .disabled(modelStore.allAvailableModels.isEmpty)
+            } footer: {
+                Text("You can also switch models from the Propr menu bar icon.")
+            }
+
+            Section("Providers") {
+                ForEach(modelStore.customEndpoints) { endpoint in
+                    EndpointRow(
+                        endpoint: endpoint,
+                        onEdit: { editingEndpoint = endpoint },
+                        onRemove: { removingEndpoint = endpoint }
+                    )
+                }
+
+                Button {
+                    isAddingEndpoint = true
+                } label: {
+                    Label("Add Provider…", systemImage: "plus.circle.fill")
+                }
+                .buttonStyle(.borderless)
             }
         }
-        .listStyle(.inset)
-        .onDeleteCommand { if let selection { delete(selection) } }
+        .formStyle(.grouped)
     }
 
     private var emptyState: some View {
         ContentUnavailableView {
-            Label("No Endpoints", systemImage: "brain")
+            Label("No Providers", systemImage: "cpu")
         } description: {
             Text("Add an OpenAI-compatible provider to start refining text.")
         } actions: {
-            Button("Add Endpoint…") { isAddingEndpoint = true }
+            Button("Add Provider…") { isAddingEndpoint = true }
+                .buttonStyle(.borderedProminent)
         }
         .frame(maxHeight: .infinity)
     }
 
-    /// The small +/− pair beneath a list, as used throughout macOS.
-    private var listControls: some View {
-        HStack(spacing: 0) {
-            Button {
-                isAddingEndpoint = true
-            } label: {
-                Image(systemName: "plus")
-                    .frame(width: 24, height: 20)
+    private var selectedModelBinding: Binding<UUID?> {
+        Binding(
+            get: { modelStore.selectedModel()?.id },
+            set: { id in
+                guard let model = modelStore.allAvailableModels.first(where: { $0.id == id }) else { return }
+                modelStore.selectModel(model)
             }
-            .help("Add an endpoint")
-
-            Button {
-                if let selection { delete(selection) }
-            } label: {
-                Image(systemName: "minus")
-                    .frame(width: 24, height: 20)
-            }
-            .disabled(selection == nil)
-            .help("Remove the selected endpoint")
-
-            Spacer()
-
-            if let selection, let endpoint = endpoint(for: selection) {
-                Button("Edit…") { editingEndpoint = endpoint }
-            }
-        }
-        .buttonStyle(.borderless)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        )
     }
 
     // MARK: - Actions
-
-    private func endpoint(for id: CustomEndpoint.ID) -> CustomEndpoint? {
-        modelStore.customEndpoints.first { $0.id == id }
-    }
 
     private func add(_ endpoint: CustomEndpoint, apiKey: String) {
         do {
@@ -142,7 +160,6 @@ struct ModelsSettingsView: View {
 
     private func delete(_ id: CustomEndpoint.ID) {
         modelStore.deleteEndpoint(id: id)
-        if selection == id { selection = nil }
     }
 
     /// Leaves the user with something selected after they configure a provider, so

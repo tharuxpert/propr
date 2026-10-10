@@ -18,6 +18,11 @@ struct EndpointEditorSheet: View {
     @State private var form = EndpointFormState()
     @State private var provider: BuiltInProvider?
     @State private var didPrefill = false
+    @FocusState private var focusedField: Field?
+
+    private enum Field: Hashable {
+        case name, modelID
+    }
 
     private var isEditing: Bool { endpoint != nil }
 
@@ -32,6 +37,8 @@ struct EndpointEditorSheet: View {
 
     var body: some View {
         VStack(spacing: 0) {
+            header
+
             Form {
                 Section {
                     if !isEditing {
@@ -62,6 +69,8 @@ struct EndpointEditorSheet: View {
                             prompt: Text(verbatim: "e.g. My OpenRouter")
                         )
                         .labelsHidden()
+                        .multilineTextAlignment(.leading)
+                        .focused($focusedField, equals: .name)
                     }
                     validationMessage(form.nameError(in: context))
 
@@ -71,6 +80,7 @@ struct EndpointEditorSheet: View {
                             prompt: Text(verbatim: "https://api.example.com/v1")
                         )
                         .labelsHidden()
+                        .multilineTextAlignment(.leading)
                     }
                     validationMessage(form.urlError)
 
@@ -81,6 +91,7 @@ struct EndpointEditorSheet: View {
                                 prompt: Text(verbatim: provider?.apiKeyExample ?? "Paste your key")
                             )
                             .labelsHidden()
+                            .multilineTextAlignment(.leading)
                         }
                         validationMessage(form.apiKeyError)
                     }
@@ -121,13 +132,18 @@ struct EndpointEditorSheet: View {
                     HStack(spacing: 8) {
                         TextField("Model ID", text: $form.draftModelName, prompt: Text(verbatim: "Model ID"))
                             .labelsHidden()
+                            .multilineTextAlignment(.leading)
+                            .focused($focusedField, equals: .modelID)
+                            .onSubmit(addDraftModel)
                         TextField(
                             "Alias", text: $form.draftModelAlias, prompt: Text(verbatim: "Alias (optional)")
                         )
                         .labelsHidden()
+                        .multilineTextAlignment(.leading)
                         .frame(maxWidth: 150)
+                        .onSubmit(addDraftModel)
                         // Distinct from the sheet's own "Add" button below.
-                        Button("Add Model") { form.addDraftModel() }
+                        Button("Add Model", action: addDraftModel)
                             .disabled(!form.canAddDraftModel)
                     }
                 } header: {
@@ -157,8 +173,34 @@ struct EndpointEditorSheet: View {
             }
             .padding(16)
         }
-        .frame(width: 520, height: 520)
+        .frame(width: 520, height: 540)
         .onAppear(perform: prefill)
+        // Start in the first field to type in, not on the provider picker, which
+        // otherwise opens wearing a focus ring.
+        .defaultFocus($focusedField, .name)
+    }
+
+    private var header: some View {
+        HStack(spacing: 12) {
+            SettingsIcon(systemImage: "cpu.fill", color: .indigo, size: 32)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(isEditing ? "Edit Provider" : "Add Provider")
+                    .font(.headline)
+                Text("Any OpenAI-compatible API works.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 20)
+    }
+
+    /// Adds the typed model and puts the cursor back in the ID field for the next one.
+    private func addDraftModel() {
+        guard form.canAddDraftModel else { return }
+        form.addDraftModel()
+        focusedField = .modelID
     }
 
     /// Shows a rule only once it is actually violated, so the form is not shouting

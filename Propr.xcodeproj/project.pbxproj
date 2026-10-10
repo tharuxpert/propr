@@ -23,6 +23,7 @@
 		26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */; };
 		28E2526107024D7426EAA254 /* ApplyTargetTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */; };
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
+		2D6F4596A68E7CA9D6E8AF0F /* SettingsIcon.swift in Sources */ = {isa = PBXBuildFile; fileRef = A5AD9203535268F747AC060C /* SettingsIcon.swift */; };
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
 		34DFA93DA721A74CA4AF4492 /* SearchPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97517C94E9AD533EE6C89625 /* SearchPanelTests.swift */; };
 		369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */; };
@@ -148,6 +149,7 @@
 		998F9E9BACD2376DAABC7F9B /* SearchTriggerService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchTriggerService.swift; sourceTree = "<group>"; };
 		9ECBAA31B8DFE7F9B2A25B02 /* SearchPanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanel.swift; sourceTree = "<group>"; };
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
+		A5AD9203535268F747AC060C /* SettingsIcon.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsIcon.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarAnswerView.swift; sourceTree = "<group>"; };
 		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
@@ -249,6 +251,7 @@
 				4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */,
 				A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */,
 				B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */,
+				A5AD9203535268F747AC060C /* SettingsIcon.swift */,
 				2BBFA4D9B786404254155B7B /* SettingsView.swift */,
 			);
 			path = Settings;
@@ -573,6 +576,7 @@
 				53E70E434146050BAB518EF3 /* SearchTriggerService.swift in Sources */,
 				4795A02E4D9C6AB5CF396867 /* SearchWebPresentation.swift in Sources */,
 				D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */,
+				2D6F4596A68E7CA9D6E8AF0F /* SettingsIcon.swift in Sources */,
 				45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */,
 				369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */,
 				918CD164A944F2CEF224EBFA /* StatusItemController.swift in Sources */,
