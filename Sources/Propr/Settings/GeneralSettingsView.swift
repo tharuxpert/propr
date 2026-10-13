@@ -9,6 +9,7 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    private let shortcutConflicts = ShortcutConflictMonitor.shared
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -66,6 +67,10 @@ struct GeneralSettingsView: View {
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityLabel("Tap Fn, or Force Click")
+                }
+
+                if !shortcutConflicts.conflicts.isEmpty {
+                    ShortcutConflictList(conflicts: shortcutConflicts.conflicts)
                 }
             } header: {
                 Text("Summoning")

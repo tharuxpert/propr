@@ -20,6 +20,7 @@ struct OnboardingView: View {
 
     @Environment(\.dismissWindow) private var dismissWindow
     @AppStorage("hasCompletedOnboarding") private var hasCompletedOnboarding = false
+    private let shortcutConflicts = ShortcutConflictMonitor.shared
 
     var body: some View {
         VStack(spacing: 0) {
@@ -32,13 +33,31 @@ struct OnboardingView: View {
             }
             .padding(.horizontal, 28)
 
+            // Only on first run: the recovery screen is about the missing
+            // permission, and Settings shows the same warning afterwards.
+            if !hasCompletedOnboarding && !shortcutConflicts.conflicts.isEmpty {
+                GroupBox {
+                    ShortcutConflictList(conflicts: shortcutConflicts.conflicts)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(6)
+                } label: {
+                    Label("Shortcut Conflicts", systemImage: "keyboard")
+                }
+                .padding(.horizontal, 28)
+                .padding(.top, 14)
+            }
+
             Spacer(minLength: 20)
 
             actions
                 .padding(.horizontal, 28)
                 .padding(.bottom, 24)
         }
-        .frame(width: 460, height: 460)
+        // At least the original height, taller when conflicts are listed; the
+        // hosting view passes the size on to the window.
+        .frame(width: 460)
+        .frame(minHeight: 460)
+        .fixedSize(horizontal: false, vertical: true)
         .onAppear { accessibility.startMonitoring() }
         .onDisappear { accessibility.stopMonitoring() }
         .onChange(of: accessibility.hasPermission) { _, granted in
