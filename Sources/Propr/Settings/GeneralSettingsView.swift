@@ -9,6 +9,7 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    @State private var hasScreenRecording = CGPreflightScreenCaptureAccess()
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -38,23 +39,41 @@ struct GeneralSettingsView: View {
 
             Section {
                 SettingsRow(
-                    title: "Summon Propr",
+                    title: "Refine Text",
                     systemImage: "command",
                     color: .blue,
                     subtitle: "Double-tap Command in any text field."
                 ) {
-                    // The shortcut was previously undocumented anywhere in the app,
-                    // which made the whole feature undiscoverable.
+                    // The shortcuts were previously undocumented anywhere in the app,
+                    // which made both features undiscoverable.
                     HStack(spacing: 4) {
                         SettingsKeycap(symbol: "⌘")
                         SettingsKeycap(symbol: "⌘")
                     }
                     .accessibilityLabel("Double-tap Command")
                 }
+
+                SettingsRow(
+                    title: "Quick Lookup",
+                    systemImage: "magnifyingglass",
+                    color: .teal,
+                    subtitle: "Tap Fn on selected text, or Force Click a word."
+                ) {
+                    HStack(spacing: 6) {
+                        SettingsKeycap(symbol: "fn")
+                        Text("or Force Click")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Tap Fn, or Force Click")
+                }
             } header: {
                 Text("Summoning")
             } footer: {
-                Text("You can also choose Show Floating Bar from the Propr menu bar icon.")
+                Text(
+                    "Lookup opens a separate panel and never changes your text. You can also choose Show Floating Bar from the Propr menu bar icon."
+                )
             }
 
             Section("Permissions") {
@@ -64,7 +83,7 @@ struct GeneralSettingsView: View {
                     color: .blue,
                     subtitle: "Lets Propr read and edit text in other apps."
                 ) {
-                    permissionStatus
+                    permissionBadge(granted: accessibility.hasPermission)
                 }
 
                 if !accessibility.hasPermission {
@@ -75,12 +94,38 @@ struct GeneralSettingsView: View {
                         }
                     }
                 }
+
+                SettingsRow(
+                    title: "Screen Recording",
+                    systemImage: "rectangle.dashed.badge.record",
+                    color: .purple,
+                    subtitle: "Optional. Lets Force Click read words that can't be selected."
+                ) {
+                    if hasScreenRecording {
+                        permissionBadge(granted: true)
+                    } else {
+                        Button("Allow…", action: requestScreenRecording)
+                    }
+                }
             }
         }
         .formStyle(.grouped)
         .onAppear {
             // The toggle can be changed outside the app (System Settings > Login Items).
             launchAtLogin = SMAppService.mainApp.status == .enabled
+            hasScreenRecording = CGPreflightScreenCaptureAccess()
+        }
+    }
+
+    /// Asks once with the system prompt. macOS only shows that prompt the first
+    /// time, so after a refusal this opens the Screen Recording list instead.
+    private func requestScreenRecording() {
+        if CGRequestScreenCaptureAccess() {
+            hasScreenRecording = true
+        } else if let url = URL(
+            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
+        {
+            NSWorkspace.shared.open(url)
         }
     }
 
@@ -96,7 +141,7 @@ struct GeneralSettingsView: View {
             VStack(alignment: .leading, spacing: 2) {
                 Text("Propr")
                     .font(.title3.weight(.semibold))
-                Text("Refine any text, right where you type it.")
+                Text("Refine or look up any text, right where you are.")
                     .foregroundStyle(.secondary)
             }
 
@@ -109,9 +154,8 @@ struct GeneralSettingsView: View {
         .padding(.vertical, 4)
     }
 
-    private var permissionStatus: some View {
-        let granted = accessibility.hasPermission
-        return Label(
+    private func permissionBadge(granted: Bool) -> some View {
+        Label(
             granted ? "Granted" : "Not Granted",
             systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
         )

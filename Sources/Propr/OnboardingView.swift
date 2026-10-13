@@ -64,7 +64,7 @@ struct OnboardingView: View {
             Text(
                 hasCompletedOnboarding
                     ? "Propr needs Accessibility permission to read and edit text in other apps."
-                    : "Refine your writing anywhere on your Mac. Double-tap ⌘ to summon Propr in any app."
+                    : "Refine or look up text anywhere on your Mac. Double-tap ⌘ to refine, or tap Fn on a selection to look it up."
             )
             .font(.callout)
             .foregroundStyle(.secondary)
@@ -112,7 +112,7 @@ struct OnboardingView: View {
     private var actions: some View {
         if accessibility.hasPermission {
             VStack(spacing: 10) {
-                Text("You're all set — focus any text field and double-tap ⌘.")
+                Text("You're all set. Double-tap ⌘ in any text field, or tap Fn on selected text.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
