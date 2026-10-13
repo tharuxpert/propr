@@ -12,7 +12,6 @@ final class SearchPanelController: NSObject {
     private let providerTabs = NSSegmentedControl()
     private let contentView = NSView()
     private let placeholder = NSTextField(labelWithString: "Select text or type a search")
-    private let grantScreenRecordingButton = NSButton()
     private let loadingIndicator = NSProgressIndicator()
     private var webView: WKWebView?
     private var aiResultView: NSView?
@@ -22,19 +21,16 @@ final class SearchPanelController: NSObject {
     private var imageContext: SearchImageContext?
     private var searchGeneration = 0
     private var isDismissing = false
-    private var capturePermissionRequired = false
 
     func show(
         query: String,
         near screenPoint: CGPoint? = nil,
-        imageContext: SearchImageContext? = nil,
-        capturePermissionRequired: Bool = false
+        imageContext: SearchImageContext? = nil
     ) {
         if panel == nil { createPanel() }
         guard let panel else { return }
 
         self.imageContext = imageContext
-        self.capturePermissionRequired = capturePermissionRequired
         queryField.stringValue = query
         place(panel, near: screenPoint)
         panel.orderFront(nil)
@@ -149,14 +145,6 @@ final class SearchPanelController: NSObject {
         placeholder.translatesAutoresizingMaskIntoConstraints = false
         contentView.addSubview(placeholder)
 
-        grantScreenRecordingButton.title = "Allow Screen Recording"
-        grantScreenRecordingButton.bezelStyle = .rounded
-        grantScreenRecordingButton.target = self
-        grantScreenRecordingButton.action = #selector(requestScreenRecording)
-        grantScreenRecordingButton.isHidden = true
-        grantScreenRecordingButton.translatesAutoresizingMaskIntoConstraints = false
-        contentView.addSubview(grantScreenRecordingButton)
-
         NSLayoutConstraint.activate([
             searchIcon.leadingAnchor.constraint(equalTo: background.leadingAnchor, constant: 18),
             searchIcon.topAnchor.constraint(equalTo: background.topAnchor, constant: 20),
@@ -183,9 +171,7 @@ final class SearchPanelController: NSObject {
             placeholder.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
             placeholder.centerYAnchor.constraint(equalTo: contentView.centerYAnchor, constant: -16),
             placeholder.leadingAnchor.constraint(greaterThanOrEqualTo: contentView.leadingAnchor, constant: 20),
-            placeholder.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20),
-            grantScreenRecordingButton.centerXAnchor.constraint(equalTo: contentView.centerXAnchor),
-            grantScreenRecordingButton.topAnchor.constraint(equalTo: placeholder.bottomAnchor, constant: 10)
+            placeholder.trailingAnchor.constraint(lessThanOrEqualTo: contentView.trailingAnchor, constant: -20)
         ])
 
         self.panel = panel
@@ -231,9 +217,7 @@ final class SearchPanelController: NSObject {
         guard isVisible else { return }
         let query = queryField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !query.isEmpty || (selectedProvider == .ai && imageContext?.isUsable == true) else {
-            showPlaceholder(capturePermissionRequired
-                ? "Screen Recording is needed to read the word under the pointer."
-                : "Select text or type a search")
+            showPlaceholder("Select text or type a search")
             return
         }
 
@@ -362,8 +346,6 @@ final class SearchPanelController: NSObject {
     private func showPlaceholder(_ message: String) {
         placeholder.stringValue = message
         placeholder.isHidden = false
-        grantScreenRecordingButton.isHidden = !capturePermissionRequired
-            || !queryField.stringValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     @objc private func providerChanged() {
@@ -373,20 +355,10 @@ final class SearchPanelController: NSObject {
     }
 
     @objc private func closeTapped() { hide() }
-
-    @objc private func requestScreenRecording() {
-        if CGRequestScreenCaptureAccess() {
-            placeholder.stringValue = "Access granted. Try Force Click again."
-            grantScreenRecordingButton.isHidden = true
-        } else {
-            placeholder.stringValue = "Enable Screen Recording in System Settings, then relaunch Propr."
-        }
-    }
 }
 
 extension SearchPanelController: NSTextFieldDelegate {
     func controlTextDidChange(_ notification: Notification) {
-        capturePermissionRequired = false
         scheduleSearch()
     }
 

@@ -9,7 +9,6 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
-    @State private var hasScreenRecording = CGPreflightScreenCaptureAccess()
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -94,38 +93,12 @@ struct GeneralSettingsView: View {
                         }
                     }
                 }
-
-                SettingsRow(
-                    title: "Screen Recording",
-                    systemImage: "rectangle.dashed.badge.record",
-                    color: .purple,
-                    subtitle: "Optional. Lets Force Click read words that can't be selected."
-                ) {
-                    if hasScreenRecording {
-                        permissionBadge(granted: true)
-                    } else {
-                        Button("Allow…", action: requestScreenRecording)
-                    }
-                }
             }
         }
         .formStyle(.grouped)
         .onAppear {
             // The toggle can be changed outside the app (System Settings > Login Items).
             launchAtLogin = SMAppService.mainApp.status == .enabled
-            hasScreenRecording = CGPreflightScreenCaptureAccess()
-        }
-    }
-
-    /// Asks once with the system prompt. macOS only shows that prompt the first
-    /// time, so after a refusal this opens the Screen Recording list instead.
-    private func requestScreenRecording() {
-        if CGRequestScreenCaptureAccess() {
-            hasScreenRecording = true
-        } else if let url = URL(
-            string: "x-apple.systempreferences:com.apple.preference.security?Privacy_ScreenCapture")
-        {
-            NSWorkspace.shared.open(url)
         }
     }
 
