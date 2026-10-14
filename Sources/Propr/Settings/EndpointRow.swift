@@ -1,50 +1,60 @@
 import SwiftUI
 
-/// One configured endpoint in the Models list.
-///
-/// Deliberately has no background of its own — a `List` draws row backgrounds,
-/// selection and separators, and a card drawn inside one fights all three.
+/// One configured provider in the Models pane: its logo, its name and host,
+/// and how many models it offers, with Edit and Remove at the trailing edge.
 struct EndpointRow: View {
     let endpoint: CustomEndpoint
+    let onEdit: () -> Void
+    let onRemove: () -> Void
 
-    private var modelSummary: String {
-        endpoint.models.map(\.displayName).joined(separator: ", ")
+    /// The host reads better than the full URL, which mostly repeats `/v1`.
+    private var host: String {
+        URL(string: endpoint.baseURL)?.host() ?? endpoint.baseURL
+    }
+
+    private var modelCount: String {
+        switch endpoint.models.count {
+        case 0: "No models"
+        case 1: "1 model"
+        default: "\(endpoint.models.count) models"
+        }
     }
 
     var body: some View {
         HStack(spacing: 10) {
-            Image(systemName: "server.rack")
-                .font(.title3)
-                .foregroundStyle(.secondary)
-                .frame(width: 22)
+            ProviderLogo(name: endpoint.name, baseURL: endpoint.baseURL)
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1) {
                 Text(endpoint.name)
-                    .font(.body)
-
-                Text(endpoint.baseURL)
-                    .font(.callout)
+                Text("\(host) · \(modelCount)")
+                    .font(.caption)
                     .foregroundStyle(.secondary)
                     .lineLimit(1)
                     .truncationMode(.middle)
-
-                if !endpoint.models.isEmpty {
-                    Text(modelSummary)
-                        .font(.callout)
-                        .foregroundStyle(.tertiary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
-                }
             }
 
-            Spacer(minLength: 0)
+            Spacer(minLength: 8)
+
+            Button("Edit…", action: onEdit)
+
+            Button(role: .destructive, action: onRemove) {
+                Image(systemName: "trash")
+            }
+            .buttonStyle(.borderless)
+            .help("Remove \(endpoint.name)")
+            .accessibilityLabel("Remove \(endpoint.name)")
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 2)
+        .contentShape(Rectangle())
+        .contextMenu {
+            Button("Edit…", action: onEdit)
+            Button("Remove Provider…", role: .destructive, action: onRemove)
+        }
     }
 }
 
 #Preview {
-    List {
+    Form {
         EndpointRow(
             endpoint: CustomEndpoint(
                 name: "My Groq",
@@ -53,8 +63,11 @@ struct EndpointRow: View {
                     CustomModel(name: "llama-3.3-70b-versatile", alias: "Llama 3.3 70B"),
                     CustomModel(name: "openai/gpt-oss-120b"),
                 ]
-            )
+            ),
+            onEdit: {},
+            onRemove: {}
         )
     }
-    .frame(width: 460, height: 140)
+    .formStyle(.grouped)
+    .frame(width: 520, height: 140)
 }

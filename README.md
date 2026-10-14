@@ -59,7 +59,7 @@ Questions about the text — "is this correct?", "what does this word mean?" —
 
 For a lookup, select text and tap **Fn**, or press firmly on a Force Touch trackpad. The dark search panel opens separately from the refinement bar and does not replace the selected text. It searches the selection automatically; you can edit the query or choose Google or AI. AI gives a brief definition, or separately labeled meanings with a short use-case example on its own line for each when a term has genuinely different meanings (including common slang). If no text can be captured, type a query into the panel. Force Click requires a trackpad that produces a genuine pressure event; an ordinary click does not open search.
 
-Lookup first reads the current selection through Accessibility or the same temporary clipboard-copy fallback used by the refinement bar. If a Force Click has no selected text, it reads the word at the pressed position through Accessibility or a local screenshot. Only that last fallback requires Screen Recording permission; the search panel offers an explicit button to request it. The clipboard is restored, screenshots are not sent to a server, and lookup never selects and copies an entire field.
+Lookup first reads the current selection through Accessibility or the same temporary clipboard-copy fallback used by the refinement bar. If a Force Click has no selected text, it reads the word at the pressed position through Accessibility; if the app does not expose it, the panel opens empty for you to type. Lookup never needs Screen Recording permission. The clipboard is restored, and lookup never selects and copies an entire field.
 
 ## Where your API keys are stored
 

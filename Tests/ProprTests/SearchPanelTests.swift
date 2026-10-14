@@ -11,6 +11,27 @@ struct SearchPanelTests {
         #expect(SearchProvider.allCases == [.google, .ai])
     }
 
+    @Test("Clicked web links open in the browser", arguments: [
+        "https://example.com/page",
+        "http://example.com",
+        "HTTPS://Example.com/Path",
+    ])
+    func webLinksOpen(_ link: String) {
+        #expect(SearchPanelController.canOpenExternally(URL(string: link)!))
+    }
+
+    @Test("Clicked non-web links are dropped", arguments: [
+        "file:///etc/passwd",
+        "smb://attacker.example/share",
+        "x-apple.systempreferences:com.apple.preference.security",
+        "javascript:alert(1)",
+        "mailto:someone@example.com",
+        "https:///no-host",
+    ])
+    func nonWebLinksDropped(_ link: String) {
+        #expect(!SearchPanelController.canOpenExternally(URL(string: link)!))
+    }
+
     @Test("Google searches the complete edited phrase")
     func providerSearchURL() {
         let query = "rejection & Swift/Unicode 👋"

@@ -15,8 +15,15 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 
     var systemImage: String {
         switch self {
-        case .general: return "gearshape"
-        case .models: return "brain"
+        case .general: return "gearshape.fill"
+        case .models: return "cpu.fill"
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .general: return .gray
+        case .models: return .indigo
         }
     }
 }
@@ -29,6 +36,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
 /// highlight and no hover behaviour.
 struct SettingsView: View {
     @State private var selection: SettingsSection
+    @FocusState private var isSidebarFocused: Bool
 
     /// - Parameter initialSection: the pane to show when the window is first built.
     ///   Passed in rather than delivered by notification, because the notification
@@ -40,9 +48,17 @@ struct SettingsView: View {
     var body: some View {
         NavigationSplitView {
             List(SettingsSection.allCases, selection: $selection) { section in
-                Label(section.title, systemImage: section.systemImage)
-                    .tag(section)
+                Label {
+                    Text(section.title)
+                } icon: {
+                    SettingsIcon(systemImage: section.systemImage, color: section.color)
+                }
+                .tag(section)
             }
+            // Start with the sidebar focused. Otherwise, with keyboard navigation on,
+            // the first control in the pane opens wearing a focus ring.
+            .focused($isSidebarFocused)
+            .defaultFocus($isSidebarFocused, true)
             .navigationSplitViewColumnWidth(min: 160, ideal: 190, max: 240)
         } detail: {
             detail

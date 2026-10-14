@@ -4,53 +4,95 @@ import SwiftUI
 /// The General pane.
 ///
 /// A grouped `Form`, which is what gives Mac settings their leading-aligned labels,
-/// trailing controls and system section spacing. The previous version stacked
-/// hand-drawn material cards inside a ScrollView, which reads as a web page.
+/// trailing controls and system section spacing. Rows carry System Settings style
+/// badges so each one can be found at a glance.
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
+    private let shortcutConflicts = ShortcutConflictMonitor.shared
+
+    private var appVersion: String {
+        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
+    }
 
     var body: some View {
         Form {
             Section {
-                Toggle("Launch at Login", isOn: $launchAtLogin)
-                    .onChange(of: launchAtLogin) { _, enabled in
-                        updateLaunchAtLogin(enabled)
-                    }
-            } footer: {
-                Text("Propr lives in the menu bar and stays out of the way until you summon it.")
+                appHeader
             }
 
-            Section("Summoning") {
-                LabeledContent("Keyboard Shortcut") {
-                    // The shortcut was previously undocumented anywhere in the app,
-                    // which made the whole feature undiscoverable.
-                    Text("Double-tap ⌘")
-                        .foregroundStyle(.secondary)
+            Section {
+                SettingsRow(
+                    title: "Launch at Login",
+                    systemImage: "power",
+                    color: .gray,
+                    subtitle: "Keep Propr ready in the menu bar."
+                ) {
+                    Toggle("Launch at Login", isOn: $launchAtLogin)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .onChange(of: launchAtLogin) { _, enabled in
+                            updateLaunchAtLogin(enabled)
+                        }
+                }
+            }
+
+            Section {
+                SettingsRow(
+                    title: "Refine Text",
+                    systemImage: "command",
+                    color: .blue,
+                    subtitle: "Double-tap Command in any text field."
+                ) {
+                    // The shortcuts were previously undocumented anywhere in the app,
+                    // which made both features undiscoverable.
+                    HStack(spacing: 4) {
+                        SettingsKeycap(symbol: "⌘")
+                        SettingsKeycap(symbol: "⌘")
+                    }
+                    .accessibilityLabel("Double-tap Command")
                 }
 
-                LabeledContent("Menu Bar") {
-                    Text("Show Floating Bar")
-                        .foregroundStyle(.secondary)
+                SettingsRow(
+                    title: "Quick Lookup",
+                    systemImage: "magnifyingglass",
+                    color: .teal,
+                    subtitle: "Tap Fn on selected text, or Force Click a word."
+                ) {
+                    HStack(spacing: 6) {
+                        SettingsKeycap(symbol: "fn")
+                        Text("or Force Click")
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Tap Fn, or Force Click")
                 }
+
+                if !shortcutConflicts.conflicts.isEmpty {
+                    ShortcutConflictList(conflicts: shortcutConflicts.conflicts)
+                }
+            } header: {
+                Text("Summoning")
+            } footer: {
+                Text(
+                    "Lookup opens a separate panel and never changes your text. You can also choose Show Floating Bar from the Propr menu bar icon."
+                )
             }
 
             Section("Permissions") {
-                LabeledContent("Accessibility") {
-                    HStack(spacing: 8) {
-                        Image(
-                            systemName: accessibility.hasPermission
-                                ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-                        )
-                        .foregroundStyle(accessibility.hasPermission ? .green : .orange)
-
-                        Text(accessibility.hasPermission ? "Granted" : "Not granted")
-                            .foregroundStyle(.secondary)
-                    }
+                SettingsRow(
+                    title: "Accessibility",
+                    systemImage: "accessibility",
+                    color: .blue,
+                    subtitle: "Lets Propr read and edit text in other apps."
+                ) {
+                    permissionBadge(granted: accessibility.hasPermission)
                 }
 
                 if !accessibility.hasPermission {
-                    LabeledContent("Required to read and edit text in other apps") {
+                    HStack {
+                        Spacer()
                         Button("Open System Settings…") {
                             accessibility.openAccessibilitySystemSettings()
                         }
@@ -63,6 +105,43 @@ struct GeneralSettingsView: View {
             // The toggle can be changed outside the app (System Settings > Login Items).
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
+    }
+
+    /// The app's identity at the top of the pane, like the account card in System
+    /// Settings, so the window does not open on a lone toggle.
+    private var appHeader: some View {
+        HStack(spacing: 12) {
+            Image(nsImage: NSApp.applicationIconImage)
+                .resizable()
+                .frame(width: 48, height: 48)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Propr")
+                    .font(.title3.weight(.semibold))
+                Text("Refine or look up any text, right where you are.")
+                    .foregroundStyle(.secondary)
+            }
+
+            Spacer()
+
+            Text("Version \(appVersion)")
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func permissionBadge(granted: Bool) -> some View {
+        Label(
+            granted ? "Granted" : "Not Granted",
+            systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
+        )
+        .font(.callout.weight(.medium))
+        .foregroundStyle(granted ? .green : .orange)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(Capsule().fill((granted ? Color.green : Color.orange).opacity(0.15)))
     }
 
     private func updateLaunchAtLogin(_ enabled: Bool) {
