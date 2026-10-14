@@ -148,12 +148,7 @@ struct ChatCompletionRequest {
         """
 
     var systemPrompt: String {
-        var prompt = intentPrompt
-        let preferences = customInstructions.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !preferences.isEmpty {
-            prompt += "\n\n" + Self.preferencesInstruction(preferences)
-        }
-        return prompt
+        CustomInstructions.appended(customInstructions, to: intentPrompt)
     }
 
     private var intentPrompt: String {
@@ -165,18 +160,6 @@ struct ChatCompletionRequest {
             prompt += "\n\n" + Self.followUpInstruction
         }
         return prompt
-    }
-
-    /// Delimited so the preferences read as the user's standing wishes, and ranked
-    /// below the instruction so a one-off request can still override them.
-    static func preferencesInstruction(_ preferences: String) -> String {
-        """
-        The user's standing preferences are inside <user_preferences>. Follow them \
-        unless the instruction asks for something different.
-        <user_preferences>
-        \(preferences)
-        </user_preferences>
-        """
     }
 
     var userPrompt: String {

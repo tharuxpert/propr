@@ -277,7 +277,8 @@ final class SearchPanelController: NSObject {
             query: query,
             selection: selection,
             apiKey: key,
-            imageContext: imageContext
+            imageContext: imageContext,
+            customInstructions: LookupPreferences.customInstructions
         )
         let generation = searchGeneration
         showPlaceholder("Looking up with AI…")

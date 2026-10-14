@@ -15,7 +15,7 @@ enum RefinePreferences {
         }
     }
 
-    static let customInstructionsKey = "refine.customInstructions"
+    static let customInstructionsKey = CustomInstructions.refineKey
     static let startModeKey = "refine.startMode"
 
     static var startMode: StartMode {
@@ -27,12 +27,10 @@ enum RefinePreferences {
         stored.flatMap(StartMode.init(rawValue:)) ?? .edit
     }
 
-    /// Long enough for a handful of preferences, short enough that it cannot crowd
-    /// out the actual request or run up cost on every call.
-    static let customInstructionsLimit = 1_000
+    static let customInstructionsLimit = CustomInstructions.limit
 
     /// Standing preferences added to every refine and Ask request.
     static var customInstructions: String {
-        String((UserDefaults.standard.string(forKey: customInstructionsKey) ?? "").prefix(customInstructionsLimit))
+        CustomInstructions.stored(under: customInstructionsKey)
     }
 }

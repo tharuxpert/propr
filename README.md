@@ -11,7 +11,7 @@ Propr lives in your menu bar. Double-tap the **Command** key in any app to refin
 - Reads the focused text field (or your current selection) via the Accessibility API
 - Look up a selection with Fn or Force Click in a separate, read-only search panel
 - Switch each trigger (⌘⌘, Fn, Force Click) on or off in Settings, with a warning when one clashes with a macOS shortcut
-- Settings for custom instructions on every request, whether the bar opens in Edit or Ask, which source lookups open in, and a separate model for lookups
+- Settings for custom instructions on every request — one set for the bar, one for lookups — whether the bar opens in Edit or Ask, which source lookups open in, and a separate model for lookups
 - Edit the search query and switch between Google and your configured AI model
 - Beautiful first-run onboarding with proper permission handling
 - Floating refinement panel with editable context

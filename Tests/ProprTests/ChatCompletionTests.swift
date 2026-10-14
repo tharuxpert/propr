@@ -25,7 +25,7 @@ struct ChatCompletionTests {
         var edit = request()
         edit.customInstructions = "  Use British spelling.  "
         #expect(edit.systemPrompt.hasSuffix(
-            ChatCompletionRequest.preferencesInstruction("Use British spelling.")))
+            CustomInstructions.instruction("Use British spelling.")))
 
         var ask = request()
         ask.intent = .ask
