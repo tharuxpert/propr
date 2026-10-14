@@ -174,7 +174,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// Feeds a modifier change to the detector, summoning the bar on a double tap.
     @MainActor
     private func handleCommandFlagsChanged(keyCode: UInt16, flags: NSEvent.ModifierFlags, at time: TimeInterval) {
-        if commandTapDetector.flagsChanged(keyCode: keyCode, flags: flags, at: time) {
+        if commandTapDetector.flagsChanged(keyCode: keyCode, flags: flags, at: time),
+            TriggerPreferences.refineDoubleTapEnabled
+        {
             summonFloatingBar()
         }
     }
@@ -206,6 +208,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 self?.summonSearch(pid: pid, gestureID: gestureID, near: point)
             }
         )
+        triggers.isFnEnabled = { TriggerPreferences.fnLookupEnabled }
+        triggers.isForceClickEnabled = { TriggerPreferences.forceClickLookupEnabled }
         searchTriggerService = triggers
         triggers.start()
     }
