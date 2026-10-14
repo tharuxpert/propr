@@ -38,6 +38,8 @@ struct GeneralSettingsView: View {
 
             SummoningSection()
 
+            LookupSection()
+
             Section("Permissions") {
                 SettingsRow(
                     title: "Accessibility",

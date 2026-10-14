@@ -50,3 +50,17 @@ enum SearchProvider: String, CaseIterable, Sendable {
         return components.url
     }
 }
+
+extension SearchProvider {
+    static let defaultForLookupKey = "lookup.defaultProvider"
+
+    /// The source a new lookup opens on, chosen in Settings. Google when unset or
+    /// when the stored value no longer names a provider.
+    static var defaultForLookup: SearchProvider {
+        defaultForLookup(stored: UserDefaults.standard.string(forKey: defaultForLookupKey))
+    }
+
+    static func defaultForLookup(stored: String?) -> SearchProvider {
+        stored.flatMap(SearchProvider.init(rawValue:)) ?? .google
+    }
+}
