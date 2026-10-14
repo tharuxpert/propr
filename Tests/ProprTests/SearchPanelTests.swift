@@ -32,6 +32,14 @@ struct SearchPanelTests {
         #expect(!SearchPanelController.canOpenExternally(URL(string: link)!))
     }
 
+    @Test("Lookups open on the saved source, and on Google when nothing usable is saved")
+    func defaultLookupSource() {
+        #expect(SearchProvider.defaultForLookup(stored: "ai") == .ai)
+        #expect(SearchProvider.defaultForLookup(stored: "google") == .google)
+        #expect(SearchProvider.defaultForLookup(stored: nil) == .google)
+        #expect(SearchProvider.defaultForLookup(stored: "bing") == .google)
+    }
+
     @Test("Google searches the complete edited phrase")
     func providerSearchURL() {
         let query = "rejection & Swift/Unicode 👋"

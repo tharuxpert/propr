@@ -32,6 +32,10 @@ final class SearchPanelController: NSObject {
 
         self.imageContext = imageContext
         queryField.stringValue = query
+        // Every new lookup starts on the source chosen in Settings; switching tabs
+        // inside the panel only lasts for that lookup.
+        selectedProvider = SearchProvider.defaultForLookup
+        providerTabs.selectedSegment = SearchProvider.allCases.firstIndex(of: selectedProvider) ?? 0
         place(panel, near: screenPoint)
         panel.orderFront(nil)
         panel.makeKey()
