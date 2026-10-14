@@ -10,6 +10,7 @@ Propr lives in your menu bar. Double-tap the **Command** key in any app to refin
 - Summon the refinement bar with a double-tap of the Command key
 - Reads the focused text field (or your current selection) via the Accessibility API
 - Look up a selection with Fn or Force Click in a separate, read-only search panel
+- Switch each trigger (⌘⌘, Fn, Force Click) on or off in Settings, with a warning when one clashes with a macOS shortcut
 - Edit the search query and switch between Google and your configured AI model
 - Beautiful first-run onboarding with proper permission handling
 - Floating refinement panel with editable context

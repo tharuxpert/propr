@@ -9,7 +9,6 @@ import SwiftUI
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
-    private let shortcutConflicts = ShortcutConflictMonitor.shared
 
     private var appVersion: String {
         Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
@@ -37,48 +36,7 @@ struct GeneralSettingsView: View {
                 }
             }
 
-            Section {
-                SettingsRow(
-                    title: "Refine Text",
-                    systemImage: "command",
-                    color: .blue,
-                    subtitle: "Double-tap Command in any text field."
-                ) {
-                    // The shortcuts were previously undocumented anywhere in the app,
-                    // which made both features undiscoverable.
-                    HStack(spacing: 4) {
-                        SettingsKeycap(symbol: "⌘")
-                        SettingsKeycap(symbol: "⌘")
-                    }
-                    .accessibilityLabel("Double-tap Command")
-                }
-
-                SettingsRow(
-                    title: "Quick Lookup",
-                    systemImage: "magnifyingglass",
-                    color: .teal,
-                    subtitle: "Tap Fn on selected text, or Force Click a word."
-                ) {
-                    HStack(spacing: 6) {
-                        SettingsKeycap(symbol: "fn")
-                        Text("or Force Click")
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Tap Fn, or Force Click")
-                }
-
-                if !shortcutConflicts.conflicts.isEmpty {
-                    ShortcutConflictList(conflicts: shortcutConflicts.conflicts)
-                }
-            } header: {
-                Text("Summoning")
-            } footer: {
-                Text(
-                    "Lookup opens a separate panel and never changes your text. You can also choose Show Floating Bar from the Propr menu bar icon."
-                )
-            }
+            SummoningSection()
 
             Section("Permissions") {
                 SettingsRow(

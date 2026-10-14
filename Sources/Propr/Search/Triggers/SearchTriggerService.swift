@@ -30,6 +30,12 @@ final class SearchTriggerService {
     private let onForceClick: @MainActor (UUID, pid_t, CGPoint) -> Void
     private let pressureReader: PressureReader
 
+    /// Whether each trigger is switched on, asked at the moment of the gesture.
+    /// Injected rather than read from settings here, so tests do not depend on the
+    /// user's saved preferences.
+    var isFnEnabled: @MainActor () -> Bool = { true }
+    var isForceClickEnabled: @MainActor () -> Bool = { true }
+
     private var fnDetector = FnTapDetector()
     private var forceDetector = ForceClickPressDetector()
     private var fnGlobalMonitor: Any?
@@ -138,7 +144,8 @@ final class SearchTriggerService {
         return event
     }
 
-    private func processFnEvent(type: NSEvent.EventType, code: UInt16, flags: UInt, time: TimeInterval) {
+    /// Internal for test coverage of the Fn on/off switch.
+    func processFnEvent(type: NSEvent.EventType, code: UInt16, flags: UInt, time: TimeInterval) {
         switch type {
         case .keyDown:
             fnDetector.keyDown()
@@ -147,7 +154,7 @@ final class SearchTriggerService {
                 keyCode: code,
                 flags: NSEvent.ModifierFlags(rawValue: flags),
                 at: time
-            ) {
+            ), isFnEnabled() {
                 onFn()
             }
         default:
@@ -161,7 +168,7 @@ final class SearchTriggerService {
         let quartzPoint = event.cgEvent?.location
         let targetPID = event.cgEvent.map { Int32($0.getIntegerValueField(.eventTargetUnixProcessID)) }
         Task { @MainActor in
-            guard let service = Self.activeService else { return }
+            guard let service = Self.activeService, service.isForceClickEnabled() else { return }
             let point = quartzPoint.map(Self.appKitPoint) ?? NSEvent.mouseLocation
             let pid = service.sourcePID(targetPID)
             switch type {
@@ -188,6 +195,11 @@ final class SearchTriggerService {
         case .tapDisabledByTimeout, .tapDisabledByUserInput:
             forceDetector.cancel()
             if let eventTap { CGEvent.tapEnable(tap: eventTap, enable: true) }
+        case _ where !isForceClickEnabled():
+            // Switched off: every event passes through untouched, so the system's
+            // own Force Click Look Up works again.
+            forceDetector.cancel()
+            return false
         case .leftMouseDown:
             mouseDown(
                 at: Self.appKitPoint(event.location),

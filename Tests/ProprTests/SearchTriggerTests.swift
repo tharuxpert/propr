@@ -127,6 +127,50 @@ struct SearchTriggerTests {
         #expect(lookups == snapshots)
     }
 
+    @Test("Force Click switched off passes every event through and never looks up")
+    func forceClickSwitchedOff() async {
+        var snapshots = 0
+        var lookups = 0
+        let service = SearchTriggerService(
+            onFn: {},
+            onMouseDown: { _, _, _ in snapshots += 1 },
+            onForceClick: { _, _, _ in lookups += 1 },
+            pressureReader: { _ in (.pressure, 2) }
+        )
+        service.isForceClickEnabled = { false }
+        let event = CGEvent(source: nil)!
+
+        #expect(!service.handleActiveEvent(type: .leftMouseDown, event: event))
+        #expect(!service.handleActiveEvent(type: SearchTriggerService.pressureEventType, event: event))
+        await Task.yield()
+        #expect(snapshots == 0)
+        #expect(lookups == 0)
+
+        // Back on, the same press is caught and native Look Up is suppressed.
+        service.isForceClickEnabled = { true }
+        _ = service.handleActiveEvent(type: .leftMouseDown, event: event)
+        #expect(service.handleActiveEvent(type: SearchTriggerService.pressureEventType, event: event))
+        await Task.yield()
+        #expect(lookups == 1)
+    }
+
+    @Test("Fn switched off ignores a clean tap")
+    func fnSwitchedOff() {
+        var taps = 0
+        let service = SearchTriggerService(onFn: { taps += 1 }, onMouseDown: { _, _, _ in }, onForceClick: { _, _, _ in })
+        let fn = NSEvent.ModifierFlags.function.rawValue
+
+        service.isFnEnabled = { false }
+        service.processFnEvent(type: .flagsChanged, code: 63, flags: fn, time: 0)
+        service.processFnEvent(type: .flagsChanged, code: 63, flags: 0, time: 0.1)
+        #expect(taps == 0)
+
+        service.isFnEnabled = { true }
+        service.processFnEvent(type: .flagsChanged, code: 63, flags: fn, time: 1)
+        service.processFnEvent(type: .flagsChanged, code: 63, flags: 0, time: 1.1)
+        #expect(taps == 1)
+    }
+
     @Test("Gesture envelopes without a press pass through untouched")
     func gestureFastPathWithoutPress() {
         var decoded = 0
