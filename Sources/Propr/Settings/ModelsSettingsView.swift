@@ -69,7 +69,7 @@ struct ModelsSettingsView: View {
         Form {
             Section {
                 SettingsRow(
-                    title: "Default Model",
+                    title: "Refine Model",
                     systemImage: "star.fill",
                     color: .orange,
                     subtitle: "Used each time you summon Propr."
@@ -113,7 +113,7 @@ struct ModelsSettingsView: View {
 
     private var defaultModelPicker: some View {
         modelPicker(
-            "Default Model", selection: selectedModelBinding,
+            "Refine Model", selection: selectedModelBinding,
             emptyLabel: modelStore.selectedModel() == nil ? "None" : nil)
     }
 

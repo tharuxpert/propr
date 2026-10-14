@@ -70,7 +70,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         // Model submenus (dynamic). Default and lookup are separate choices, so
         // they get separate submenus rather than one list with two checkmarks.
         let modelMenu = buildModelSubmenu()
-        let modelItem = NSMenuItem(title: "Default Model...", action: nil, keyEquivalent: "")
+        let modelItem = NSMenuItem(title: "Refine Model...", action: nil, keyEquivalent: "")
         modelItem.submenu = modelMenu
         menu.addItem(modelItem)
         
