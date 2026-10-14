@@ -97,6 +97,20 @@ final class ModelStore {
         return model
     }
 
+    /// The Lookup Model menu, in the order it is shown: the "Same as Default" choice
+    /// first, then every configured model. Kept free of AppKit so it stays testable.
+    nonisolated static func lookupModelMenuItems(
+        lookupID: UUID?, available: [ModelSelection]
+    ) -> [LookupModelMenuItem] {
+        var items = [
+            LookupModelMenuItem(modelID: nil, title: "Same as Default", isSelected: lookupID == nil)
+        ]
+        items += available.map {
+            LookupModelMenuItem(modelID: $0.id, title: $0.displayName, isSelected: $0.id == lookupID)
+        }
+        return items
+    }
+
     func addEndpoint(_ endpoint: CustomEndpoint) {
         customEndpoints.append(endpoint)
         saveEndpoints()
@@ -151,6 +165,13 @@ final class ModelStore {
     private func notifyChanged() {
         NotificationCenter.default.post(name: .proprModelStoreDidChange, object: self)
     }
+}
+
+/// One row of the Lookup Model menu. `modelID == nil` is the "Same as Default" row.
+struct LookupModelMenuItem: Equatable {
+    let modelID: UUID?
+    let title: String
+    let isSelected: Bool
 }
 
 // Simple struct used for menu + selection

@@ -39,4 +39,33 @@ struct LookupModelTests {
         #expect(config.selectedModelID == id)
         #expect(config.lookupModelID == nil)
     }
+
+    @Test("The Lookup Model menu offers Same as Default first, then every model")
+    func menuItems() {
+        let fast = model("fast"), strong = model("strong")
+        let items = ModelStore.lookupModelMenuItems(lookupID: nil, available: [fast, strong])
+
+        #expect(items.map(\.title) == ["Same as Default", "fast", "strong"])
+        #expect(items.map(\.isSelected) == [true, false, false])
+        #expect(items.first?.modelID == nil)
+    }
+
+    @Test("The Lookup Model menu ticks the chosen model, and only that one")
+    func menuItemsTickChosenModel() {
+        let fast = model("fast"), strong = model("strong")
+        let items = ModelStore.lookupModelMenuItems(lookupID: strong.id, available: [fast, strong])
+
+        #expect(items.map(\.isSelected) == [false, false, true])
+        // A lookup model that no longer exists ticks nothing; the picker binds the
+        // raw stored value, so neither surface pretends a deleted model is in use.
+        let stale = ModelStore.lookupModelMenuItems(lookupID: UUID(), available: [fast, strong])
+        #expect(stale.map(\.isSelected) == [false, false, false])
+    }
+
+    @Test("With no models configured the menu only offers Same as Default")
+    func menuItemsWithoutModels() {
+        let items = ModelStore.lookupModelMenuItems(lookupID: nil, available: [])
+
+        #expect(items == [LookupModelMenuItem(modelID: nil, title: "Same as Default", isSelected: true)])
+    }
 }

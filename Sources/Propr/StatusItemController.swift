@@ -67,11 +67,17 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         
         menu.addItem(.separator())
         
-        // Model submenu (dynamic)
+        // Model submenus (dynamic). Default and lookup are separate choices, so
+        // they get separate submenus rather than one list with two checkmarks.
         let modelMenu = buildModelSubmenu()
-        let modelItem = NSMenuItem(title: "Model...", action: nil, keyEquivalent: "")
+        let modelItem = NSMenuItem(title: "Refine Model...", action: nil, keyEquivalent: "")
         modelItem.submenu = modelMenu
         menu.addItem(modelItem)
+        
+        let lookupMenu = buildLookupModelSubmenu()
+        let lookupItem = NSMenuItem(title: "Lookup Model...", action: nil, keyEquivalent: "")
+        lookupItem.submenu = lookupMenu
+        menu.addItem(lookupItem)
         
         menu.addItem(.separator())
         
@@ -140,6 +146,33 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         return submenu
     }
     
+    private func buildLookupModelSubmenu() -> NSMenu {
+        let submenu = NSMenu()
+        submenu.autoenablesItems = false
+        
+        let items = ModelStore.lookupModelMenuItems(
+            lookupID: ModelStore.shared.lookupModelID,
+            available: ModelStore.shared.allAvailableModels)
+        
+        for item in items {
+            let menuItem = NSMenuItem(
+                title: item.title, action: #selector(selectLookupModel(_:)), keyEquivalent: "")
+            menuItem.target = self
+            menuItem.representedObject = item.modelID?.uuidString
+            if item.isSelected {
+                menuItem.state = .on
+            }
+            submenu.addItem(menuItem)
+            
+            // Keep the nil choice ("Same as Default") visually apart from the models.
+            if item.modelID == nil {
+                submenu.addItem(.separator())
+            }
+        }
+        
+        return submenu
+    }
+    
     // Called by the system right before the menu is shown.
     func menuWillOpen(_ menu: NSMenu) {
         // Make sure everything (permission item + model checkmark) is up to date.
@@ -156,6 +189,19 @@ final class StatusItemController: NSObject, NSMenuDelegate {
               let model = ModelStore.shared.allAvailableModels.first(where: { $0.id == uuid }) else { return }
         
         ModelStore.shared.selectModel(model)
+    }
+    
+    @objc private func selectLookupModel(_ sender: NSMenuItem) {
+        // nil means the "Same as Default" item.
+        guard let idString = sender.representedObject as? String else {
+            ModelStore.shared.lookupModelID = nil
+            return
+        }
+        guard let uuid = UUID(uuidString: idString),
+              ModelStore.shared.allAvailableModels.contains(where: { $0.id == uuid })
+        else { return }
+        
+        ModelStore.shared.lookupModelID = uuid
     }
     
     @objc private func openSettings() {
