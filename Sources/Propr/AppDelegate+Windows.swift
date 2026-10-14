@@ -29,23 +29,19 @@ extension AppDelegate {
             hostingController.sizingOptions = []
 
             // The hosting controller must be the window's *contentViewController*,
-            // not just have its view dropped in as contentView. Only then does it
-            // bridge the NavigationSplitView's toolbar and titlebar into the window
-            // and learn the titlebar's safe area. Without it the sidebar toggle and
-            // title showed up but the form slid underneath a phantom toolbar band.
+            // not just have its view dropped in as contentView, or the window does
+            // not give SwiftUI the titlebar's safe area and the content slides under
+            // a phantom band.
             let window = NSWindow(contentViewController: hostingController)
 
-            // Full-size content lets the sidebar run up under the titlebar, the way
-            // System Settings and other split-view Mac apps look.
-            window.styleMask = [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView]
-            window.toolbarStyle = .unified
-            window.setContentSize(NSSize(width: 760, height: 580))
-            window.minSize = NSSize(width: 720, height: 480)
-
-            // The navigationTitle bridge only pushes a title when the selection
-            // *changes*, so without this the window opened as "Untitled" until the
-            // user switched panes.
-            window.title = section.title
+            // The tab strip sits below the titlebar, so the content stays in the
+            // titlebar's safe area instead of running up under it. The title names
+            // the window rather than the pane: the selected tab already says which
+            // pane is showing.
+            window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.setContentSize(NSSize(width: 720, height: 560))
+            window.minSize = NSSize(width: 640, height: 440)
+            window.title = "Propr Settings"
 
             window.identifier = NSUserInterfaceItemIdentifier("settings")
             window.isReleasedWhenClosed = false

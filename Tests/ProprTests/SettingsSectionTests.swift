@@ -21,6 +21,17 @@ struct SettingsSectionTests {
         #expect(Set(icons).count == icons.count)
     }
 
+    @Test("Arrow keys wrap around the tab strip")
+    func moved() {
+        #expect(SettingsSection.moved(from: .general, by: 1) == .shortcuts)
+        #expect(SettingsSection.moved(from: .models, by: 1) == .general)
+        #expect(SettingsSection.moved(from: .general, by: -1) == .models)
+        #expect(SettingsSection.moved(from: .lookup, by: -1) == .refine)
+        #expect(SettingsSection.moved(from: .refine, by: 0) == .refine)
+        // A move longer than the strip still lands inside it.
+        #expect(SettingsSection.moved(from: .general, by: SettingsSection.allCases.count) == .general)
+    }
+
     @Test("Raw values match the notification the menu bar sends")
     func menuBarContract() {
         // StatusItemController posts "models" for Manage Models…
