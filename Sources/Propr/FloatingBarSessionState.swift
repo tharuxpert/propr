@@ -13,7 +13,12 @@ final class FloatingBarSessionState: ObservableObject {
     /// An answer shown in the bar instead of being written into the document.
     @Published private(set) var answer: Answer?
     /// Ask mode: every request is answered in the bar. Toggled with Tab.
-    @Published var isAskMode = false
+    @Published var isAskMode: Bool
+
+    /// - Parameter startsInAskMode: the mode chosen in Settings for a fresh bar.
+    init(startsInAskMode: Bool = false) {
+        isAskMode = startsInAskMode
+    }
 
     struct Answer: Equatable {
         /// The instruction that produced it, so it can be retried as an edit.

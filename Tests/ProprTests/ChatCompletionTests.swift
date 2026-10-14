@@ -34,6 +34,21 @@ struct ChatCompletionTests {
         #expect(ask.systemPrompt.contains("<user_preferences>\nUse British spelling.\n</user_preferences>"))
     }
 
+    @Test("The bar opens in Edit unless Ask was saved")
+    func startModeParsing() {
+        #expect(RefinePreferences.startMode(stored: "ask") == .ask)
+        #expect(RefinePreferences.startMode(stored: "edit") == .edit)
+        #expect(RefinePreferences.startMode(stored: nil) == .edit)
+        #expect(RefinePreferences.startMode(stored: "chat") == .edit)
+    }
+
+    @Test("A fresh bar session opens in the requested mode")
+    @MainActor
+    func sessionStartsInMode() {
+        #expect(FloatingBarSessionState(startsInAskMode: true).isAskMode)
+        #expect(!FloatingBarSessionState().isAskMode)
+    }
+
     @Test("Blank custom instructions leave the prompt untouched")
     func blankCustomInstructions() {
         var blank = request()

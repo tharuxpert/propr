@@ -3,9 +3,26 @@ import SwiftUI
 /// The Refine section of the General pane: how the refine bar behaves.
 struct RefineSection: View {
     @AppStorage(RefinePreferences.customInstructionsKey) private var customInstructions = ""
+    @AppStorage(RefinePreferences.startModeKey) private var startMode: RefinePreferences.StartMode = .edit
 
     var body: some View {
         Section {
+            SettingsRow(
+                title: "Open the Bar In",
+                systemImage: "rectangle.and.pencil.and.ellipsis",
+                color: .blue,
+                subtitle: "Edit changes your text; Ask answers in the bar. Tab switches."
+            ) {
+                Picker("Open the Bar In", selection: $startMode) {
+                    ForEach(RefinePreferences.StartMode.allCases, id: \.self) { mode in
+                        Text(mode.title).tag(mode)
+                    }
+                }
+                .labelsHidden()
+                .pickerStyle(.segmented)
+                .fixedSize()
+            }
+
             VStack(alignment: .leading, spacing: 8) {
                 SettingsRowLabel(
                     title: "Custom Instructions",
@@ -51,7 +68,9 @@ struct RefineSection: View {
         } header: {
             Text("Refine")
         } footer: {
-            Text("A request in the bar wins over these when the two disagree. Not used by Quick Lookup.")
+            Text(
+                "When a request in the bar disagrees with your custom instructions, the request wins. Quick Lookup doesn't use them."
+            )
         }
     }
 }
