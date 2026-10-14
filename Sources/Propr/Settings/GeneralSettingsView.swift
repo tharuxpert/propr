@@ -38,6 +38,8 @@ struct GeneralSettingsView: View {
 
             SummoningSection()
 
+            RefineSection()
+
             LookupSection()
 
             Section("Permissions") {

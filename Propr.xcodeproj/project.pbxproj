@@ -29,6 +29,7 @@
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
 		34DFA93DA721A74CA4AF4492 /* SearchPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97517C94E9AD533EE6C89625 /* SearchPanelTests.swift */; };
 		369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */; };
+		3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */; };
 		3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */; };
 		3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */; };
 		4172233E337C9DC0DED63426 /* AILookupResponse.swift in Sources */ = {isa = PBXBuildFile; fileRef = FC12BB0F299BDA428F273879 /* AILookupResponse.swift */; };
@@ -78,6 +79,7 @@
 		D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */; };
 		D533F6DD22B146979ECA5A0E /* FloatingBarController+StreamingApply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */; };
 		D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */; };
+		DBDE071A8DBC0F2660B06FE3 /* RefineSection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3901BC736B4A8F573D493F70 /* RefineSection.swift */; };
 		DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */; };
 		DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */; };
 		E1CAB360CA3E516859A6F73E /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */; };
@@ -128,6 +130,7 @@
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
 		3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandDoubleTapDetector.swift; sourceTree = "<group>"; };
+		3901BC736B4A8F573D493F70 /* RefineSection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineSection.swift; sourceTree = "<group>"; };
 		39D6C1C202E14BE0422D6C8C /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		3B7578011130C67BA08139F5 /* SearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelController.swift; sourceTree = "<group>"; };
 		40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshot.swift; sourceTree = "<group>"; };
@@ -141,6 +144,7 @@
 		55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormStateTests.swift; sourceTree = "<group>"; };
 		57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyTests.swift; sourceTree = "<group>"; };
 		57D04E532EE362C9FB949CD3 /* ShortcutConflicts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConflicts.swift; sourceTree = "<group>"; };
+		58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefinePreferences.swift; sourceTree = "<group>"; };
 		5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSessionState.swift; sourceTree = "<group>"; };
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
 		65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+StreamingApply.swift"; sourceTree = "<group>"; };
@@ -238,6 +242,7 @@
 				40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */,
 				52389F30283FC8DEAE46A772 /* Propr.entitlements */,
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
+				58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */,
 				0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */,
 				D57AACF05D72BA774AF70D00 /* StatusItemController.swift */,
 				EACB17E5999A4290BF4747A6 /* TriggerPreferences.swift */,
@@ -270,6 +275,7 @@
 				E245AD3AD0A79EEECB3FAD04 /* LookupSection.swift */,
 				B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */,
 				03650E0EB7DEF2F8F9B836A1 /* ProviderLogo.swift */,
+				3901BC736B4A8F573D493F70 /* RefineSection.swift */,
 				A5AD9203535268F747AC060C /* SettingsIcon.swift */,
 				2BBFA4D9B786404254155B7B /* SettingsView.swift */,
 				BEE53455CCF50660809EE621 /* ShortcutConflictList.swift */,
@@ -597,6 +603,8 @@
 				E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */,
 				EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */,
 				8B5214EC61877BD3B3EBDF35 /* ProviderLogo.swift in Sources */,
+				3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */,
+				DBDE071A8DBC0F2660B06FE3 /* RefineSection.swift in Sources */,
 				F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */,
 				EBE49570366F7941FA9035B8 /* SearchPanel.swift in Sources */,
 				923A62D8726688C4B6DD9C54 /* SearchPanelController.swift in Sources */,

@@ -38,7 +38,8 @@ final class AIService {
             selection: selection,
             apiKey: apiKey,
             stream: false,
-            intent: intent
+            intent: intent,
+            customInstructions: RefinePreferences.customInstructions
         ).makeURLRequest()
 
         let (data, response) = try await session.data(for: request)
@@ -70,7 +71,8 @@ final class AIService {
         apiKey: String,
         intent: RefineIntent = .auto
     ) -> AsyncThrowingStream<String, Error> {
-        AsyncThrowingStream { continuation in
+        let customInstructions = RefinePreferences.customInstructions
+        return AsyncThrowingStream { continuation in
             let requestTask = Task {
                 do {
                     let request = try ChatCompletionRequest(
@@ -80,7 +82,8 @@ final class AIService {
                         selection: selection,
                         apiKey: apiKey,
                         stream: true,
-                        intent: intent
+                        intent: intent,
+                        customInstructions: customInstructions
                     ).makeURLRequest()
 
                     let (bytes, response) = try await session.bytes(for: request)

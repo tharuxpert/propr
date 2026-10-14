@@ -20,6 +20,28 @@ struct ChatCompletionTests {
         )
     }
 
+    @Test("Custom instructions are added, delimited, to edit and Ask prompts")
+    func customInstructionsInPrompt() {
+        var edit = request()
+        edit.customInstructions = "  Use British spelling.  "
+        #expect(edit.systemPrompt.hasSuffix(
+            ChatCompletionRequest.preferencesInstruction("Use British spelling.")))
+
+        var ask = request()
+        ask.intent = .ask
+        ask.customInstructions = "Use British spelling."
+        #expect(ask.systemPrompt.hasPrefix(ChatCompletionRequest.askSystemPrompt))
+        #expect(ask.systemPrompt.contains("<user_preferences>\nUse British spelling.\n</user_preferences>"))
+    }
+
+    @Test("Blank custom instructions leave the prompt untouched")
+    func blankCustomInstructions() {
+        var blank = request()
+        blank.customInstructions = " \n "
+        #expect(!blank.systemPrompt.contains("user_preferences"))
+        #expect(blank.systemPrompt == request().systemPrompt)
+    }
+
     private func request(
         original: String = "hello",
         instruction: String = "make it formal",
