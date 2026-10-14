@@ -1,7 +1,11 @@
 import SwiftUI
 
+/// One pane of the Settings window. The order here is the order in the sidebar.
 enum SettingsSection: String, CaseIterable, Identifiable {
     case general
+    case shortcuts
+    case refine
+    case lookup
     case models
 
     var id: Self { self }
@@ -9,6 +13,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .general: return "General"
+        case .shortcuts: return "Shortcuts"
+        case .refine: return "Refine"
+        case .lookup: return "Lookup"
         case .models: return "Models"
         }
     }
@@ -16,6 +23,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var systemImage: String {
         switch self {
         case .general: return "gearshape.fill"
+        case .shortcuts: return "command"
+        case .refine: return "wand.and.stars"
+        case .lookup: return "magnifyingglass"
         case .models: return "cpu.fill"
         }
     }
@@ -23,6 +33,9 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     var color: Color {
         switch self {
         case .general: return .gray
+        case .shortcuts: return .blue
+        case .refine: return .purple
+        case .lookup: return .teal
         case .models: return .indigo
         }
     }
@@ -78,6 +91,12 @@ struct SettingsView: View {
         switch selection {
         case .general:
             GeneralSettingsView()
+        case .shortcuts:
+            ShortcutsSettingsView()
+        case .refine:
+            RefineSettingsView()
+        case .lookup:
+            LookupSettingsView()
         case .models:
             ModelsSettingsView()
         }

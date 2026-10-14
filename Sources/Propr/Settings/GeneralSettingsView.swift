@@ -1,7 +1,9 @@
 import ServiceManagement
 import SwiftUI
 
-/// The General pane.
+/// The General pane: app-level settings that are not about a feature. The refine
+/// bar, Quick Lookup, the summoning shortcuts and the models each have a pane of
+/// their own, so this one stays short.
 ///
 /// A grouped `Form`, which is what gives Mac settings their leading-aligned labels,
 /// trailing controls and system section spacing. Rows carry System Settings style
@@ -35,12 +37,6 @@ struct GeneralSettingsView: View {
                         }
                 }
             }
-
-            SummoningSection()
-
-            RefineSection()
-
-            LookupSection()
 
             Section("Permissions") {
                 SettingsRow(
