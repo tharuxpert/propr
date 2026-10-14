@@ -29,23 +29,17 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .models: return "cpu.fill"
         }
     }
-
-    var color: Color {
-        switch self {
-        case .general: return .gray
-        case .shortcuts: return .blue
-        case .refine: return .purple
-        case .lookup: return .teal
-        case .models: return .indigo
-        }
-    }
 }
 
-/// The Settings window.
+/// The Settings window: the platform's own tab container, one tab per pane.
 ///
-/// A tab strip across the top with one tab per pane, instead of a sidebar: the
-/// panes are few and each belongs to a feature, so the whole window can stay one
-/// column wide and every pane is a single click away.
+/// This is SwiftUI's `TabView`, which on macOS is an AppKit tab view (`NSTabView`).
+/// The tab bar, its selection state, its keyboard behaviour and its appearance —
+/// Liquid Glass included — all come from the system rather than from a hand-built
+/// strip, so the window keeps up with the platform on its own.
+///
+/// `Tab` is the macOS 15 API; macOS 14 uses the older `.tabItem`, which draws the
+/// same native tabs.
 struct SettingsView: View {
     @State private var selection: SettingsSection
 
@@ -57,38 +51,64 @@ struct SettingsView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            SettingsTabStrip(selection: $selection)
-            detail
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .proprOpenSettings)) { note in
-            if let target = note.userInfo?["selectSection"] as? String,
-                let section = SettingsSection(rawValue: target)
-            {
-                selection = section
+        tabs
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onReceive(NotificationCenter.default.publisher(for: .proprOpenSettings)) { note in
+                if let target = note.userInfo?["selectSection"] as? String,
+                    let section = SettingsSection(rawValue: target)
+                {
+                    selection = section
+                }
+            }
+    }
+
+    @ViewBuilder
+    private var tabs: some View {
+        if #available(macOS 15.0, *) {
+            TabView(selection: $selection) {
+                Tab("General", systemImage: SettingsSection.general.systemImage, value: .general) {
+                    GeneralSettingsView()
+                }
+                Tab("Shortcuts", systemImage: SettingsSection.shortcuts.systemImage, value: .shortcuts) {
+                    ShortcutsSettingsView()
+                }
+                Tab("Refine", systemImage: SettingsSection.refine.systemImage, value: .refine) {
+                    RefineSettingsView()
+                }
+                Tab("Lookup", systemImage: SettingsSection.lookup.systemImage, value: .lookup) {
+                    LookupSettingsView()
+                }
+                Tab("Models", systemImage: SettingsSection.models.systemImage, value: .models) {
+                    ModelsSettingsView()
+                }
+            }
+        } else {
+            TabView(selection: $selection) {
+                GeneralSettingsView()
+                    .tabItem { tabLabel(.general) }
+                    .tag(SettingsSection.general)
+                ShortcutsSettingsView()
+                    .tabItem { tabLabel(.shortcuts) }
+                    .tag(SettingsSection.shortcuts)
+                RefineSettingsView()
+                    .tabItem { tabLabel(.refine) }
+                    .tag(SettingsSection.refine)
+                LookupSettingsView()
+                    .tabItem { tabLabel(.lookup) }
+                    .tag(SettingsSection.lookup)
+                ModelsSettingsView()
+                    .tabItem { tabLabel(.models) }
+                    .tag(SettingsSection.models)
             }
         }
     }
 
-    @ViewBuilder
-    private var detail: some View {
-        switch selection {
-        case .general:
-            GeneralSettingsView()
-        case .shortcuts:
-            ShortcutsSettingsView()
-        case .refine:
-            RefineSettingsView()
-        case .lookup:
-            LookupSettingsView()
-        case .models:
-            ModelsSettingsView()
-        }
+    private func tabLabel(_ section: SettingsSection) -> some View {
+        Label(section.title, systemImage: section.systemImage)
     }
 }
 
 #Preview {
     SettingsView()
-        .frame(width: 760, height: 620)
+        .frame(width: 720, height: 560)
 }

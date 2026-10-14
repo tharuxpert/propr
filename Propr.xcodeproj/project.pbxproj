@@ -95,7 +95,6 @@
 		EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657DF8869C06BB014548EC7C /* BuiltInProvider.swift */; };
 		EC7BAF4974496734530D7EF2 /* FnTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB212309517604983B9E3644 /* FnTapDetector.swift */; };
 		F1E7F98C852FFFED936A5FB2 /* SettingsSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34148042249D3D059403D041 /* SettingsSectionTests.swift */; };
-		F2102502D4653E7E594CBF7A /* SettingsTabStrip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AE3901043CA28FCB391DBD6 /* SettingsTabStrip.swift */; };
 		F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */ = {isa = PBXBuildFile; productRef = 1C04ED90828FD1CE2248C986 /* Permiso */; };
 		F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA3CD6F0FB4D610360732B /* SearchAnswerFormatter.swift */; };
 		FB4B7256873269C13E7DEB32 /* HotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */; };
@@ -142,7 +141,6 @@
 		40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshot.swift; sourceTree = "<group>"; };
 		44C2ADA94D5205A5D117BD9A /* AIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIError.swift; sourceTree = "<group>"; };
 		4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarView.swift; sourceTree = "<group>"; };
-		4AE3901043CA28FCB391DBD6 /* SettingsTabStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsTabStrip.swift; sourceTree = "<group>"; };
 		4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXTextWriter.swift; sourceTree = "<group>"; };
 		4EDBF67D5AB0E7B78279C7FC /* ProviderIconTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProviderIconTests.swift; sourceTree = "<group>"; };
 		4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointRow.swift; sourceTree = "<group>"; };
@@ -291,7 +289,6 @@
 				03650E0EB7DEF2F8F9B836A1 /* ProviderLogo.swift */,
 				5848DE460275B09268D62776 /* RefineSettingsView.swift */,
 				A5AD9203535268F747AC060C /* SettingsIcon.swift */,
-				4AE3901043CA28FCB391DBD6 /* SettingsTabStrip.swift */,
 				2BBFA4D9B786404254155B7B /* SettingsView.swift */,
 				BEE53455CCF50660809EE621 /* ShortcutConflictList.swift */,
 				827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */,
@@ -636,7 +633,6 @@
 				4795A02E4D9C6AB5CF396867 /* SearchWebPresentation.swift in Sources */,
 				D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */,
 				2D6F4596A68E7CA9D6E8AF0F /* SettingsIcon.swift in Sources */,
-				F2102502D4653E7E594CBF7A /* SettingsTabStrip.swift in Sources */,
 				45AF59493DAE10138D0CD3A1 /* SettingsView.swift in Sources */,
 				A26ACAA730DFD7FED6800062 /* ShortcutConflictList.swift in Sources */,
 				C41689373CFCF59CC532B5EF /* ShortcutConflicts.swift in Sources */,

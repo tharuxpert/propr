@@ -1,12 +1,14 @@
+import AppKit
+import SwiftUI
 import Testing
 
 @testable import Propr
 
-/// The Settings panes. Each feature owns one, so these pin down the sidebar order,
-/// that every pane is labelled, and that the menu bar's "Manage Models…" still lands
-/// on the right pane by raw value.
+/// The Settings tabs. Each feature owns one, so these pin down the order, that every
+/// pane is labelled, that the menu bar's "Manage Models…" still lands on the right
+/// pane by raw value, and that the tabs really do reach the platform's tab container.
 struct SettingsSectionTests {
-    @Test("The sidebar lists the app's panes in a stable order")
+    @Test("The tab bar lists the app's panes in a stable order")
     func order() {
         #expect(SettingsSection.allCases == [.general, .shortcuts, .refine, .lookup, .models])
     }
@@ -21,17 +23,6 @@ struct SettingsSectionTests {
         #expect(Set(icons).count == icons.count)
     }
 
-    @Test("Arrow keys wrap around the tab strip")
-    func moved() {
-        #expect(SettingsSection.moved(from: .general, by: 1) == .shortcuts)
-        #expect(SettingsSection.moved(from: .models, by: 1) == .general)
-        #expect(SettingsSection.moved(from: .general, by: -1) == .models)
-        #expect(SettingsSection.moved(from: .lookup, by: -1) == .refine)
-        #expect(SettingsSection.moved(from: .refine, by: 0) == .refine)
-        // A move longer than the strip still lands inside it.
-        #expect(SettingsSection.moved(from: .general, by: SettingsSection.allCases.count) == .general)
-    }
-
     @Test("Raw values match the notification the menu bar sends")
     func menuBarContract() {
         // StatusItemController posts "models" for Manage Models…
@@ -39,5 +30,41 @@ struct SettingsSectionTests {
         for section in SettingsSection.allCases {
             #expect(SettingsSection(rawValue: section.rawValue) == section)
         }
+    }
+
+    /// Propr hosts SwiftUI in an AppKit window, so this checks that the panes land
+    /// in the platform's own tab container (`NSTabView`) rather than only looking
+    /// like tabs: one item per pane, in order, each carrying its title and icon.
+    @MainActor
+    @Test("The panes reach the platform tab container")
+    func nativeTabView() throws {
+        let hosting = NSHostingController(rootView: SettingsView())
+        hosting.sizingOptions = []
+        let window = NSWindow(contentViewController: hosting)
+        window.styleMask = [.titled, .closable, .resizable]
+        window.setContentSize(NSSize(width: 720, height: 560))
+        // Offscreen: the hierarchy still builds and lays out without appearing.
+        window.setFrameOrigin(NSPoint(x: -30000, y: -30000))
+        window.orderFront(nil)
+        defer { window.orderOut(nil) }
+
+        RunLoop.current.run(until: Date().addingTimeInterval(0.4))
+        hosting.view.layoutSubtreeIfNeeded()
+
+        let tabView = try #require(Self.firstTabView(in: hosting.view))
+        #expect(tabView.tabViewItems.count == SettingsSection.allCases.count)
+        #expect(tabView.tabViewItems.map(\.label) == SettingsSection.allCases.map(\.title))
+        #expect(tabView.tabViewItems.allSatisfy { $0.image != nil })
+        // Top tabs, the classic settings chrome.
+        #expect(tabView.tabViewType == .topTabsBezelBorder)
+    }
+
+    @MainActor
+    private static func firstTabView(in view: NSView) -> NSTabView? {
+        if let tabView = view as? NSTabView { return tabView }
+        for subview in view.subviews {
+            if let found = firstTabView(in: subview) { return found }
+        }
+        return nil
     }
 }
