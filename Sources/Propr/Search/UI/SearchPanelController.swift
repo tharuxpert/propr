@@ -263,7 +263,7 @@ final class SearchPanelController: NSObject {
     }
 
     private func startAILookup(query: String) {
-        guard let selection = ModelStore.shared.selectedModel() else {
+        guard let selection = ModelStore.shared.lookupModel() else {
             showPlaceholder("No model selected. Choose one in Propr Settings.")
             return
         }

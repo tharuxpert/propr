@@ -76,8 +76,19 @@ struct ModelsSettingsView: View {
                 ) {
                     defaultModelPicker
                 }
+
+                SettingsRow(
+                    title: "Lookup Model",
+                    systemImage: "magnifyingglass",
+                    color: .teal,
+                    subtitle: "Used for AI answers in Quick Lookup."
+                ) {
+                    lookupModelPicker
+                }
             } footer: {
-                Text("You can also switch models from the Propr menu bar icon.")
+                Text(
+                    "A small, fast model suits lookups. You can also switch the default model from the Propr menu bar icon."
+                )
             }
 
             Section("Providers") {
@@ -101,9 +112,25 @@ struct ModelsSettingsView: View {
     }
 
     private var defaultModelPicker: some View {
-        Picker("Default Model", selection: selectedModelBinding) {
-            if modelStore.selectedModel() == nil {
-                Text("None").tag(UUID?.none)
+        modelPicker(
+            "Default Model", selection: selectedModelBinding,
+            emptyLabel: modelStore.selectedModel() == nil ? "None" : nil)
+    }
+
+    /// "Same as Default" is the nil choice, so a deleted lookup model and a fresh
+    /// install both land on it.
+    private var lookupModelPicker: some View {
+        modelPicker("Lookup Model", selection: $modelStore.lookupModelID, emptyLabel: "Same as Default")
+    }
+
+    /// Every configured model, grouped by provider. `emptyLabel`, when given, is
+    /// offered as the nil choice.
+    private func modelPicker(
+        _ title: String, selection: Binding<UUID?>, emptyLabel: String?
+    ) -> some View {
+        Picker(title, selection: selection) {
+            if let emptyLabel {
+                Text(emptyLabel).tag(UUID?.none)
             }
             ForEach(modelStore.customEndpoints) { endpoint in
                 if !endpoint.models.isEmpty {
