@@ -19,7 +19,7 @@ extension FloatingBarController {
 
         // Fresh ID so SwiftUI recreates the view and resets all @State (prompt, hasApplied, etc.)
         summonID = UUID()
-        sessionState = FloatingBarSessionState()
+        sessionState = FloatingBarSessionState(startsInAskMode: RefinePreferences.startMode == .ask)
         appliedRevisions = []
         conversation = []
         lastApplyUndo = nil
