@@ -7,6 +7,9 @@ import Foundation
 struct ModelConfig: Codable {
     var customEndpoints: [CustomEndpoint] = []
     var selectedModelID: String?  // stored as string for JSON friendliness
+    /// The model quick lookups use. Nil means the same as `selectedModelID`, and is
+    /// also what files written before this existed decode to.
+    var lookupModelID: String?
 }
 
 @MainActor

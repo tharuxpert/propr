@@ -24,6 +24,14 @@ final class ModelStore {
         }
     }
 
+    /// The model quick lookups use instead of the default; nil follows the default.
+    var lookupModelID: UUID? {
+        didSet {
+            saveEndpoints()
+            notifyChanged()
+        }
+    }
+
     private(set) var allAvailableModels: [ModelSelection] = []
 
     private init() {
@@ -31,6 +39,7 @@ final class ModelStore {
         let config = ModelConfigStore.shared.load()
         customEndpoints = config.customEndpoints
         selectedModelID = config.selectedModelID.flatMap { UUID(uuidString: $0) }
+        lookupModelID = config.lookupModelID.flatMap { UUID(uuidString: $0) }
 
         rebuildAvailableModels()
     }
@@ -41,6 +50,7 @@ final class ModelStore {
         var config = ModelConfigStore.shared.load()
         config.customEndpoints = customEndpoints
         config.selectedModelID = selectedModelID?.uuidString
+        config.lookupModelID = lookupModelID?.uuidString
         ModelConfigStore.shared.save(config)
     }
 
@@ -71,6 +81,22 @@ final class ModelStore {
         return allAvailableModels.first { $0.id == id }
     }
 
+    /// The model quick lookups use: the chosen lookup model while it still exists,
+    /// otherwise the default model.
+    func lookupModel() -> ModelSelection? {
+        Self.resolveLookupModel(
+            lookupID: lookupModelID, defaultModel: selectedModel(), available: allAvailableModels)
+    }
+
+    nonisolated static func resolveLookupModel(
+        lookupID: UUID?, defaultModel: ModelSelection?, available: [ModelSelection]
+    ) -> ModelSelection? {
+        guard let lookupID, let model = available.first(where: { $0.id == lookupID }) else {
+            return defaultModel
+        }
+        return model
+    }
+
     func addEndpoint(_ endpoint: CustomEndpoint) {
         customEndpoints.append(endpoint)
         saveEndpoints()
@@ -84,6 +110,9 @@ final class ModelStore {
         // If the selected model belonged to this endpoint, clear selection
         if let selected = selectedModel(), selected.endpointID == id {
             selectedModelID = nil
+        }
+        if let lookupModelID, !allAvailableModels.contains(where: { $0.id == lookupModelID }) {
+            self.lookupModelID = nil
         }
 
         saveEndpoints()
