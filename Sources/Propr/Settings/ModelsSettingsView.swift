@@ -87,7 +87,7 @@ struct ModelsSettingsView: View {
                 }
             } footer: {
                 Text(
-                    "A small, fast model suits lookups. You can also switch the default model from the Propr menu bar icon."
+                    "A small, fast model suits lookups. You can also switch both models from the Propr menu bar icon."
                 )
             }
 
