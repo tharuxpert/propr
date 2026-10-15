@@ -8,6 +8,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
     case refine
     case lookup
     case models
+    case about
 
     var id: Self { self }
 
@@ -18,6 +19,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .refine: return "Refine"
         case .lookup: return "Lookup"
         case .models: return "Models"
+        case .about: return "About"
         }
     }
 
@@ -28,6 +30,7 @@ enum SettingsSection: String, CaseIterable, Identifiable {
         case .refine: return "wand.and.stars"
         case .lookup: return "magnifyingglass"
         case .models: return "cpu"
+        case .about: return "info.circle"
         }
     }
 }
@@ -42,6 +45,7 @@ extension SettingsSection {
         case .refine: return AnyView(RefineSettingsView())
         case .lookup: return AnyView(LookupSettingsView())
         case .models: return AnyView(ModelsSettingsView())
+        case .about: return AnyView(AboutSettingsView())
         }
     }
 }

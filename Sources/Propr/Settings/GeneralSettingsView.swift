@@ -8,14 +8,8 @@ struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
-    private var appVersion: String {
-        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "—"
-    }
-
     var body: some View {
         SettingsPane {
-            appHeader
-
             SettingsForm {
                 SettingsRow("Startup") {
                     Toggle("Launch Propr at login", isOn: $launchAtLogin)
@@ -40,24 +34,6 @@ struct GeneralSettingsView: View {
         .onAppear {
             // The toggle can be changed outside the app (System Settings > Login Items).
             launchAtLogin = SMAppService.mainApp.status == .enabled
-        }
-    }
-
-    /// The app's identity at the top of the pane, so the window does not open on a
-    /// lone checkbox.
-    private var appHeader: some View {
-        VStack(spacing: 6) {
-            Image(nsImage: NSApp.applicationIconImage)
-                .resizable()
-                .frame(width: 64, height: 64)
-                .accessibilityHidden(true)
-            Text("Propr")
-                .font(.title2.weight(.semibold))
-            Text("Refine or look up any text, right where you are.")
-                .foregroundStyle(.secondary)
-            Text("Version \(appVersion)")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
         }
     }
 

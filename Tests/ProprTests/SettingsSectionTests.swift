@@ -10,7 +10,7 @@ import Testing
 struct SettingsSectionTests {
     @Test("The tab bar lists the app's panes in a stable order")
     func order() {
-        #expect(SettingsSection.allCases == [.general, .shortcuts, .refine, .lookup, .models])
+        #expect(SettingsSection.allCases == [.general, .shortcuts, .refine, .lookup, .models, .about])
     }
 
     @Test("Every pane has its own title and icon")
@@ -58,7 +58,7 @@ struct SettingsSectionTests {
         #expect(toolbar.items.count == items.count * 2 - 1)
         #expect(items.map(\.label) == SettingsSection.allCases.map(\.title))
         #expect(items.allSatisfy { $0.image != nil })
-        #expect(toolbar.selectedItemIdentifier == items.last?.itemIdentifier)
+        #expect(toolbar.selectedItemIdentifier == items[SettingsSection.allCases.firstIndex(of: .models)!].itemIdentifier)
 
         tabs.select(.shortcuts)
         #expect(tabs.selectedSection == .shortcuts)

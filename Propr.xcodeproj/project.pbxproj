@@ -28,6 +28,7 @@
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
 		341CA78DAB599B668E8BE35D /* ShortcutsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */; };
 		34DFA93DA721A74CA4AF4492 /* SearchPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97517C94E9AD533EE6C89625 /* SearchPanelTests.swift */; };
+		35829BFA7FEAABCEB369D75E /* AboutSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 427876A480CD6A376CFE186A /* AboutSettingsView.swift */; };
 		369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */; };
 		3992C0FC875F2A3D1FD17F32 /* LookupSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89491E74541EC1FD3672F272 /* LookupSettingsView.swift */; };
 		3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = 58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */; };
@@ -138,6 +139,7 @@
 		39D6C1C202E14BE0422D6C8C /* AppIntents.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppIntents.framework; path = System/Library/Frameworks/AppIntents.framework; sourceTree = SDKROOT; };
 		3B7578011130C67BA08139F5 /* SearchPanelController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchPanelController.swift; sourceTree = "<group>"; };
 		40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshot.swift; sourceTree = "<group>"; };
+		427876A480CD6A376CFE186A /* AboutSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AboutSettingsView.swift; sourceTree = "<group>"; };
 		44C2ADA94D5205A5D117BD9A /* AIError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIError.swift; sourceTree = "<group>"; };
 		4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarView.swift; sourceTree = "<group>"; };
 		4D6EB4A83BAB120537065A3D /* AXTextWriter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AXTextWriter.swift; sourceTree = "<group>"; };
@@ -280,6 +282,7 @@
 		426872CF918B31D596AEBECE /* Settings */ = {
 			isa = PBXGroup;
 			children = (
+				427876A480CD6A376CFE186A /* AboutSettingsView.swift */,
 				A8B75F494DA84AAD50407762 /* CustomInstructionsEditor.swift */,
 				FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */,
 				4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */,
@@ -577,6 +580,7 @@
 				4172233E337C9DC0DED63426 /* AILookupResponse.swift in Sources */,
 				1ED66005BF837E2236B1D32A /* AIService.swift in Sources */,
 				3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */,
+				35829BFA7FEAABCEB369D75E /* AboutSettingsView.swift in Sources */,
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,
 				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
