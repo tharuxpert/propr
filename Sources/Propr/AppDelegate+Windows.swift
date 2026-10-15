@@ -34,8 +34,8 @@ extension AppDelegate {
             // pane buttons centred below it with equal widths.
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
             window.toolbarStyle = .preference
-            window.setContentSize(NSSize(width: 720, height: 560))
-            window.minSize = NSSize(width: 640, height: 440)
+            window.setContentSize(NSSize(width: 780, height: 600))
+            window.minSize = NSSize(width: 680, height: 480)
             window.title = "Propr Settings"
 
             window.identifier = NSUserInterfaceItemIdentifier("settings")

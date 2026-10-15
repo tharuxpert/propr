@@ -53,7 +53,9 @@ struct SettingsSectionTests {
         #expect(tabs.selectedSection == .models)
 
         let toolbar = try #require(window.toolbar)
-        let items = toolbar.items
+        // Spacers sit between the tabs; the tabs themselves are the selectable items.
+        let items = toolbar.items.filter { $0.itemIdentifier != .space }
+        #expect(toolbar.items.count == items.count * 2 - 1)
         #expect(items.map(\.label) == SettingsSection.allCases.map(\.title))
         #expect(items.allSatisfy { $0.image != nil })
         #expect(toolbar.selectedItemIdentifier == items.last?.itemIdentifier)

@@ -1,31 +1,21 @@
 import SwiftUI
 
-/// The text box for a section's standing custom instructions: badged label,
-/// placeholder, character cap and counter.
+/// The text box for a section's standing custom instructions: placeholder,
+/// character cap, counter and an explanatory note.
 ///
-/// The Refine and Lookup sections each own one, so the two boxes cannot drift apart
+/// The Refine and Lookup panes each own one, so the two boxes cannot drift apart
 /// in look or in the limit they enforce.
 struct CustomInstructionsEditor: View {
-    let title: String
-    let systemImage: String
-    let color: Color
-    let subtitle: String
     let placeholder: String
+    let note: String
     let limit: Int
     @Binding var text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            SettingsRowLabel(
-                title: title,
-                systemImage: systemImage,
-                color: color,
-                subtitle: subtitle
-            )
-
+        VStack(alignment: .leading, spacing: 6) {
             TextEditor(text: $text)
                 .font(.body)
-                .frame(minHeight: 64, maxHeight: 120)
+                .frame(minHeight: 96, maxHeight: 160)
                 .scrollContentBackground(.hidden)
                 .padding(6)
                 .background(
@@ -50,12 +40,17 @@ struct CustomInstructionsEditor: View {
                         text = String(newValue.prefix(limit))
                     }
                 }
+                .accessibilityLabel("Custom Instructions")
 
-            Text("\(text.count) / \(limit)")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(maxWidth: .infinity, alignment: .trailing)
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                SettingsNote(note)
+                Spacer(minLength: 0)
+                Text("\(text.count) / \(limit)")
+                    .font(.caption)
+                    .monospacedDigit()
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .padding(.vertical, 2)
+        .frame(maxWidth: .infinity)
     }
 }

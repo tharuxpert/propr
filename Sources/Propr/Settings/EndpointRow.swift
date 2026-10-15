@@ -44,7 +44,6 @@ struct EndpointRow: View {
             .help("Remove \(endpoint.name)")
             .accessibilityLabel("Remove \(endpoint.name)")
         }
-        .padding(.vertical, 2)
         .contentShape(Rectangle())
         .contextMenu {
             Button("Edit…", action: onEdit)
@@ -54,7 +53,7 @@ struct EndpointRow: View {
 }
 
 #Preview {
-    Form {
+    VStack {
         EndpointRow(
             endpoint: CustomEndpoint(
                 name: "My Groq",
@@ -68,6 +67,6 @@ struct EndpointRow: View {
             onRemove: {}
         )
     }
-    .formStyle(.grouped)
-    .frame(width: 520, height: 140)
+    .padding()
+    .frame(width: 440)
 }

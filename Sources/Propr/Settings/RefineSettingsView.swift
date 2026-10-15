@@ -7,42 +7,36 @@ struct RefineSettingsView: View {
     @AppStorage(RefinePreferences.startModeKey) private var startMode: RefinePreferences.StartMode = .edit
 
     var body: some View {
-        Form {
-            Section {
-                SettingsRow(
-                    title: "Open the Bar In",
-                    systemImage: "rectangle.and.pencil.and.ellipsis",
-                    color: .blue,
-                    subtitle: "Edit changes your text; Ask answers in the bar. Tab switches."
-                ) {
-                    Picker("Open the Bar In", selection: $startMode) {
-                        ForEach(RefinePreferences.StartMode.allCases, id: \.self) { mode in
-                            Text(mode.title).tag(mode)
+        SettingsPane {
+            SettingsForm {
+                SettingsRow("Open the Bar In") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Picker("Open the Bar In", selection: $startMode) {
+                            ForEach(RefinePreferences.StartMode.allCases, id: \.self) { mode in
+                                Text(mode.title).tag(mode)
+                            }
                         }
+                        .labelsHidden()
+                        .pickerStyle(.segmented)
+                        .fixedSize()
+                        SettingsNote("Edit changes your text; Ask answers in the bar. Tab switches between them.")
                     }
-                    .labelsHidden()
-                    .pickerStyle(.segmented)
-                    .fixedSize()
                 }
 
-                CustomInstructionsEditor(
-                    title: "Custom Instructions",
-                    systemImage: "text.badge.star",
-                    color: .purple,
-                    subtitle: "Applied to every edit and answer in the bar.",
-                    placeholder: "e.g. Use British spelling. Keep my casual tone.",
-                    limit: RefinePreferences.customInstructionsLimit,
-                    text: $customInstructions
-                )
-            } footer: {
-                Text("When a request in the bar disagrees with your custom instructions, the request wins.")
+                SettingsRow("Custom Instructions") {
+                    CustomInstructionsEditor(
+                        placeholder: "e.g. Use British spelling. Keep my casual tone.",
+                        note: "Applied to every edit and answer. A request in the bar wins if they disagree.",
+                        limit: RefinePreferences.customInstructionsLimit,
+                        text: $customInstructions
+                    )
+                }
             }
         }
-        .formStyle(.grouped)
     }
 }
 
 #Preview {
     RefineSettingsView()
-        .frame(width: 560, height: 420)
+        .frame(width: 780, height: 560)
 }

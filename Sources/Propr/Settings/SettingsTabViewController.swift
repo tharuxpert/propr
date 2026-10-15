@@ -68,7 +68,8 @@ final class SettingsTabViewController: NSTabViewController {
             hosting.sizingOptions = []
             let item = NSTabViewItem(viewController: hosting)
             item.label = section.title
-            item.image = NSImage(systemSymbolName: section.systemImage, accessibilityDescription: section.title)
+            item.image = NSImage(systemSymbolName: section.systemImage, accessibilityDescription: section.title)?
+                .withSymbolConfiguration(NSImage.SymbolConfiguration(scale: .large))
             item.identifier = section.rawValue
             addTabViewItem(item)
         }
@@ -77,6 +78,19 @@ final class SettingsTabViewController: NSTabViewController {
 
     @available(*, unavailable)
     required init?(coder: NSCoder) { fatalError("init(coder:) is not supported") }
+
+    /// A fixed space between neighbouring tabs, so the pane buttons do not sit
+    /// shoulder to shoulder. The header documents adding items this way.
+    override func toolbarDefaultItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        let tabs = super.toolbarDefaultItemIdentifiers(toolbar)
+        return tabs.enumerated().flatMap { index, id in
+            index == 0 ? [id] : [.space, id]
+        }
+    }
+
+    override func toolbarAllowedItemIdentifiers(_ toolbar: NSToolbar) -> [NSToolbarItem.Identifier] {
+        super.toolbarAllowedItemIdentifiers(toolbar) + [.space]
+    }
 
     var selectedSection: SettingsSection? {
         guard selectedTabViewItemIndex >= 0 else { return nil }

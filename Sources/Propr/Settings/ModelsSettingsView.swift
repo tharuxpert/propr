@@ -2,8 +2,7 @@ import SwiftUI
 
 /// The Models pane: which model Propr uses, and the providers that supply them.
 ///
-/// A grouped `Form` like the General pane, so both panes share one look. Each
-/// provider row carries its own Edit and Remove, and adding or editing happens in
+/// Laid out like the other panes. Each provider row carries its own Edit and Remove, and adding or editing happens in
 /// a sheet rather than in forms that expand inline inside a scroll view.
 struct ModelsSettingsView: View {
     @State private var modelStore = ModelStore.shared
@@ -66,49 +65,44 @@ struct ModelsSettingsView: View {
     // MARK: - Pieces
 
     private var form: some View {
-        Form {
-            Section {
-                SettingsRow(
-                    title: "Refine Model",
-                    systemImage: "star.fill",
-                    color: .orange,
-                    subtitle: "Used each time you summon Propr."
-                ) {
-                    defaultModelPicker
+        SettingsPane {
+            SettingsForm {
+                Section {
+                    SettingsRow("Refine Model") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            defaultModelPicker
+                            SettingsNote("Used each time you summon Propr.")
+                        }
+                    }
+
+                    SettingsRow("Lookup Model") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            lookupModelPicker
+                            SettingsNote(
+                                "Used for AI answers in Quick Lookup. A small, fast model suits it. Both can also be switched from the menu bar icon."
+                            )
+                        }
+                    }
                 }
 
-                SettingsRow(
-                    title: "Lookup Model",
-                    systemImage: "magnifyingglass",
-                    color: .teal,
-                    subtitle: "Used for AI answers in Quick Lookup."
-                ) {
-                    lookupModelPicker
-                }
-            } footer: {
-                Text(
-                    "A small, fast model suits lookups. You can also switch both models from the Propr menu bar icon."
-                )
-            }
+                Section {
+                    SettingsRow("Providers") {
+                        VStack(alignment: .leading, spacing: 10) {
+                            ForEach(modelStore.customEndpoints) { endpoint in
+                                EndpointRow(
+                                    endpoint: endpoint,
+                                    onEdit: { editingEndpoint = endpoint },
+                                    onRemove: { removingEndpoint = endpoint }
+                                )
+                                Divider()
+                            }
 
-            Section("Providers") {
-                ForEach(modelStore.customEndpoints) { endpoint in
-                    EndpointRow(
-                        endpoint: endpoint,
-                        onEdit: { editingEndpoint = endpoint },
-                        onRemove: { removingEndpoint = endpoint }
-                    )
+                            Button("Add Provider…") { isAddingEndpoint = true }
+                        }
+                    }
                 }
-
-                Button {
-                    isAddingEndpoint = true
-                } label: {
-                    Label("Add Provider…", systemImage: "plus.circle.fill")
-                }
-                .buttonStyle(.borderless)
             }
         }
-        .formStyle(.grouped)
     }
 
     private var defaultModelPicker: some View {
@@ -214,5 +208,5 @@ struct ModelsSettingsView: View {
 
 #Preview {
     ModelsSettingsView()
-        .frame(width: 560, height: 480)
+        .frame(width: 780, height: 560)
 }

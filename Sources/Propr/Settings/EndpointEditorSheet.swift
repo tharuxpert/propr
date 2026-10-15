@@ -181,17 +181,14 @@ struct EndpointEditorSheet: View {
     }
 
     private var header: some View {
-        HStack(spacing: 12) {
-            SettingsIcon(systemImage: "cpu.fill", color: .indigo, size: 32)
-            VStack(alignment: .leading, spacing: 1) {
-                Text(isEditing ? "Edit Provider" : "Add Provider")
-                    .font(.headline)
-                Text("Any OpenAI-compatible API works.")
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer()
+        VStack(alignment: .leading, spacing: 1) {
+            Text(isEditing ? "Edit Provider" : "Add Provider")
+                .font(.headline)
+            Text("Any OpenAI-compatible API works.")
+                .font(.callout)
+                .foregroundStyle(.secondary)
         }
+        .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.top, 20)
     }

@@ -4,10 +4,6 @@ import SwiftUI
 /// The General pane: app-level settings that are not about a feature. The refine
 /// bar, Quick Lookup, the summoning shortcuts and the models each have a pane of
 /// their own, so this one stays short.
-///
-/// A grouped `Form`, which is what gives Mac settings their leading-aligned labels,
-/// trailing controls and system section spacing. Rows carry System Settings style
-/// badges so each one can be found at a glance.
 struct GeneralSettingsView: View {
     @ObservedObject private var accessibility = AccessibilityManager.shared
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
@@ -17,89 +13,61 @@ struct GeneralSettingsView: View {
     }
 
     var body: some View {
-        Form {
-            Section {
-                appHeader
-            }
+        SettingsPane {
+            appHeader
 
-            Section {
-                SettingsRow(
-                    title: "Launch at Login",
-                    systemImage: "power",
-                    color: .gray,
-                    subtitle: "Keep Propr ready in the menu bar."
-                ) {
-                    Toggle("Launch at Login", isOn: $launchAtLogin)
-                        .labelsHidden()
-                        .toggleStyle(.switch)
+            SettingsForm {
+                SettingsRow("Startup") {
+                    Toggle("Launch Propr at login", isOn: $launchAtLogin)
                         .onChange(of: launchAtLogin) { _, enabled in
                             updateLaunchAtLogin(enabled)
                         }
                 }
-            }
 
-            Section("Permissions") {
-                SettingsRow(
-                    title: "Accessibility",
-                    systemImage: "accessibility",
-                    color: .blue,
-                    subtitle: "Lets Propr read and edit text in other apps."
-                ) {
-                    permissionBadge(granted: accessibility.hasPermission)
-                }
-
-                if !accessibility.hasPermission {
-                    HStack {
-                        Spacer()
-                        Button("Open System Settings…") {
-                            accessibility.openAccessibilitySystemSettings()
+                SettingsRow("Accessibility") {
+                    VStack(alignment: .leading, spacing: 8) {
+                        permissionStatus(granted: accessibility.hasPermission)
+                        SettingsNote("Lets Propr read and edit text in other apps.")
+                        if !accessibility.hasPermission {
+                            Button("Open System Settings…") {
+                                accessibility.openAccessibilitySystemSettings()
+                            }
                         }
                     }
                 }
             }
         }
-        .formStyle(.grouped)
         .onAppear {
             // The toggle can be changed outside the app (System Settings > Login Items).
             launchAtLogin = SMAppService.mainApp.status == .enabled
         }
     }
 
-    /// The app's identity at the top of the pane, like the account card in System
-    /// Settings, so the window does not open on a lone toggle.
+    /// The app's identity at the top of the pane, so the window does not open on a
+    /// lone checkbox.
     private var appHeader: some View {
-        HStack(spacing: 12) {
+        VStack(spacing: 6) {
             Image(nsImage: NSApp.applicationIconImage)
                 .resizable()
-                .frame(width: 48, height: 48)
+                .frame(width: 64, height: 64)
                 .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Propr")
-                    .font(.title3.weight(.semibold))
-                Text("Refine or look up any text, right where you are.")
-                    .foregroundStyle(.secondary)
-            }
-
-            Spacer()
-
+            Text("Propr")
+                .font(.title2.weight(.semibold))
+            Text("Refine or look up any text, right where you are.")
+                .foregroundStyle(.secondary)
             Text("Version \(appVersion)")
-                .font(.callout)
+                .font(.caption)
                 .foregroundStyle(.tertiary)
         }
-        .padding(.vertical, 4)
     }
 
-    private func permissionBadge(granted: Bool) -> some View {
-        Label(
-            granted ? "Granted" : "Not Granted",
-            systemImage: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill"
-        )
-        .font(.callout.weight(.medium))
-        .foregroundStyle(granted ? .green : .orange)
-        .padding(.horizontal, 8)
-        .padding(.vertical, 3)
-        .background(Capsule().fill((granted ? Color.green : Color.orange).opacity(0.15)))
+    private func permissionStatus(granted: Bool) -> some View {
+        Label {
+            Text(granted ? "Granted" : "Not granted")
+        } icon: {
+            Image(systemName: granted ? "checkmark.circle.fill" : "exclamationmark.triangle.fill")
+                .foregroundStyle(granted ? .green : .orange)
+        }
     }
 
     private func updateLaunchAtLogin(_ enabled: Bool) {
@@ -119,5 +87,5 @@ struct GeneralSettingsView: View {
 
 #Preview {
     GeneralSettingsView()
-        .frame(width: 560, height: 480)
+        .frame(width: 780, height: 560)
 }
