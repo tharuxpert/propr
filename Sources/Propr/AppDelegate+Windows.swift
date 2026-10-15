@@ -22,23 +22,18 @@ extension AppDelegate {
 
     @MainActor
     func showSettingsWindow(section: SettingsSection = .general) {
-        if settingsWindow == nil {
-            let hostingController = NSHostingController(
-                rootView: SettingsView(initialSection: section))
-            // Let the window be resized freely; SwiftUI should fill it, not size it.
-            hostingController.sizingOptions = []
+        if let window = settingsWindow,
+            let tabs = window.contentViewController as? SettingsTabViewController
+        {
+            tabs.select(section)
+        } else {
+            let tabs = SettingsTabViewController(initialSection: section)
+            let window = NSWindow(contentViewController: tabs)
 
-            // The hosting controller must be the window's *contentViewController*,
-            // not just have its view dropped in as contentView, or the window does
-            // not give SwiftUI the titlebar's safe area and the content slides under
-            // a phantom band.
-            let window = NSWindow(contentViewController: hostingController)
-
-            // The tab strip sits below the titlebar, so the content stays in the
-            // titlebar's safe area instead of running up under it. The title names
-            // the window rather than the pane: the selected tab already says which
-            // pane is showing.
+            // `.preference` is AppKit's settings-window toolbar: title above, the
+            // pane buttons centred below it with equal widths.
             window.styleMask = [.titled, .closable, .miniaturizable, .resizable]
+            window.toolbarStyle = .preference
             window.setContentSize(NSSize(width: 720, height: 560))
             window.minSize = NSSize(width: 640, height: 440)
             window.title = "Propr Settings"

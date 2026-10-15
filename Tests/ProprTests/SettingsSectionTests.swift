@@ -6,7 +6,7 @@ import Testing
 
 /// The Settings tabs. Each feature owns one, so these pin down the order, that every
 /// pane is labelled, that the menu bar's "Manage Models…" still lands on the right
-/// pane by raw value, and that the tabs really do reach the platform's tab container.
+/// pane by raw value, and that the tabs really do reach the window's settings toolbar.
 struct SettingsSectionTests {
     @Test("The tab bar lists the app's panes in a stable order")
     func order() {
@@ -32,39 +32,34 @@ struct SettingsSectionTests {
         }
     }
 
-    /// Propr hosts SwiftUI in an AppKit window, so this checks that the panes land
-    /// in the platform's own tab container (`NSTabView`) rather than only looking
-    /// like tabs: one item per pane, in order, each carrying its title and icon.
+    /// The panes must reach AppKit's settings-window toolbar, not just look like
+    /// tabs: one selectable toolbar item per pane, in order, each with its title and
+    /// icon, in a `.preference` style toolbar.
     @MainActor
-    @Test("The panes reach the platform tab container")
-    func nativeTabView() throws {
-        let hosting = NSHostingController(rootView: SettingsView())
-        hosting.sizingOptions = []
-        let window = NSWindow(contentViewController: hosting)
+    @Test("The panes are the window's settings toolbar")
+    func toolbarTabs() throws {
+        let tabs = SettingsTabViewController(initialSection: .models)
+        let window = NSWindow(contentViewController: tabs)
         window.styleMask = [.titled, .closable, .resizable]
+        window.toolbarStyle = .preference
         window.setContentSize(NSSize(width: 720, height: 560))
         // Offscreen: the hierarchy still builds and lays out without appearing.
         window.setFrameOrigin(NSPoint(x: -30000, y: -30000))
         window.orderFront(nil)
         defer { window.orderOut(nil) }
+        RunLoop.current.run(until: Date().addingTimeInterval(0.2))
 
-        RunLoop.current.run(until: Date().addingTimeInterval(0.4))
-        hosting.view.layoutSubtreeIfNeeded()
+        #expect(tabs.tabStyle == .toolbar)
+        #expect(tabs.selectedSection == .models)
 
-        let tabView = try #require(Self.firstTabView(in: hosting.view))
-        #expect(tabView.tabViewItems.count == SettingsSection.allCases.count)
-        #expect(tabView.tabViewItems.map(\.label) == SettingsSection.allCases.map(\.title))
-        #expect(tabView.tabViewItems.allSatisfy { $0.image != nil })
-        // Top tabs, the classic settings chrome.
-        #expect(tabView.tabViewType == .topTabsBezelBorder)
-    }
+        let toolbar = try #require(window.toolbar)
+        let items = toolbar.items
+        #expect(items.map(\.label) == SettingsSection.allCases.map(\.title))
+        #expect(items.allSatisfy { $0.image != nil })
+        #expect(toolbar.selectedItemIdentifier == items.last?.itemIdentifier)
 
-    @MainActor
-    private static func firstTabView(in view: NSView) -> NSTabView? {
-        if let tabView = view as? NSTabView { return tabView }
-        for subview in view.subviews {
-            if let found = firstTabView(in: subview) { return found }
-        }
-        return nil
+        tabs.select(.shortcuts)
+        #expect(tabs.selectedSection == .shortcuts)
+        #expect(toolbar.selectedItemIdentifier == items[1].itemIdentifier)
     }
 }
