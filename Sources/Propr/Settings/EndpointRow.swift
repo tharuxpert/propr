@@ -44,6 +44,10 @@ struct EndpointRow: View {
             .help("Remove \(endpoint.name)")
             .accessibilityLabel("Remove \(endpoint.name)")
         }
+        // The columns form lines its label up with this row's first baseline, which
+        // would be the provider name, high on the logo. Report the baseline as the
+        // row's middle instead, so "Providers" sits level with the logo's centre.
+        .alignmentGuide(.firstTextBaseline) { d in d[VerticalAlignment.center] + 4 }
         .contentShape(Rectangle())
         .contextMenu {
             Button("Edit…", action: onEdit)
