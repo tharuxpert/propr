@@ -52,5 +52,9 @@ struct CustomInstructionsEditor: View {
             }
         }
         .frame(maxWidth: .infinity)
+        // A text editor reports no baseline, so the columns form would hang its label
+        // above the box. Report the first line's baseline (box inset plus one line)
+        // so the label reads level with the text inside.
+        .alignmentGuide(.firstTextBaseline) { d in d[.top] + 19 }
     }
 }
