@@ -43,7 +43,9 @@ struct SettingsRow<Content: View>: View {
     }
 
     var body: some View {
-        LabeledContent(title) {
+        // The trailing colon is the Mac settings convention, so callers pass the
+        // plain label and every row gets one.
+        LabeledContent("\(title):") {
             content
         }
         .padding(.vertical, 8)
