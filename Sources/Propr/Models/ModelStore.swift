@@ -82,28 +82,37 @@ final class ModelStore {
     }
 
     /// The model quick lookups use: the chosen lookup model while it still exists,
-    /// otherwise the default model.
+    /// otherwise the refine model.
     func lookupModel() -> ModelSelection? {
         Self.resolveLookupModel(
-            lookupID: lookupModelID, defaultModel: selectedModel(), available: allAvailableModels)
+            lookupID: lookupModelID, refineModel: selectedModel(), available: allAvailableModels)
     }
 
     nonisolated static func resolveLookupModel(
-        lookupID: UUID?, defaultModel: ModelSelection?, available: [ModelSelection]
+        lookupID: UUID?, refineModel: ModelSelection?, available: [ModelSelection]
     ) -> ModelSelection? {
         guard let lookupID, let model = available.first(where: { $0.id == lookupID }) else {
-            return defaultModel
+            return refineModel
         }
         return model
     }
 
-    /// The Lookup Model menu, in the order it is shown: the "Same as Default" choice
+    /// The nil choice in both Lookup Model surfaces. A lookup with no override follows the
+    /// refine model, so it is deliberately not called a default.
+    ///
+    /// Defined once because it is shown in two places — the Settings picker and the menu
+    /// bar submenu — and the last rename reached only one of them. `nonisolated` so the
+    /// menu-building function below, and the tests, can read it without the actor.
+    nonisolated static let sameAsRefineModelTitle = "Same as Refine Model"
+
+    /// The Lookup Model menu, in the order it is shown: the "Same as Refine Model" choice
     /// first, then every configured model. Kept free of AppKit so it stays testable.
     nonisolated static func lookupModelMenuItems(
         lookupID: UUID?, available: [ModelSelection]
     ) -> [LookupModelMenuItem] {
         var items = [
-            LookupModelMenuItem(modelID: nil, title: "Same as Default", isSelected: lookupID == nil)
+            LookupModelMenuItem(
+                modelID: nil, title: Self.sameAsRefineModelTitle, isSelected: lookupID == nil)
         ]
         items += available.map {
             LookupModelMenuItem(modelID: $0.id, title: $0.displayName, isSelected: $0.id == lookupID)
@@ -167,7 +176,7 @@ final class ModelStore {
     }
 }
 
-/// One row of the Lookup Model menu. `modelID == nil` is the "Same as Default" row.
+/// One row of the Lookup Model menu. `modelID == nil` is the "Same as Refine Model" row.
 struct LookupModelMenuItem: Equatable {
     let modelID: UUID?
     let title: String

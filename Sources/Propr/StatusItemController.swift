@@ -164,7 +164,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             }
             submenu.addItem(menuItem)
             
-            // Keep the nil choice ("Same as Default") visually apart from the models.
+            // Keep the nil choice ("Same as Refine Model") visually apart from the models.
             if item.modelID == nil {
                 submenu.addItem(.separator())
             }
@@ -192,7 +192,7 @@ final class StatusItemController: NSObject, NSMenuDelegate {
     }
     
     @objc private func selectLookupModel(_ sender: NSMenuItem) {
-        // nil means the "Same as Default" item.
+        // nil means the "Same as Refine Model" item.
         guard let idString = sender.representedObject as? String else {
             ModelStore.shared.lookupModelID = nil
             return

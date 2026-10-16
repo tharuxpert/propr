@@ -16,18 +16,18 @@ struct LookupModelTests {
     func chosenModel() {
         let fast = model("fast"), strong = model("strong")
         let resolved = ModelStore.resolveLookupModel(
-            lookupID: fast.id, defaultModel: strong, available: [fast, strong])
+            lookupID: fast.id, refineModel: strong, available: [fast, strong])
         #expect(resolved == fast)
     }
 
-    @Test("Same as Default, or a deleted lookup model, falls back to the default")
-    func fallsBackToDefault() {
+    @Test("Same as Refine Model, or a deleted lookup model, falls back to the refine model")
+    func fallsBackToRefineModel() {
         let strong = model("strong")
         #expect(
-            ModelStore.resolveLookupModel(lookupID: nil, defaultModel: strong, available: [strong])
+            ModelStore.resolveLookupModel(lookupID: nil, refineModel: strong, available: [strong])
                 == strong)
         #expect(
-            ModelStore.resolveLookupModel(lookupID: UUID(), defaultModel: strong, available: [strong])
+            ModelStore.resolveLookupModel(lookupID: UUID(), refineModel: strong, available: [strong])
                 == strong)
     }
 
@@ -40,12 +40,12 @@ struct LookupModelTests {
         #expect(config.lookupModelID == nil)
     }
 
-    @Test("The Lookup Model menu offers Same as Default first, then every model")
+    @Test("The Lookup Model menu offers Same as Refine Model first, then every model")
     func menuItems() {
         let fast = model("fast"), strong = model("strong")
         let items = ModelStore.lookupModelMenuItems(lookupID: nil, available: [fast, strong])
 
-        #expect(items.map(\.title) == ["Same as Default", "fast", "strong"])
+        #expect(items.map(\.title) == ["Same as Refine Model", "fast", "strong"])
         #expect(items.map(\.isSelected) == [true, false, false])
         #expect(items.first?.modelID == nil)
     }
@@ -62,10 +62,14 @@ struct LookupModelTests {
         #expect(stale.map(\.isSelected) == [false, false, false])
     }
 
-    @Test("With no models configured the menu only offers Same as Default")
+    @Test("With no models configured the menu only offers Same as Refine Model")
     func menuItemsWithoutModels() {
         let items = ModelStore.lookupModelMenuItems(lookupID: nil, available: [])
 
-        #expect(items == [LookupModelMenuItem(modelID: nil, title: "Same as Default", isSelected: true)])
+        #expect(
+            items == [
+                LookupModelMenuItem(
+                    modelID: nil, title: "Same as Refine Model", isSelected: true)
+            ])
     }
 }

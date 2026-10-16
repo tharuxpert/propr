@@ -70,7 +70,7 @@ struct ModelsSettingsView: View {
                 Section {
                     SettingsRow("Refine Model") {
                         VStack(alignment: .leading, spacing: 8) {
-                            defaultModelPicker
+                            refineModelPicker
                             SettingsNote("Used each time you summon Propr.")
                         }
                     }
@@ -105,16 +105,18 @@ struct ModelsSettingsView: View {
         }
     }
 
-    private var defaultModelPicker: some View {
+    private var refineModelPicker: some View {
         modelPicker(
             "Refine Model", selection: selectedModelBinding,
             emptyLabel: modelStore.selectedModel() == nil ? "None" : nil)
     }
 
-    /// "Same as Default" is the nil choice, so a deleted lookup model and a fresh
+    /// "Same as Refine Model" is the nil choice, so a deleted lookup model and a fresh
     /// install both land on it.
     private var lookupModelPicker: some View {
-        modelPicker("Lookup Model", selection: $modelStore.lookupModelID, emptyLabel: "Same as Default")
+        modelPicker(
+            "Lookup Model", selection: $modelStore.lookupModelID,
+            emptyLabel: ModelStore.sameAsRefineModelTitle)
     }
 
     /// Every configured model, grouped by provider. `emptyLabel`, when given, is
