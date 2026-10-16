@@ -150,6 +150,29 @@ extension EndpointFormState {
         models.removeAll { $0.id == model.id }
     }
 
+    /// Appends models picked from the provider's own catalog.
+    ///
+    /// Enforces the identifier rule only: compared case-sensitively, and skipped when
+    /// already present, exactly as `canAddDraftModel` does. No alias is set — an alias is
+    /// what the user reads in the menu, and aliases collide case-insensitively against
+    /// identifiers and other aliases, so one invented from an identifier would create a
+    /// collision for the user to undo.
+    ///
+    /// Note this cannot reach the alias rules `canAddDraftModel` applies to a typed
+    /// alias, because there is no alias to check. A display name matching an existing
+    /// alias is possible here and equally possible by hand; the form has never ruled it
+    /// out, and tightening it is a change to the manual path too, not to this one.
+    mutating func addModels(names: [String]) {
+        for name in names {
+            let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty,
+                !models.contains(where: { $0.name == trimmed })
+            else { continue }
+
+            models.append(CustomModel(name: trimmed))
+        }
+    }
+
     mutating func clearDraftModel() {
         draftModelName = ""
         draftModelAlias = ""
