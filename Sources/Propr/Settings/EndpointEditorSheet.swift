@@ -18,6 +18,7 @@ struct EndpointEditorSheet: View {
     @State private var form = EndpointFormState()
     @State private var provider: BuiltInProvider?
     @State private var didPrefill = false
+    @State private var catalog = ModelCatalogLoader()
     @FocusState private var focusedField: Field?
 
     private enum Field: Hashable {
@@ -33,6 +34,12 @@ struct EndpointEditorSheet: View {
     /// Local endpoints (Ollama, LM Studio) do not need a key.
     private var requiresKey: Bool {
         EndpointURLValidator.requiresAPIKey(for: form.baseURL)
+    }
+
+    /// The catalog request carries the API key, so it is only offered once the URL is
+    /// usable and, for a remote endpoint, a key is actually there to send.
+    private var canLoadCatalog: Bool {
+        form.urlError == nil && (!requiresKey || !form.trimmedAPIKey.isEmpty)
     }
 
     var body: some View {
@@ -126,6 +133,42 @@ struct EndpointEditorSheet: View {
                         }
                     }
 
+                    // The provider's own catalog, so identifiers never have to be hunted
+                    // down by hand. An explicit action rather than a fetch on open: the
+                    // request sends the API key, so it must only ever go to a host the
+                    // user has finished typing.
+                    HStack(spacing: 8) {
+                        Button("Load Models from Provider") {
+                            // The trimmed key, matching what `save` persists: a key pasted
+                            // with a trailing newline is a 401 on most providers.
+                            catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey)
+                        }
+                        .disabled(!canLoadCatalog || catalog.isFetching)
+
+                        if catalog.isFetching {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+
+                        Spacer(minLength: 0)
+                    }
+
+                    if let error = catalog.error {
+                        Text(error.errorDescription ?? "The model list could not be loaded.")
+                            .font(.callout)
+                            .foregroundStyle(.red)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+
+                    if !catalog.ids.isEmpty {
+                        ModelCatalogPicker(
+                            ids: catalog.ids,
+                            alreadyAdded: Set(form.models.map(\.name))
+                        ) { names in
+                            form.addModels(names: names)
+                        }
+                    }
+
                     // Two inputs share one row, so their labels are hidden and the
                     // placeholders carry the meaning — otherwise the grouped form turns
                     // the labels into what looked like column headings.
@@ -150,7 +193,7 @@ struct EndpointEditorSheet: View {
                     Text("Models")
                 } footer: {
                     Text(
-                        "The model ID must match the provider exactly. An alias is what Propr shows in its menu."
+                        "The model ID must match the provider exactly. An alias is what Propr shows in its menu. A provider's list is its whole catalog, so it can include models Propr cannot chat with, such as embeddings and speech models."
                     )
                 }
             }
@@ -175,6 +218,12 @@ struct EndpointEditorSheet: View {
         }
         .frame(width: 520, height: 540)
         .onAppear(perform: prefill)
+        // Identifiers fetched from one host must never be addable to another, so a
+        // change of base URL drops the catalog. The API key is deliberately not watched:
+        // a model list belongs to the provider, not to the credentials that read it.
+        .onChange(of: form.baseURL) { _, _ in catalog.reset() }
+        // Dismissing mid-fetch must not leave a request carrying an API key in flight.
+        .onDisappear { catalog.cancel() }
         // Start in the first field to type in, not on the provider picker, which
         // otherwise opens wearing a focus ring.
         .defaultFocus($focusedField, .name)

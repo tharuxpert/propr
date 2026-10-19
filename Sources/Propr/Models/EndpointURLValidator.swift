@@ -25,14 +25,22 @@ enum EndpointURLValidator {
     }
 
     static func chatCompletionsURL(from baseURL: String) -> URL? {
-        guard let normalized = normalizedBaseURL(from: baseURL),
-              let base = URL(string: normalized) else {
-            return nil
-        }
+        guard let base = normalizedURL(from: baseURL) else { return nil }
 
         return base
             .appendingPathComponent("chat")
             .appendingPathComponent("completions")
+    }
+
+    /// The route that lists a provider's models, which is where the Add Provider sheet
+    /// gets the identifiers a user would otherwise have to look up themselves.
+    static func modelsURL(from baseURL: String) -> URL? {
+        normalizedURL(from: baseURL)?.appendingPathComponent("models")
+    }
+
+    private static func normalizedURL(from baseURL: String) -> URL? {
+        guard let normalized = normalizedBaseURL(from: baseURL) else { return nil }
+        return URL(string: normalized)
     }
 
     static func requiresAPIKey(for baseURL: String) -> Bool {
