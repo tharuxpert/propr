@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */; };
+		0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */; };
 		0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39D6C1C202E14BE0422D6C8C /* AppIntents.framework */; };
 		10E2F1C813530EBE4B9A8B33 /* ForceClickPressDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */; };
 		12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */; };
@@ -141,6 +142,7 @@
 		2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshotTests.swift; sourceTree = "<group>"; };
 		2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Answer.swift"; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
+		30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSurface.swift; sourceTree = "<group>"; };
 		34148042249D3D059403D041 /* SettingsSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSectionTests.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
 		3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandDoubleTapDetector.swift; sourceTree = "<group>"; };
@@ -261,6 +263,7 @@
 				5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */,
 				C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */,
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
+				30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */,
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
 				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
 				CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */,
@@ -632,6 +635,7 @@
 				20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */,
 				6CB4285C23D48E82AADA9678 /* FloatingBarSourceStrip.swift in Sources */,
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
+				0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,
 				EC7BAF4974496734530D7EF2 /* FnTapDetector.swift in Sources */,

@@ -14,6 +14,7 @@ struct FloatingBarView: View {
 
     @State private var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
+    @Namespace private var glassNamespace
 
     /// With text captured the bar can edit it or answer about it, so the fresh
     /// prompt stays open-ended. With an empty context the bar writes at the cursor
@@ -89,29 +90,14 @@ struct FloatingBarView: View {
         }
         .frame(maxWidth: .infinity)
         .modifier(DraggablePanel())
-        // A real behind-window vibrancy view, so the bar samples the desktop beneath
-        // it the way Spotlight does. The panel itself is borderless and clear; the
-        // rounding and the shadow live here.
-        //
-        // The tint sits between the content and the blur, knocking the whole
-        // composer a shade darker than the raw material.
-        .background(Color.black.opacity(Self.backgroundDim))
-        .background(
-            VisualEffectBackground(
-                material: .hudWindow,
-                blendingMode: .behindWindow,
-                cornerRadius: Self.cornerRadius
+        // The panel itself is borderless and clear; the backdrop and rounding live here.
+        .modifier(
+            FloatingBarSurface(
+                cornerRadius: Self.cornerRadius,
+                isBusy: sessionState.isBusy,
+                glassNamespace: glassNamespace
             )
         )
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
-        )
-        .overlay(WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius))
-        // No SwiftUI shadow: the panel sets `hasShadow`, and now that the content is
-        // an opaque rounded shape the window shadow follows it correctly. Drawing
-        // both stacked two shadows on top of each other.
     }
 
     /// The instruction field with its key: ↩ to send, or a stop key while busy.
@@ -206,9 +192,6 @@ struct FloatingBarView: View {
 
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
-
-    /// How much darker than the raw material the composer sits.
-    private static let backgroundDim: CGFloat = 0.3
 
     private func submitPrompt() {
         guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }
