@@ -2,18 +2,25 @@ import SwiftUI
 
 /// The quick prompt pills under the bar. A click, or ⌘1 to ⌘6, sends one.
 ///
-/// On macOS 26 each pill is its own glass shape in the bar's glass group, so the
-/// pills flow out of the bar when they appear and back into it when they go.
+/// The pills stay in the view while hidden, tucked up under the bar's bottom edge.
+/// Showing and hiding moves them out and back in, so both directions animate the
+/// same way, and on macOS 26 their glass flows into the bar's as they pass it.
 struct QuickPromptRow: View {
     let prompts: [QuickPrompt]
+    let isShown: Bool
+    /// Whether the row keeps its height. Released a moment after the pills hide,
+    /// once they are back under the bar, so the panel does not cut them off.
+    let holdsSpace: Bool
     let isEnabled: Bool
     let glassNamespace: Namespace.ID
-    /// A stand-in that only reserves the row's space while the real pills animate
-    /// away, so it draws nothing and takes no glass IDs or shortcuts.
-    var isPlaceholder = false
     let onSend: (QuickPrompt) -> Void
 
+    /// Between the pills, and between the bar and the first line of them.
     static let spacing: CGFloat = 8
+
+    /// The pills' own height, measured, so the row can reserve it while they
+    /// are tucked away.
+    @State private var pillsHeight: CGFloat = 0
 
     var body: some View {
         PillFlowLayout(spacing: Self.spacing) {
@@ -22,26 +29,29 @@ struct QuickPromptRow: View {
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pillsHeight = $0 }
+        // Hidden, the pills sit just under the bar's bottom edge; shown, one gap
+        // below it. Real layout rather than an offset, so the glass group sees
+        // the pills move and blends them into the bar on the way.
+        .padding(.top, isShown ? Self.spacing : -pillsHeight)
+        .frame(height: holdsSpace ? Self.spacing + pillsHeight : 0, alignment: .top)
+        .allowsHitTesting(isShown)
     }
 
-    @ViewBuilder
     private func pill(_ prompt: QuickPrompt, number: Int) -> some View {
-        let button = Button {
+        Button {
             onSend(prompt)
         } label: {
             QuickPromptPillLabel(prompt: prompt)
         }
         .buttonStyle(.plain)
-        .disabled(!isEnabled)
+        // Disabled while hidden too, which also turns its shortcut off.
+        .disabled(!isEnabled || !isShown)
         .help("\(prompt.mode.title): \(prompt.text) (⌘\(number))")
-
-        if isPlaceholder {
-            button.hidden()
-        } else {
-            button
-                .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
-                .modifier(QuickPromptPillSurface(id: prompt.id, glassNamespace: glassNamespace))
-        }
+        .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
+        .modifier(QuickPromptPillSurface(id: prompt.id, glassNamespace: glassNamespace))
+        .scaleEffect(isShown ? 1 : 0.6, anchor: .top)
+        .opacity(isShown ? 1 : 0)
     }
 }
 

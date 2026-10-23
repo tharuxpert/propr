@@ -7,30 +7,34 @@ extension FloatingBarView {
         quickPrompts.visible
     }
 
-    /// Only while the bar has text to act on and nothing has been typed: a pill
-    /// sends its own instruction, so it would throw a typed one away.
+    /// Whether the bar offers pills at all: only with text to act on.
+    var hasQuickPrompts: Bool {
+        !displayedContextText.isEmpty && !visibleQuickPrompts.isEmpty
+    }
+
+    /// Only while nothing has been typed: a pill sends its own instruction, so it
+    /// would throw a typed one away.
     var showsQuickPrompts: Bool {
-        !displayedContextText.isEmpty && prompt.isEmpty && !visibleQuickPrompts.isEmpty
+        hasQuickPrompts && prompt.isEmpty
     }
 
     @ViewBuilder
     var quickPromptArea: some View {
-        if showsQuickPrompts {
+        if hasQuickPrompts {
             QuickPromptRow(
                 prompts: visibleQuickPrompts,
+                isShown: showsQuickPrompts,
+                holdsSpace: holdsQuickPromptSpace,
                 isEnabled: !sessionState.isBusy,
                 glassNamespace: glassNamespace,
                 onSend: sendQuickPrompt
             )
-        } else if holdsQuickPromptSpace {
-            QuickPromptRow(
-                prompts: visibleQuickPrompts,
-                isEnabled: false,
-                glassNamespace: glassNamespace,
-                isPlaceholder: true,
-                onSend: { _ in }
-            )
+            .animation(Self.quickPromptAnimation, value: showsQuickPrompts)
         }
+    }
+
+    static var quickPromptAnimation: Animation {
+        .spring(duration: 0.35, bounce: 0.2)
     }
 
     func sendQuickPrompt(_ quickPrompt: QuickPrompt) {
@@ -38,8 +42,9 @@ extension FloatingBarView {
         send(instruction, intent: quickPrompt.mode.intent)
     }
 
-    /// When the pills hide, their space is kept until they have flowed back into
-    /// the bar, so the panel does not shrink under them.
+    /// The row takes its space as soon as the pills show. When they hide it keeps
+    /// it until they are back under the bar, so the panel does not shrink under
+    /// them mid-animation.
     func quickPromptVisibilityChanged(to shows: Bool) {
         if shows {
             holdsQuickPromptSpace = true

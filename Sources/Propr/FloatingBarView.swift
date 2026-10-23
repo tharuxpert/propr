@@ -64,12 +64,12 @@ struct FloatingBarView: View {
     }
 
     var body: some View {
-        VStack(spacing: QuickPromptRow.spacing) {
-            bar
+        VStack(spacing: 0) {
+            // Above the pills, which tuck under it while hidden.
+            bar.zIndex(1)
             // Animated on its own, so the pills' spring never slows the rest of the
             // bar: the placeholder and the tab hint still change at once.
-            Group { quickPromptArea }
-                .animation(.spring(duration: 0.35, bounce: 0.2), value: showsQuickPrompts)
+            quickPromptArea
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
         // Natural height, whatever frame the panel currently has.
@@ -229,8 +229,9 @@ struct FloatingBarView: View {
     private static let cornerRadius: CGFloat = 16
 
     /// How near the pills and the bar must be before their glass flows together.
-    /// Wider than the gap between them, so they rest joined by liquid bridges.
-    private static let glassBlendSpacing: CGFloat = 14
+    /// Narrower than the gap between them, so they merge only while moving in and
+    /// out; at rest the bar's own shape stays exactly as it is.
+    private static let glassBlendSpacing: CGFloat = 6
 
     private func submitPrompt() {
         guard !trimmedPrompt.isEmpty else { return }
