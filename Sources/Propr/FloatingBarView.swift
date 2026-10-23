@@ -16,7 +16,7 @@ struct FloatingBarView: View {
     var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
     @State var prompt: String = ""
-    @FocusState private var isPromptFocused: Bool
+    @FocusState var isPromptFocused: Bool
     @Namespace var glassNamespace
     @AppStorage(QuickPrompts.key) var quickPrompts = QuickPrompts.defaults
     /// Keeps the pills' space for a moment after they hide, so the panel does not
@@ -29,30 +29,8 @@ struct FloatingBarView: View {
     /// for the other.
     @State var displayedQuickPromptMode: QuickPrompt.Mode = .edit
 
-    /// With text captured the bar can edit it or answer about it, so the fresh
-    /// prompt stays open-ended. With an empty context the bar writes at the cursor
-    /// instead, so the prompt asks for that.
-    private var promptPlaceholder: String {
-        if sessionState.isAskMode {
-            // The source strip above already shows the captured text, so the
-            // prompt needn't point at it.
-            return "Ask anything…"
-        }
-        if sessionState.hasAppliedResult {
-            return "What should change next?"
-        }
-
-        return snapshot.contextText.isEmpty
-            ? "What do you want to write?"
-            : "Ask or edit anything…"
-    }
-
     var displayedContextText: String {
         sessionState.latestAppliedText ?? snapshot.contextText
-    }
-
-    private var trimmedPrompt: String {
-        prompt.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// One line of the text being refined. Newlines are flattened so a multi-line
@@ -61,12 +39,6 @@ struct FloatingBarView: View {
         String(displayedContextText.prefix(300))
             .replacingOccurrences(of: "\n", with: " ")
             .trimmingCharacters(in: .whitespaces)
-    }
-
-    private var statusLabel: String? {
-        if sessionState.isThinking { return "Thinking…" }
-        if sessionState.isTyping { return "Typing…" }
-        return nil
     }
 
     var body: some View {
@@ -147,96 +119,6 @@ struct FloatingBarView: View {
         )
     }
 
-    /// The instruction field with its key: ↩ to send, or a stop key while busy.
-    /// The leading icon shows the mode and toggles it, like Tab: a question bubble
-    /// for Ask, a turn arrow for a follow-up edit, a pencil for a first edit.
-    private var composerRow: some View {
-        HStack(spacing: 10) {
-            Button(action: toggleAskMode) {
-                Image(systemName: modeSymbol)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.tint)
-                    .frame(width: 18)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .buttonStyle(.plain)
-            .disabled(sessionState.isBusy)
-            .help(
-                sessionState.isAskMode
-                    ? "Ask: answers stay here and nothing in your text changes. Tab switches to Edit."
-                    : "Edit: changes your text. Tab switches to Ask."
-            )
-
-            TextField(promptPlaceholder, text: $prompt)
-                .textFieldStyle(.plain)
-                .font(.system(size: 16))
-                .focused($isPromptFocused)
-                .onKeyPress(.tab) {
-                    toggleAskMode()
-                    return .handled
-                }
-                .onSubmit {
-                    submitPrompt()
-                }
-                .onAppear {
-                    // Auto-focus the input as soon as the bar appears
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        isPromptFocused = true
-                    }
-                }
-                .onChange(of: sessionState.composerRevision) {
-                    prompt = ""
-                    DispatchQueue.main.async {
-                        isPromptFocused = true
-                    }
-                }
-                .disabled(sessionState.isBusy)
-
-            // Gone once typing starts, so it never crowds a real instruction.
-            if prompt.isEmpty && !sessionState.isBusy {
-                ModeSwitchHint(
-                    target: sessionState.isAskMode ? "Edit" : "Ask",
-                    action: toggleAskMode
-                )
-                .transition(.opacity)
-            }
-
-            if let statusLabel {
-                Text(statusLabel)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .transition(.opacity)
-            }
-
-            if sessionState.hasAppliedResult && !sessionState.isBusy, let onUndo {
-                Button(action: onUndo) {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                        .labelStyle(.titleAndIcon)
-                }
-                .buttonStyle(KeycapButtonStyle())
-                .help("Undo the last change")
-            }
-
-            if sessionState.isBusy {
-                Button(action: onStop) {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(KeycapButtonStyle())
-                .help("Stop")
-            } else {
-                Button(action: submitPrompt) {
-                    Image(systemName: "return")
-                }
-                .buttonStyle(KeycapButtonStyle(tint: trimmedPrompt.isEmpty ? nil : .accentColor))
-                .disabled(trimmedPrompt.isEmpty)
-                .help("Send")
-            }
-        }
-        .animation(.easeOut(duration: 0.15), value: sessionState.isBusy)
-    }
-
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
 
@@ -244,27 +126,6 @@ struct FloatingBarView: View {
     /// Narrower than the gap between them, so they merge only while moving in and
     /// out; at rest the bar's own shape stays exactly as it is.
     private static let glassBlendSpacing: CGFloat = 6
-
-    private func submitPrompt() {
-        guard !trimmedPrompt.isEmpty else { return }
-        send(trimmedPrompt, intent: sessionState.isAskMode ? .ask : .auto)
-    }
-
-    func send(_ instruction: String, intent: RefineIntent) {
-        guard !sessionState.isBusy else { return }
-        sessionState.startRequest()
-        onRefine(instruction, intent)
-    }
-
-    private var modeSymbol: String {
-        if sessionState.isAskMode { return "questionmark.bubble" }
-        return sessionState.hasAppliedResult ? "arrow.turn.down.right" : "pencil.line"
-    }
-
-    private func toggleAskMode() {
-        guard !sessionState.isBusy else { return }
-        sessionState.isAskMode.toggle()
-    }
 }
 
 #Preview("Floating Bar") {
