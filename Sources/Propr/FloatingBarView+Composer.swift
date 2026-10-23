@@ -1,4 +1,3 @@
-import Pow
 import SwiftUI
 
 // The composer row: the mode key, the instruction field and its keys.
@@ -57,22 +56,13 @@ extension FloatingBarView {
                 .textFieldStyle(.plain)
                 .font(.system(size: QuickPromptStamp.composerFontSize))
                 .focused($isPromptFocused)
-                // Where a quick prompt's stamp lands, and the sparks it throws.
+                // Where a quick prompt's stamp lands.
                 .onGeometryChange(for: CGPoint.self) { proxy in
                     let frame = proxy.frame(in: .named(QuickPromptStamp.stage))
                     return CGPoint(x: frame.minX, y: frame.midY)
                 } action: { origin in
                     promptTextOrigin = origin
                 }
-                .changeEffect(
-                    .spray(origin: UnitPoint(x: 0.1, y: 0.5)) {
-                        Image(systemName: "sparkle")
-                            .font(.system(size: 10, weight: .bold))
-                            .foregroundStyle(.tint)
-                    },
-                    value: quickPromptLandings,
-                    isEnabled: !reduceMotion
-                )
                 .onKeyPress(.tab) {
                     toggleAskMode()
                     return .handled
