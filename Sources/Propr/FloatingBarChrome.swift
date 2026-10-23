@@ -85,30 +85,73 @@ struct WorkingEdge: View {
 
     var body: some View {
         TimelineView(.animation(paused: !isActive || reduceMotion)) { timeline in
-            let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
-            let gradient = streak(at: angle(at: timeline.date))
-
-            ZStack {
-                // A touch heavier than on the old vibrancy, so it holds its own
-                // against the glass's bright rim.
-                shape.strokeBorder(gradient, lineWidth: 4).blur(radius: 4).opacity(0.85)
-                shape.strokeBorder(gradient, lineWidth: 1.75)
+            GeometryReader { proxy in
+                streakView(
+                    at: Self.headAngle(progress: progress(at: timeline.date), in: proxy.size))
             }
-            // The glow may only spill inward. Anything drawn outside the rounded
-            // shape fills the window's corners, and the window shadow turns square.
-            .clipShape(shape)
         }
         .opacity(isActive ? 1 : 0)
         .animation(.easeOut(duration: 0.25), value: isActive)
         .allowsHitTesting(false)
     }
 
-    private func angle(at date: Date) -> Angle {
-        guard !reduceMotion else { return .degrees(-90) }
-        let progress = date.timeIntervalSinceReferenceDate
-            .truncatingRemainder(dividingBy: Self.lapDuration) / Self.lapDuration
-        return .degrees(progress * 360)
+    private func streakView(at headAngle: Angle) -> some View {
+        let shape = RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+        // The gradient is laid out from `angle`; its bright head sits just short of
+        // a full turn, so start it that far ahead of where the head should be.
+        let gradient = streak(at: headAngle + .degrees(360 * (1 - Self.headLocation)))
+
+        return ZStack {
+            // A touch heavier than on the old vibrancy, so it holds its own
+            // against the glass's bright rim.
+            shape.strokeBorder(gradient, lineWidth: 4).blur(radius: 4).opacity(0.85)
+            shape.strokeBorder(gradient, lineWidth: 1.75)
+        }
+        // The glow may only spill inward. Anything drawn outside the rounded
+        // shape fills the window's corners, and the window shadow turns square.
+        .clipShape(shape)
     }
+
+    /// How far round the edge the head is, from 0 to 1. With Reduce Motion it holds
+    /// at the middle of the top edge.
+    private func progress(at date: Date) -> CGFloat? {
+        guard !reduceMotion else { return nil }
+        return date.timeIntervalSinceReferenceDate
+            .truncatingRemainder(dividingBy: Self.lapDuration) / Self.lapDuration
+    }
+
+    /// The direction from the centre to the head, `progress` of the way round the
+    /// edge clockwise from the top-left corner.
+    ///
+    /// Measured along the edge rather than as an angle, so the head moves at an even
+    /// pace and keeps moving as the bar grows. Turning at a fixed angular rate, a
+    /// growing bar stretched the edge under the head about as fast as it travelled,
+    /// and the streak seemed to stall while an answer streamed in.
+    static func headAngle(progress: CGFloat?, in size: CGSize) -> Angle {
+        guard let progress, size.width > 0, size.height > 0 else { return .degrees(-90) }
+
+        let (w, h) = (size.width, size.height)
+        var distance = progress * 2 * (w + h)
+        let point: CGPoint
+        if distance < w {
+            point = CGPoint(x: distance, y: 0)
+        } else if (distance - w) < h {
+            distance -= w
+            point = CGPoint(x: w, y: distance)
+        } else if (distance - w - h) < w {
+            distance -= w + h
+            point = CGPoint(x: w - distance, y: h)
+        } else {
+            distance -= 2 * w + h
+            point = CGPoint(x: 0, y: h - distance)
+        }
+
+        // Clockwise from +x, as SwiftUI measures angles with y pointing down.
+        return .radians(atan2(point.y - h / 2, point.x - w / 2))
+    }
+
+    /// Where the streak's bright head sits in its gradient.
+    private static let headLocation: CGFloat = 0.97
 
     private func streak(at angle: Angle) -> AngularGradient {
         AngularGradient(
@@ -116,7 +159,7 @@ struct WorkingEdge: View {
                 .init(color: .accentColor.opacity(0), location: 0),
                 .init(color: .accentColor.opacity(0), location: 0.7),
                 .init(color: .accentColor, location: 0.92),
-                .init(color: .white, location: 0.97),
+                .init(color: .white, location: Self.headLocation),
                 .init(color: .accentColor.opacity(0), location: 1),
             ],
             center: .center,
