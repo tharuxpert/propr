@@ -87,10 +87,14 @@ private struct QuickPromptPillSurface: ViewModifier {
         if #available(macOS 26.0, *) {
             // The glass group draws each glass shape and its content itself, so an
             // opacity or scale outside the glass is ignored. The label fades inside
-            // it, and the glass itself is switched off while hidden, so it
-            // materializes and dissolves along with the label.
+            // it, and the glass shape itself shrinks to nothing against the bar's
+            // edge, rim included. Switching the glass off instead let the rim
+            // linger after the label had gone.
             hiding(content)
-                .glassEffect(isShown ? .regular.interactive() : .identity, in: Capsule())
+                .glassEffect(
+                    .regular.interactive(),
+                    in: Capsule().scale(isShown ? 1 : 0, anchor: .top)
+                )
                 .glassEffectID(id, in: glassNamespace)
         } else {
             hiding(
