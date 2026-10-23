@@ -51,7 +51,12 @@ struct QuickPromptRow: View {
         .help("\(prompt.mode.title): \(prompt.text) (⌘\(number))")
         .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
         .modifier(
-            QuickPromptPillSurface(id: prompt.id, isShown: isShown, glassNamespace: glassNamespace))
+            QuickPromptPillSurface(
+                id: prompt.id,
+                isShown: isShown,
+                hasGlass: isShown || holdsSpace,
+                glassNamespace: glassNamespace
+            ))
     }
 }
 
@@ -81,6 +86,9 @@ private struct QuickPromptPillLabel: View {
 private struct QuickPromptPillSurface: ViewModifier {
     let id: UUID
     let isShown: Bool
+    /// Off once a hidden pill has finished shrinking away: a zero-size glass
+    /// shape still leaves a speck on the bar's edge.
+    let hasGlass: Bool
     let glassNamespace: Namespace.ID
 
     func body(content: Content) -> some View {
@@ -92,7 +100,7 @@ private struct QuickPromptPillSurface: ViewModifier {
             // linger after the label had gone.
             hiding(content)
                 .glassEffect(
-                    .regular.interactive(),
+                    hasGlass ? .regular.interactive() : .identity,
                     in: Capsule().scale(isShown ? 1 : 0, anchor: .top)
                 )
                 .glassEffectID(id, in: glassNamespace)
