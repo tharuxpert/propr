@@ -37,6 +37,8 @@ struct FloatingBarView: View {
     /// the two ends of a stamp's flight.
     @State var pillTextOrigins: [UUID: CGPoint] = [:]
     @State var promptTextOrigin: CGPoint?
+    /// The bar's height without the pills, for laying the working streak over it.
+    @State private var barHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var displayedContextText: String {
@@ -59,6 +61,12 @@ struct FloatingBarView: View {
             quickPromptArea
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
+        // Over the bar alone, and outside the glass group, so the glass does not
+        // render it as part of itself and wash it out.
+        .overlay(alignment: .top) {
+            WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius)
+                .frame(height: barHeight)
+        }
         .coordinateSpace(.named(QuickPromptStamp.stage))
         .overlay(alignment: .topLeading) {
             if let quickPromptStamp {
@@ -131,10 +139,10 @@ struct FloatingBarView: View {
         .modifier(
             FloatingBarSurface(
                 cornerRadius: Self.cornerRadius,
-                isBusy: sessionState.isBusy,
                 glassNamespace: glassNamespace
             )
         )
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
     }
 
     /// Matches the rounding macOS uses on floating panels of this size.

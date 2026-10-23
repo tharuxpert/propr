@@ -89,8 +89,10 @@ struct WorkingEdge: View {
             let gradient = streak(at: angle(at: timeline.date))
 
             ZStack {
-                shape.strokeBorder(gradient, lineWidth: 3).blur(radius: 3).opacity(0.7)
-                shape.strokeBorder(gradient, lineWidth: 1.25)
+                // A touch heavier than on the old vibrancy, so it holds its own
+                // against the glass's bright rim.
+                shape.strokeBorder(gradient, lineWidth: 4).blur(radius: 4).opacity(0.85)
+                shape.strokeBorder(gradient, lineWidth: 1.75)
             }
             // The glow may only spill inward. Anything drawn outside the rounded
             // shape fills the window's corners, and the window shadow turns square.
