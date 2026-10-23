@@ -70,7 +70,14 @@ struct FloatingBarView: View {
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
         .animation(.spring(duration: 0.45, bounce: 0.3), value: showsQuickPrompts)
-        .onAppear { holdsQuickPromptSpace = showsQuickPrompts }
+        // Pinned to the top. The panel catches up with a change in height a pass
+        // later, and until then the hosting view would centre the content in the
+        // old frame, jumping the bar up and back down.
+        .frame(maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            holdsQuickPromptSpace = showsQuickPrompts
+            onContentResize?()
+        }
         .onChange(of: showsQuickPrompts) { _, shows in
             quickPromptVisibilityChanged(to: shows)
         }
