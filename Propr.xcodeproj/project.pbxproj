@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */; };
+		0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */; };
 		0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39D6C1C202E14BE0422D6C8C /* AppIntents.framework */; };
 		10E2F1C813530EBE4B9A8B33 /* ForceClickPressDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */; };
 		12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */; };
@@ -16,9 +17,11 @@
 		175BC78E6BFE1FBF699C3942 /* CustomInstructions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C161A896EF80B4F2BB076235 /* CustomInstructions.swift */; };
 		18304B612AD98077F8D2EEA4 /* SearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6ECC01E365A7C98FFA52FA /* SearchProvider.swift */; };
 		19E2D649F328046473EC1B12 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26088ADA097DE290EDA0A187 /* OnboardingView.swift */; };
+		1AB175DC901B46C9B7CA5C84 /* QuickPromptRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */; };
 		1ED66005BF837E2236B1D32A /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6EF88BB1DC3E553F6B94CA /* AIService.swift */; };
 		20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */; };
 		21ED182E748C1D0DC0067711 /* AILookupRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B135C377077BEEC7913818 /* AILookupRequest.swift */; };
+		238C7390577D89C3AF8AC1D3 /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 6371F2B42C9F693957119461 /* Pow */; };
 		25CED71435B4452550DF3818 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */; };
 		269F1D27DF7BB71BEEE02C63 /* PasteboardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */; };
 		26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */; };
@@ -26,6 +29,7 @@
 		2AF2AB32F3504AE007E10C0F /* FloatingBarController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 073008FA9039CC7F8F0ECA1E /* FloatingBarController.swift */; };
 		2D8D8036CFE203857666AEE3 /* ShortcutConflictTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 22DC4FC1C585F2D0E2CA3095 /* ShortcutConflictTests.swift */; };
 		31442A6649DB8DB743667ADB /* FloatingBarController+Apply.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF7A50CE5F3AEC691B2E6A86 /* FloatingBarController+Apply.swift */; };
+		33E166A04E5B9DBA1C4588AC /* QuickPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 161EBF53261BD7EB56D4B3A1 /* QuickPrompts.swift */; };
 		341CA78DAB599B668E8BE35D /* ShortcutsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */; };
 		3499F2E0D252BE0F02761651 /* ModelCatalog.swift in Sources */ = {isa = PBXBuildFile; fileRef = B2100A64253B76D2D755C64F /* ModelCatalog.swift */; };
 		34DFA93DA721A74CA4AF4492 /* SearchPanelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 97517C94E9AD533EE6C89625 /* SearchPanelTests.swift */; };
@@ -72,6 +76,8 @@
 		AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */; };
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
+		AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */; };
+		AE66A5AFD86FF0255FDE8665 /* FloatingBarView+QuickPromptStamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */; };
 		B081ADD7C7F620FFDACAD9DB /* LookupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042D7A55F1CD1844733DB149 /* LookupModelTests.swift */; };
 		B0B05628BEC4994DE87B434D /* CustomInstructionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5665DE8325F5BB73088990EA /* CustomInstructionsTests.swift */; };
 		B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */; };
@@ -91,8 +97,10 @@
 		D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */; };
 		DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */; };
 		DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */; };
+		DE9B3715F1E442F202A18D63 /* QuickPromptsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C197F608D48A2E2BF59FD20D /* QuickPromptsTests.swift */; };
 		E1CAB360CA3E516859A6F73E /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */; };
 		E322DA89C1F42440295DEDAD /* TerminalApps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DE19428A72A8063B962EA4 /* TerminalApps.swift */; };
+		E35D2729881AD041526B9385 /* FloatingBarView+QuickPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */; };
 		E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23611B0B693E2FD16EFCB4B /* ProprApp.swift */; };
 		EA06C07E4560D6E5E3531499 /* TriggerPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB17E5999A4290BF4747A6 /* TriggerPreferences.swift */; };
 		EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1AD5CE47278593973DE0896 /* ProviderIconStore.swift */; };
@@ -100,9 +108,11 @@
 		EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 657DF8869C06BB014548EC7C /* BuiltInProvider.swift */; };
 		EC7BAF4974496734530D7EF2 /* FnTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB212309517604983B9E3644 /* FnTapDetector.swift */; };
 		F1E7F98C852FFFED936A5FB2 /* SettingsSectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 34148042249D3D059403D041 /* SettingsSectionTests.swift */; };
+		F491EB8684B164CC0B61F78A /* FloatingBarView+Composer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 678BCADB85745FE21B01B414 /* FloatingBarView+Composer.swift */; };
 		F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */ = {isa = PBXBuildFile; productRef = 1C04ED90828FD1CE2248C986 /* Permiso */; };
 		F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA3CD6F0FB4D610360732B /* SearchAnswerFormatter.swift */; };
 		FB4B7256873269C13E7DEB32 /* HotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */; };
+		FFD2D595EEA0C0251B5C38FD /* QuickPromptStamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -126,6 +136,7 @@
 		0FD5CDB6746E2730DD7D85CB /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
 		1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Target.swift"; sourceTree = "<group>"; };
 		1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarChrome.swift; sourceTree = "<group>"; };
+		161EBF53261BD7EB56D4B3A1 /* QuickPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPrompts.swift; sourceTree = "<group>"; };
 		16E1C7BFDFBE80EA88CB1EFA /* KeystrokeUndoTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndoTests.swift; sourceTree = "<group>"; };
 		1CE881D5BDAA68335291B2EB /* ApplyTargetTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ApplyTargetTests.swift; sourceTree = "<group>"; };
 		1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ForceClickPressDetector.swift; sourceTree = "<group>"; };
@@ -137,6 +148,8 @@
 		2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshotTests.swift; sourceTree = "<group>"; };
 		2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Answer.swift"; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
+		30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSurface.swift; sourceTree = "<group>"; };
+		3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptStamp.swift; sourceTree = "<group>"; };
 		34148042249D3D059403D041 /* SettingsSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSectionTests.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
 		3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandDoubleTapDetector.swift; sourceTree = "<group>"; };
@@ -158,13 +171,18 @@
 		5848DE460275B09268D62776 /* RefineSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineSettingsView.swift; sourceTree = "<group>"; };
 		58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefinePreferences.swift; sourceTree = "<group>"; };
 		5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSessionState.swift; sourceTree = "<group>"; };
+		62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+QuickPrompts.swift"; sourceTree = "<group>"; };
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
 		65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+StreamingApply.swift"; sourceTree = "<group>"; };
+		678BCADB85745FE21B01B414 /* FloatingBarView+Composer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+Composer.swift"; sourceTree = "<group>"; };
 		687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalAppsTests.swift; sourceTree = "<group>"; };
 		68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormState.swift; sourceTree = "<group>"; };
+		69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptRow.swift; sourceTree = "<group>"; };
+		70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+QuickPromptStamp.swift"; sourceTree = "<group>"; };
 		71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+FallbackApply.swift"; sourceTree = "<group>"; };
 		71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
+		75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptsEditor.swift; sourceTree = "<group>"; };
 		7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Windows.swift"; sourceTree = "<group>"; };
 		827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSettingsView.swift; sourceTree = "<group>"; };
 		88311BF34253F68358B6423E /* SelectionCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCaptureTests.swift; sourceTree = "<group>"; };
@@ -192,6 +210,7 @@
 		BEE53455CCF50660809EE621 /* ShortcutConflictList.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConflictList.swift; sourceTree = "<group>"; };
 		C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSourceStrip.swift; sourceTree = "<group>"; };
 		C161A896EF80B4F2BB076235 /* CustomInstructions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomInstructions.swift; sourceTree = "<group>"; };
+		C197F608D48A2E2BF59FD20D /* QuickPromptsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptsTests.swift; sourceTree = "<group>"; };
 		C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Panel.swift"; sourceTree = "<group>"; };
 		C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Propr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		CB212309517604983B9E3644 /* FnTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FnTapDetector.swift; sourceTree = "<group>"; };
@@ -224,6 +243,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */,
+				238C7390577D89C3AF8AC1D3 /* Pow in Frameworks */,
 				0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -255,7 +275,11 @@
 				5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */,
 				C0A3ABE4823DCB52CB7B1EDC /* FloatingBarSourceStrip.swift */,
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
+				30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */,
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
+				678BCADB85745FE21B01B414 /* FloatingBarView+Composer.swift */,
+				62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */,
+				70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */,
 				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
 				CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */,
 				BC3CFE06765D24588F37A915 /* Info.plist */,
@@ -263,6 +287,9 @@
 				40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */,
 				52389F30283FC8DEAE46A772 /* Propr.entitlements */,
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
+				69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */,
+				161EBF53261BD7EB56D4B3A1 /* QuickPrompts.swift */,
+				3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */,
 				58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */,
 				0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */,
 				D57AACF05D72BA774AF70D00 /* StatusItemController.swift */,
@@ -299,6 +326,7 @@
 				B47A18415C6D3C82F7B241D1 /* ModelCatalogPicker.swift */,
 				B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */,
 				03650E0EB7DEF2F8F9B836A1 /* ProviderLogo.swift */,
+				75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */,
 				5848DE460275B09268D62776 /* RefineSettingsView.swift */,
 				FD53E73CB320245AA2900D60 /* SettingsPane.swift */,
 				D05AF5DF1B049941D1FABE43 /* SettingsTabViewController.swift */,
@@ -345,6 +373,7 @@
 				F74673AD381A1CEB1E25EDCF /* ModelReplyTests.swift */,
 				2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */,
 				4EDBF67D5AB0E7B78279C7FC /* ProviderIconTests.swift */,
+				C197F608D48A2E2BF59FD20D /* QuickPromptsTests.swift */,
 				97517C94E9AD533EE6C89625 /* SearchPanelTests.swift */,
 				F6105F8D3DFBBB44451A3815 /* SearchTriggerTests.swift */,
 				88311BF34253F68358B6423E /* SelectionCaptureTests.swift */,
@@ -483,6 +512,7 @@
 			name = Propr;
 			packageProductDependencies = (
 				1C04ED90828FD1CE2248C986 /* Permiso */,
+				6371F2B42C9F693957119461 /* Pow */,
 			);
 			productName = Propr;
 			productReference = C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */;
@@ -534,6 +564,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */,
+				83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9A4BF0A8D139C3B444C9D9D /* Products */;
@@ -576,6 +607,7 @@
 				7620A0EC15EE9562C8ACCB32 /* ModelReplyTests.swift in Sources */,
 				269F1D27DF7BB71BEEE02C63 /* PasteboardSnapshotTests.swift in Sources */,
 				D3A3D2DACA9F1EA6768491E5 /* ProviderIconTests.swift in Sources */,
+				DE9B3715F1E442F202A18D63 /* QuickPromptsTests.swift in Sources */,
 				34DFA93DA721A74CA4AF4492 /* SearchPanelTests.swift in Sources */,
 				46115AED2137639D47094618 /* SearchTriggerTests.swift in Sources */,
 				63874E09634BA61C31B8F864 /* SelectionCaptureTests.swift in Sources */,
@@ -622,6 +654,10 @@
 				20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */,
 				6CB4285C23D48E82AADA9678 /* FloatingBarSourceStrip.swift in Sources */,
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
+				0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */,
+				F491EB8684B164CC0B61F78A /* FloatingBarView+Composer.swift in Sources */,
+				AE66A5AFD86FF0255FDE8665 /* FloatingBarView+QuickPromptStamp.swift in Sources */,
+				E35D2729881AD041526B9385 /* FloatingBarView+QuickPrompts.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,
 				EC7BAF4974496734530D7EF2 /* FnTapDetector.swift in Sources */,
@@ -643,6 +679,10 @@
 				E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */,
 				EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */,
 				8B5214EC61877BD3B3EBDF35 /* ProviderLogo.swift in Sources */,
+				1AB175DC901B46C9B7CA5C84 /* QuickPromptRow.swift in Sources */,
+				FFD2D595EEA0C0251B5C38FD /* QuickPromptStamp.swift in Sources */,
+				33E166A04E5B9DBA1C4588AC /* QuickPrompts.swift in Sources */,
+				AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */,
 				3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */,
 				52B1B323D293EFC00851970A /* RefineSettingsView.swift in Sources */,
 				F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */,
@@ -931,6 +971,14 @@
 				revision = 7b960ad83b514ecf0a097395672ed0674d59f8f0;
 			};
 		};
+		83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/EmergeTools/Pow";
+			requirement = {
+				kind = revision;
+				revision = 1b4b1dda28c50b95f0872927ee2226fe8b58950e;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -938,6 +986,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */;
 			productName = Permiso;
+		};
+		6371F2B42C9F693957119461 /* Pow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */;
+			productName = Pow;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

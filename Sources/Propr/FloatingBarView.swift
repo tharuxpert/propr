@@ -1,4 +1,5 @@
 import AppKit
+import Pow
 import SwiftUI
 
 /// The actual floating bar UI shown inside the NSPanel.
@@ -11,34 +12,35 @@ struct FloatingBarView: View {
     let onStop: () -> Void
     let onClose: () -> Void
     var onUndo: (() -> Void)? = nil
+    /// Reports the content's natural height whenever it changes, so the panel can
+    /// be sized to it. SwiftUI measures it; the panel does not size itself.
+    var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
-    @State private var prompt: String = ""
-    @FocusState private var isPromptFocused: Bool
+    @State var prompt: String = ""
+    @FocusState var isPromptFocused: Bool
+    @Namespace var glassNamespace
+    @AppStorage(QuickPrompts.key) var quickPrompts = QuickPrompts.defaults
+    /// Keeps the pills' space for a moment after they hide, so the panel does not
+    /// shrink under them while they flow back into the bar.
+    @State var holdsQuickPromptSpace = false
+    /// Whether the pills are out. Trails `showsQuickPrompts` on the way in, until
+    /// the panel has grown to make room for them.
+    @State var revealsQuickPrompts = false
+    /// The mode whose pills are out. Trails the bar's mode while one set swaps
+    /// for the other.
+    @State var displayedQuickPromptMode: QuickPrompt.Mode = .edit
+    /// A quick prompt flying into the composer, until it is sent.
+    @State var quickPromptStamp: QuickPromptStamp?
+    /// Counts stamps landing, so each one sets off the landing effects.
+    @State var quickPromptLandings = 0
+    /// Where each pill's text and the composer's text start, in stage coordinates:
+    /// the two ends of a stamp's flight.
+    @State var pillTextOrigins: [UUID: CGPoint] = [:]
+    @State var promptTextOrigin: CGPoint?
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
-    /// With text captured the bar can edit it or answer about it, so the fresh
-    /// prompt stays open-ended. With an empty context the bar writes at the cursor
-    /// instead, so the prompt asks for that.
-    private var promptPlaceholder: String {
-        if sessionState.isAskMode {
-            // The source strip above already shows the captured text, so the
-            // prompt needn't point at it.
-            return "Ask anything…"
-        }
-        if sessionState.hasAppliedResult {
-            return "What should change next?"
-        }
-
-        return snapshot.contextText.isEmpty
-            ? "What do you want to write?"
-            : "Ask or edit anything…"
-    }
-
-    private var displayedContextText: String {
+    var displayedContextText: String {
         sessionState.latestAppliedText ?? snapshot.contextText
-    }
-
-    private var trimmedPrompt: String {
-        prompt.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
     /// One line of the text being refined. Newlines are flattened so a multi-line
@@ -49,13 +51,49 @@ struct FloatingBarView: View {
             .trimmingCharacters(in: .whitespaces)
     }
 
-    private var statusLabel: String? {
-        if sessionState.isThinking { return "Thinking…" }
-        if sessionState.isTyping { return "Typing…" }
-        return nil
+    var body: some View {
+        VStack(spacing: 0) {
+            bar
+            // Animated on its own, so the pills' spring never slows the rest of the
+            // bar: the placeholder and the tab hint still change at once.
+            quickPromptArea
+        }
+        .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
+        .coordinateSpace(.named(QuickPromptStamp.stage))
+        .overlay(alignment: .topLeading) {
+            if let quickPromptStamp {
+                QuickPromptStampFlight(stamp: quickPromptStamp)
+            }
+        }
+        // The whole bar, glass and all, takes the hit when a stamp lands.
+        .changeEffect(.shake(rate: .fast), value: quickPromptLandings)
+        // Natural height, whatever frame the panel currently has.
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            onContentHeightChange?(height)
+        }
+        // Pinned to the top. The panel catches up with a change in height a pass
+        // later, and until then the hosting view would centre the content in the
+        // old frame, jumping the bar up and back down.
+        .frame(maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            holdsQuickPromptSpace = showsQuickPrompts
+            revealsQuickPrompts = showsQuickPrompts
+            displayedQuickPromptMode = quickPromptMode
+        }
+        .onChange(of: sessionState.isAskMode) {
+            quickPromptModeChanged()
+        }
+        .onChange(of: showsQuickPrompts) { _, shows in
+            quickPromptVisibilityChanged(to: shows)
+        }
     }
 
-    var body: some View {
+    /// The bar itself: the source strip, the composer and whatever the last request
+    /// produced.
+    private var bar: some View {
         VStack(spacing: 0) {
             // One even inset, roughly the corner radius, so the keys in the corners
             // never crowd the rounding.
@@ -89,142 +127,23 @@ struct FloatingBarView: View {
         }
         .frame(maxWidth: .infinity)
         .modifier(DraggablePanel())
-        // A real behind-window vibrancy view, so the bar samples the desktop beneath
-        // it the way Spotlight does. The panel itself is borderless and clear; the
-        // rounding and the shadow live here.
-        //
-        // The tint sits between the content and the blur, knocking the whole
-        // composer a shade darker than the raw material.
-        .background(Color.black.opacity(Self.backgroundDim))
-        .background(
-            VisualEffectBackground(
-                material: .hudWindow,
-                blendingMode: .behindWindow,
-                cornerRadius: Self.cornerRadius
+        // The panel itself is borderless and clear; the backdrop and rounding live here.
+        .modifier(
+            FloatingBarSurface(
+                cornerRadius: Self.cornerRadius,
+                isBusy: sessionState.isBusy,
+                glassNamespace: glassNamespace
             )
         )
-        .clipShape(RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
-                .strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5)
-        )
-        .overlay(WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius))
-        // No SwiftUI shadow: the panel sets `hasShadow`, and now that the content is
-        // an opaque rounded shape the window shadow follows it correctly. Drawing
-        // both stacked two shadows on top of each other.
-    }
-
-    /// The instruction field with its key: ↩ to send, or a stop key while busy.
-    /// The leading icon shows the mode and toggles it, like Tab: a question bubble
-    /// for Ask, a turn arrow for a follow-up edit, a pencil for a first edit.
-    private var composerRow: some View {
-        HStack(spacing: 10) {
-            Button(action: toggleAskMode) {
-                Image(systemName: modeSymbol)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.tint)
-                    .frame(width: 18)
-                    .contentTransition(.symbolEffect(.replace))
-            }
-            .buttonStyle(.plain)
-            .disabled(sessionState.isBusy)
-            .help(
-                sessionState.isAskMode
-                    ? "Ask: answers stay here and nothing in your text changes. Tab switches to Edit."
-                    : "Edit: changes your text. Tab switches to Ask."
-            )
-
-            TextField(promptPlaceholder, text: $prompt)
-                .textFieldStyle(.plain)
-                .font(.system(size: 16))
-                .focused($isPromptFocused)
-                .onKeyPress(.tab) {
-                    toggleAskMode()
-                    return .handled
-                }
-                .onSubmit {
-                    submitPrompt()
-                }
-                .onAppear {
-                    // Auto-focus the input as soon as the bar appears
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
-                        isPromptFocused = true
-                    }
-                }
-                .onChange(of: sessionState.composerRevision) {
-                    prompt = ""
-                    DispatchQueue.main.async {
-                        isPromptFocused = true
-                    }
-                }
-                .disabled(sessionState.isBusy)
-
-            // Gone once typing starts, so it never crowds a real instruction.
-            if prompt.isEmpty && !sessionState.isBusy {
-                ModeSwitchHint(
-                    target: sessionState.isAskMode ? "Edit" : "Ask",
-                    action: toggleAskMode
-                )
-                .transition(.opacity)
-            }
-
-            if let statusLabel {
-                Text(statusLabel)
-                    .font(.callout)
-                    .foregroundStyle(.secondary)
-                    .transition(.opacity)
-            }
-
-            if sessionState.hasAppliedResult && !sessionState.isBusy, let onUndo {
-                Button(action: onUndo) {
-                    Label("Undo", systemImage: "arrow.uturn.backward")
-                        .labelStyle(.titleAndIcon)
-                }
-                .buttonStyle(KeycapButtonStyle())
-                .help("Undo the last change")
-            }
-
-            if sessionState.isBusy {
-                Button(action: onStop) {
-                    Image(systemName: "stop.fill")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.red)
-                }
-                .buttonStyle(KeycapButtonStyle())
-                .help("Stop")
-            } else {
-                Button(action: submitPrompt) {
-                    Image(systemName: "return")
-                }
-                .buttonStyle(KeycapButtonStyle(tint: trimmedPrompt.isEmpty ? nil : .accentColor))
-                .disabled(trimmedPrompt.isEmpty)
-                .help("Send")
-            }
-        }
-        .animation(.easeOut(duration: 0.15), value: sessionState.isBusy)
     }
 
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
 
-    /// How much darker than the raw material the composer sits.
-    private static let backgroundDim: CGFloat = 0.3
-
-    private func submitPrompt() {
-        guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }
-        sessionState.startRequest()
-        onRefine(trimmedPrompt, sessionState.isAskMode ? .ask : .auto)
-    }
-
-    private var modeSymbol: String {
-        if sessionState.isAskMode { return "questionmark.bubble" }
-        return sessionState.hasAppliedResult ? "arrow.turn.down.right" : "pencil.line"
-    }
-
-    private func toggleAskMode() {
-        guard !sessionState.isBusy else { return }
-        sessionState.isAskMode.toggle()
-    }
+    /// How near the pills and the bar must be before their glass flows together.
+    /// Narrower than the gap between them, so they merge only while moving in and
+    /// out; at rest the bar's own shape stays exactly as it is.
+    private static let glassBlendSpacing: CGFloat = 6
 }
 
 #Preview("Floating Bar") {

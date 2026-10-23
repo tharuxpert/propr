@@ -109,6 +109,9 @@ final class FloatingBarController {
     // Used to force SwiftUI view recreation on every summon (resets @State)
     var summonID = UUID()
 
+    /// The bar's natural height as SwiftUI last measured it; zero until it has.
+    var contentHeight: CGFloat = 0
+
     /// Whether the bar is currently visible.
     /// Settable within the module because the presentation extension lives in
     /// another file, and Swift scopes `private(set)` to the declaring file.
