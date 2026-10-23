@@ -19,6 +19,7 @@ extension FloatingBarController {
 
         // Fresh ID so SwiftUI recreates the view and resets all @State (prompt, hasApplied, etc.)
         summonID = UUID()
+        contentHeight = 0
         sessionState = FloatingBarSessionState(startsInAskMode: RefinePreferences.startMode == .ask)
         appliedRevisions = []
         conversation = []
@@ -46,10 +47,12 @@ extension FloatingBarController {
                 onStop: { [weak self] in self?.stopRefine() },
                 onClose: { [weak self] in self?.hide() },
                 onUndo: { [weak self] in self?.undoLastApply() },
-                onContentResize: { [weak self] in
-                    // Resize once SwiftUI has laid out the new content.
+                onContentHeightChange: { [weak self] height in
+                    // Not from inside SwiftUI's layout pass.
                     DispatchQueue.main.async {
-                        self?.sizePanelToFitContent(recenter: false)
+                        guard let self else { return }
+                        self.contentHeight = height
+                        self.sizePanelToFitContent(recenter: false)
                     }
                 }
             )
@@ -83,13 +86,12 @@ extension FloatingBarController {
 
         hosting.layoutSubtreeIfNeeded()
 
-        // The panel only ever grows past its base size. fittingSize under-reports
-        // immediately after rootView is swapped — SwiftUI has not laid the content
-        // out yet — and trusting it there collapses the bar onto its text field.
+        // The panel only ever grows past its base size. Until SwiftUI has measured
+        // the new content there is no height yet, and the base size stands in.
         let base = baseContentSize
         let size = NSSize(
             width: base.width,
-            height: max(base.height, ceil(hosting.fittingSize.height))
+            height: max(base.height, ceil(contentHeight))
         )
 
         guard size != panel.frame.size || recenter else { return }
@@ -175,6 +177,10 @@ extension FloatingBarController {
                     onUndo: nil
                 )))
         hosting.frame = contentRect
+        // The panel is sized by hand from the height SwiftUI reports. Left to the
+        // hosting view's constraints, AppKit grows the window from its bottom edge
+        // first, jumping the bar up before it is moved back.
+        hosting.sizingOptions = []
 
         newPanel.contentView = hosting
 

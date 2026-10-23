@@ -38,20 +38,18 @@ extension FloatingBarView {
         send(instruction, intent: quickPrompt.mode.intent)
     }
 
-    /// Grows the panel as soon as the pills appear. When they hide, the panel keeps
-    /// their space until they have flowed back into the bar, then shrinks.
+    /// When the pills hide, their space is kept until they have flowed back into
+    /// the bar, so the panel does not shrink under them.
     func quickPromptVisibilityChanged(to shows: Bool) {
         if shows {
             holdsQuickPromptSpace = true
-            onContentResize?()
             return
         }
 
         Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(500))
+            try? await Task.sleep(for: .milliseconds(400))
             guard !showsQuickPrompts else { return }
             holdsQuickPromptSpace = false
-            onContentResize?()
         }
     }
 }

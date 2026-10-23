@@ -11,9 +11,9 @@ struct FloatingBarView: View {
     let onStop: () -> Void
     let onClose: () -> Void
     var onUndo: (() -> Void)? = nil
-    /// The bar's content changed height outside the session state, so the panel
-    /// must be resized to it.
-    var onContentResize: (() -> Void)? = nil
+    /// Reports the content's natural height whenever it changes, so the panel can
+    /// be sized to it. SwiftUI measures it; the panel does not size itself.
+    var onContentHeightChange: ((CGFloat) -> Void)? = nil
 
     @State var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
@@ -66,18 +66,24 @@ struct FloatingBarView: View {
     var body: some View {
         VStack(spacing: QuickPromptRow.spacing) {
             bar
-            quickPromptArea
+            // Animated on its own, so the pills' spring never slows the rest of the
+            // bar: the placeholder and the tab hint still change at once.
+            Group { quickPromptArea }
+                .animation(.spring(duration: 0.35, bounce: 0.2), value: showsQuickPrompts)
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
-        .animation(.spring(duration: 0.45, bounce: 0.3), value: showsQuickPrompts)
+        // Natural height, whatever frame the panel currently has.
+        .fixedSize(horizontal: false, vertical: true)
+        .onGeometryChange(for: CGFloat.self) { proxy in
+            proxy.size.height
+        } action: { height in
+            onContentHeightChange?(height)
+        }
         // Pinned to the top. The panel catches up with a change in height a pass
         // later, and until then the hosting view would centre the content in the
         // old frame, jumping the bar up and back down.
         .frame(maxHeight: .infinity, alignment: .top)
-        .onAppear {
-            holdsQuickPromptSpace = showsQuickPrompts
-            onContentResize?()
-        }
+        .onAppear { holdsQuickPromptSpace = showsQuickPrompts }
         .onChange(of: showsQuickPrompts) { _, shows in
             quickPromptVisibilityChanged(to: shows)
         }
