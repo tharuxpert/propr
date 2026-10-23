@@ -52,3 +52,6 @@ Build/
 
 # Per-machine code signing identity (see Configs/Signing.xcconfig)
 Configs/Signing.local.xcconfig
+
+# Personal coding-agent instructions
+AGENTS.md
