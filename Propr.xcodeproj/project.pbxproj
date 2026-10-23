@@ -73,6 +73,7 @@
 		AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */; };
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
+		AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */; };
 		B081ADD7C7F620FFDACAD9DB /* LookupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042D7A55F1CD1844733DB149 /* LookupModelTests.swift */; };
 		B0B05628BEC4994DE87B434D /* CustomInstructionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5665DE8325F5BB73088990EA /* CustomInstructionsTests.swift */; };
 		B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */; };
@@ -168,6 +169,7 @@
 		71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+FallbackApply.swift"; sourceTree = "<group>"; };
 		71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
+		75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptsEditor.swift; sourceTree = "<group>"; };
 		7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Windows.swift"; sourceTree = "<group>"; };
 		827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSettingsView.swift; sourceTree = "<group>"; };
 		88311BF34253F68358B6423E /* SelectionCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCaptureTests.swift; sourceTree = "<group>"; };
@@ -304,6 +306,7 @@
 				B47A18415C6D3C82F7B241D1 /* ModelCatalogPicker.swift */,
 				B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */,
 				03650E0EB7DEF2F8F9B836A1 /* ProviderLogo.swift */,
+				75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */,
 				5848DE460275B09268D62776 /* RefineSettingsView.swift */,
 				FD53E73CB320245AA2900D60 /* SettingsPane.swift */,
 				D05AF5DF1B049941D1FABE43 /* SettingsTabViewController.swift */,
@@ -651,6 +654,7 @@
 				EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */,
 				8B5214EC61877BD3B3EBDF35 /* ProviderLogo.swift in Sources */,
 				33E166A04E5B9DBA1C4588AC /* QuickPrompts.swift in Sources */,
+				AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */,
 				3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */,
 				52B1B323D293EFC00851970A /* RefineSettingsView.swift in Sources */,
 				F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */,

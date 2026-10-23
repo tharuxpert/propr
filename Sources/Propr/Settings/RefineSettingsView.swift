@@ -5,6 +5,7 @@ import SwiftUI
 struct RefineSettingsView: View {
     @AppStorage(RefinePreferences.customInstructionsKey) private var customInstructions = ""
     @AppStorage(RefinePreferences.startModeKey) private var startMode: RefinePreferences.StartMode = .edit
+    @AppStorage(QuickPrompts.key) private var quickPrompts = QuickPrompts.defaults
 
     var body: some View {
         SettingsPane {
@@ -21,6 +22,10 @@ struct RefineSettingsView: View {
                         .fixedSize()
                         SettingsNote("Edit changes your text; Ask answers in the bar. Tab switches between them.")
                     }
+                }
+
+                SettingsRow("Quick Prompts") {
+                    QuickPromptsEditor(prompts: $quickPrompts)
                 }
 
                 SettingsRow("Custom Instructions") {
