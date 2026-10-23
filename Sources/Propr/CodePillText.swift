@@ -241,7 +241,12 @@ struct AnswerTextView: NSViewRepresentable {
         textView.isVerticallyResizable = true
         textView.autoresizingMask = [.width]
         textView.textContainer?.widthTracksTextView = true
+        context.coordinator.textView = textView
         return scrollView
+    }
+
+    func makeCoordinator() -> StreamingTextFade {
+        StreamingTextFade()
     }
 
     func updateNSView(_ scrollView: NSScrollView, context: Context) {
@@ -251,6 +256,7 @@ struct AnswerTextView: NSViewRepresentable {
         let selection = textView.selectedRanges
         let visible = textView.visibleRect
         textView.textStorage?.setAttributedString(content)
+        context.coordinator.textDidChange(to: content)
         textView.selectedRanges = selection.filter {
             $0.rangeValue.upperBound <= content.length
         }

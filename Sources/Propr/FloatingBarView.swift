@@ -37,6 +37,8 @@ struct FloatingBarView: View {
     /// the two ends of a stamp's flight.
     @State var pillTextOrigins: [UUID: CGPoint] = [:]
     @State var promptTextOrigin: CGPoint?
+    /// The bar's height without the pills, for laying the working streak over it.
+    @State private var barHeight: CGFloat = 0
     @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var displayedContextText: String {
@@ -59,6 +61,14 @@ struct FloatingBarView: View {
             quickPromptArea
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
+        // Over the bar alone, and outside the glass group, so the glass does not
+        // render it as part of itself and wash it out.
+        .overlay(alignment: .top) {
+            WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius)
+                .frame(height: barHeight)
+                // Keeps pace with the bar as it grows.
+                .animation(Self.growAnimation, value: barHeight)
+        }
         .coordinateSpace(.named(QuickPromptStamp.stage))
         .overlay(alignment: .topLeading) {
             if let quickPromptStamp {
@@ -131,11 +141,18 @@ struct FloatingBarView: View {
         .modifier(
             FloatingBarSurface(
                 cornerRadius: Self.cornerRadius,
-                isBusy: sessionState.isBusy,
                 glassNamespace: glassNamespace
             )
         )
+        // A streaming answer grows the bar a line at a time; easing each step
+        // keeps that from stuttering. The panel makes room first, as it grows
+        // straight to the new height.
+        .animation(Self.growAnimation, value: sessionState.answer?.text)
+        .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
     }
+
+    /// How the bar eases to a new height.
+    static let growAnimation: Animation = .easeOut(duration: 0.2)
 
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16

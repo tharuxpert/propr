@@ -13,6 +13,7 @@
 		10E2F1C813530EBE4B9A8B33 /* ForceClickPressDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */; };
 		12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */; };
 		126530E8DEE7708B39A76F2F /* ChatCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */; };
+		14645265087750C510C15C45 /* StreamingTextFade.swift in Sources */ = {isa = PBXBuildFile; fileRef = 563423B76162356E86DCE212 /* StreamingTextFade.swift */; };
 		1484CBD677ED2E8795DC4809 /* KeystrokeUndo.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */; };
 		175BC78E6BFE1FBF699C3942 /* CustomInstructions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C161A896EF80B4F2BB076235 /* CustomInstructions.swift */; };
 		18304B612AD98077F8D2EEA4 /* SearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6ECC01E365A7C98FFA52FA /* SearchProvider.swift */; };
@@ -51,6 +52,7 @@
 		52B1B323D293EFC00851970A /* RefineSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5848DE460275B09268D62776 /* RefineSettingsView.swift */; };
 		53E70E434146050BAB518EF3 /* SearchTriggerService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 998F9E9BACD2376DAABC7F9B /* SearchTriggerService.swift */; };
 		55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */; };
+		58179D633B559AA2E5573B45 /* WorkingEdgeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C0AED174E5218486E0F4EBF /* WorkingEdgeTests.swift */; };
 		624CFF35C6BA55F254037DCF /* FloatingBarController+Panel.swift in Sources */ = {isa = PBXBuildFile; fileRef = C7BFFA3826FC94C284D5D5A3 /* FloatingBarController+Panel.swift */; };
 		63874E09634BA61C31B8F864 /* SelectionCaptureTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88311BF34253F68358B6423E /* SelectionCaptureTests.swift */; };
 		6B6C1809031B24CEE305D5EB /* KeystrokePacingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 051988735931571C55E220DD /* KeystrokePacingTests.swift */; };
@@ -146,6 +148,7 @@
 		26088ADA097DE290EDA0A187 /* OnboardingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = OnboardingView.swift; sourceTree = "<group>"; };
 		28863A77F851BCCF52CE2C13 /* EndpointURLValidator.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointURLValidator.swift; sourceTree = "<group>"; };
 		2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasteboardSnapshotTests.swift; sourceTree = "<group>"; };
+		2C0AED174E5218486E0F4EBF /* WorkingEdgeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WorkingEdgeTests.swift; sourceTree = "<group>"; };
 		2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Answer.swift"; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSurface.swift; sourceTree = "<group>"; };
@@ -165,6 +168,7 @@
 		50FA3CD6F0FB4D610360732B /* SearchAnswerFormatter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchAnswerFormatter.swift; sourceTree = "<group>"; };
 		52389F30283FC8DEAE46A772 /* Propr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Propr.entitlements; sourceTree = "<group>"; };
 		55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormStateTests.swift; sourceTree = "<group>"; };
+		563423B76162356E86DCE212 /* StreamingTextFade.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StreamingTextFade.swift; sourceTree = "<group>"; };
 		5665DE8325F5BB73088990EA /* CustomInstructionsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomInstructionsTests.swift; sourceTree = "<group>"; };
 		57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HotkeyTests.swift; sourceTree = "<group>"; };
 		57D04E532EE362C9FB949CD3 /* ShortcutConflicts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConflicts.swift; sourceTree = "<group>"; };
@@ -293,6 +297,7 @@
 				58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */,
 				0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */,
 				D57AACF05D72BA774AF70D00 /* StatusItemController.swift */,
+				563423B76162356E86DCE212 /* StreamingTextFade.swift */,
 				EACB17E5999A4290BF4747A6 /* TriggerPreferences.swift */,
 				B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */,
 				D932FEE812426D968D6F3071 /* Keychain */,
@@ -380,6 +385,7 @@
 				34148042249D3D059403D041 /* SettingsSectionTests.swift */,
 				22DC4FC1C585F2D0E2CA3095 /* ShortcutConflictTests.swift */,
 				687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */,
+				2C0AED174E5218486E0F4EBF /* WorkingEdgeTests.swift */,
 			);
 			path = ProprTests;
 			sourceTree = "<group>";
@@ -614,6 +620,7 @@
 				F1E7F98C852FFFED936A5FB2 /* SettingsSectionTests.swift in Sources */,
 				2D8D8036CFE203857666AEE3 /* ShortcutConflictTests.swift in Sources */,
 				AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */,
+				58179D633B559AA2E5573B45 /* WorkingEdgeTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -699,6 +706,7 @@
 				341CA78DAB599B668E8BE35D /* ShortcutsSettingsView.swift in Sources */,
 				369BB3A47780A12F09B648B3 /* SourceAppKeyboard.swift in Sources */,
 				918CD164A944F2CEF224EBFA /* StatusItemController.swift in Sources */,
+				14645265087750C510C15C45 /* StreamingTextFade.swift in Sources */,
 				E322DA89C1F42440295DEDAD /* TerminalApps.swift in Sources */,
 				EA06C07E4560D6E5E3531499 /* TriggerPreferences.swift in Sources */,
 				DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */,

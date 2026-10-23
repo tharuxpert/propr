@@ -5,9 +5,11 @@ import SwiftUI
 /// From macOS 26 the bar is Liquid Glass, so it can share a `GlassEffectContainer`
 /// with the quick prompt pills and they can flow out of it. Earlier systems keep the
 /// behind-window vibrancy the bar has always had.
+///
+/// The working streak is not drawn here: anything inside the glass group is
+/// rendered as part of the glass, which washed it out. The bar draws it on top.
 struct FloatingBarSurface: ViewModifier {
     let cornerRadius: CGFloat
-    let isBusy: Bool
     let glassNamespace: Namespace.ID
 
     /// The glass ID of the bar itself, for morphing pills to and from it.
@@ -22,7 +24,6 @@ struct FloatingBarSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         surface(content.clipShape(shape))
-            .overlay(WorkingEdge(isActive: isBusy, cornerRadius: cornerRadius))
         // No SwiftUI shadow: the panel sets `hasShadow`, and the window shadow
         // follows the drawn shapes. Drawing both stacked two shadows.
     }
