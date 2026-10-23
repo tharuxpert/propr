@@ -41,8 +41,13 @@ extension AppDelegate {
             window.identifier = NSUserInterfaceItemIdentifier("settings")
             window.isReleasedWhenClosed = false
             window.hidesOnDeactivate = false
-            // Stay on the current Space like a normal utility window.
-            window.collectionBehavior = []
+            // Without a collection behavior the window server keeps the Space this
+            // window was last on and switches *the user* to it, so Settings opened on
+            // whichever Space it was last closed on. `.moveToActiveSpace` reverses that:
+            // the window comes to the Space the user is already looking at. It cannot
+            // join a fullscreen Space (that needs `.fullScreenAuxiliary`), so macOS
+            // still moves the user out of one — which is what System Settings does too.
+            window.collectionBehavior = [.moveToActiveSpace]
             window.center()
 
             settingsWindow = window
