@@ -58,7 +58,10 @@ struct QuickPromptStampFlight: View {
                     .offset(x: x, y: y - lineHeight / 2)
             } keyframes: { _ in
                 KeyframeTrack(\.travel) {
-                    SpringKeyframe(1, duration: 0.3, spring: .smooth(duration: 0.3))
+                    // Arrives exactly as the slam starts. A spring here was still
+                    // short of the composer when it slammed, landing low by a share
+                    // of the distance, which grew the further down the pills sat.
+                    LinearKeyframe(1, duration: 0.26, timingCurve: .easeInOut)
                 }
                 KeyframeTrack(\.scale) {
                     // Swells on the way up, as if lifted towards you…
