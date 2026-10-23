@@ -111,6 +111,8 @@ final class FloatingBarController {
 
     /// The bar's natural height as SwiftUI last measured it; zero until it has.
     var contentHeight: CGFloat = 0
+    /// Bumped on every reported height, so a delayed shrink can tell it is stale.
+    var heightChangeGeneration = 0
 
     /// Whether the bar is currently visible.
     /// Settable within the module because the presentation extension lives in

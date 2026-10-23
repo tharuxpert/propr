@@ -50,9 +50,7 @@ extension FloatingBarController {
                 onContentHeightChange: { [weak self] height in
                     // Not from inside SwiftUI's layout pass.
                     DispatchQueue.main.async {
-                        guard let self else { return }
-                        self.contentHeight = height
-                        self.sizePanelToFitContent(recenter: false)
+                        self?.contentHeightChanged(to: height)
                     }
                 }
             )
@@ -74,6 +72,27 @@ extension FloatingBarController {
         }
 
         isVisible = true
+    }
+
+    /// The bar eases to a new height while the panel jumps to it. Growing, that is
+    /// fine: the panel makes room and the bar eases into it. Shrinking, the panel
+    /// would cut the bar off as it eased, so it waits for the bar to finish.
+    func contentHeightChanged(to height: CGFloat) {
+        heightChangeGeneration &+= 1
+        let generation = heightChangeGeneration
+        let shrinking = height < contentHeight
+
+        guard shrinking else {
+            contentHeight = height
+            sizePanelToFitContent(recenter: false)
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.22) { [weak self] in
+            guard let self, self.heightChangeGeneration == generation else { return }
+            self.contentHeight = height
+            self.sizePanelToFitContent(recenter: false)
+        }
     }
 
     /// Resizes the panel to whatever height its SwiftUI content currently needs.

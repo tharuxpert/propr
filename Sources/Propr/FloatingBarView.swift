@@ -66,6 +66,8 @@ struct FloatingBarView: View {
         .overlay(alignment: .top) {
             WorkingEdge(isActive: sessionState.isBusy, cornerRadius: Self.cornerRadius)
                 .frame(height: barHeight)
+                // Keeps pace with the bar as it grows.
+                .animation(Self.growAnimation, value: barHeight)
         }
         .coordinateSpace(.named(QuickPromptStamp.stage))
         .overlay(alignment: .topLeading) {
@@ -142,8 +144,15 @@ struct FloatingBarView: View {
                 glassNamespace: glassNamespace
             )
         )
+        // A streaming answer grows the bar a line at a time; easing each step
+        // keeps that from stuttering. The panel makes room first, as it grows
+        // straight to the new height.
+        .animation(Self.growAnimation, value: sessionState.answer?.text)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { barHeight = $0 }
     }
+
+    /// How the bar eases to a new height.
+    static let growAnimation: Animation = .easeOut(duration: 0.2)
 
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
