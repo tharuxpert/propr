@@ -2,7 +2,7 @@ import SwiftUI
 
 /// The quick prompt pills under the bar. A click, or ⌘1 to ⌘6, sends one.
 ///
-/// The pills stay in the view while hidden, tucked up under the bar's bottom edge.
+/// The pills stay in the view while hidden, shrunk against the bar's bottom edge.
 /// Showing and hiding moves them out and back in, so both directions animate the
 /// same way, and on macOS 26 their glass flows into the bar's as they pass it.
 struct QuickPromptRow: View {
@@ -19,7 +19,7 @@ struct QuickPromptRow: View {
     static let spacing: CGFloat = 8
 
     /// The pills' own height, measured, so the row can reserve it while they
-    /// are tucked away.
+    /// are hidden.
     @State private var pillsHeight: CGFloat = 0
 
     var body: some View {
@@ -30,10 +30,11 @@ struct QuickPromptRow: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { pillsHeight = $0 }
-        // Hidden, the pills sit just under the bar's bottom edge; shown, one gap
-        // below it. Real layout rather than an offset, so the glass group sees
-        // the pills move and blends them into the bar on the way.
-        .padding(.top, isShown ? Self.spacing : -pillsHeight)
+        // Hidden, the pills shrink against the bar's bottom edge; shown, they sit
+        // one gap below it. They never pass under the bar, whose glass would show
+        // them through it. Real layout rather than an offset, so the glass group
+        // sees the pills move and blends them with the bar's edge on the way.
+        .padding(.top, isShown ? Self.spacing : 0)
         .frame(height: holdsSpace ? Self.spacing + pillsHeight : 0, alignment: .top)
         .allowsHitTesting(isShown)
     }
@@ -86,8 +87,8 @@ private struct QuickPromptPillSurface: ViewModifier {
         if #available(macOS 26.0, *) {
             // The glass group draws each glass shape and its content itself, so an
             // opacity or scale outside the glass is ignored. The label fades inside
-            // it, and the glass itself is switched off while hidden, or the tucked
-            // pills would show through the bar.
+            // it, and the glass itself is switched off while hidden, so it
+            // materializes and dissolves along with the label.
             hiding(content)
                 .glassEffect(isShown ? .regular.interactive() : .identity, in: Capsule())
                 .glassEffectID(id, in: glassNamespace)

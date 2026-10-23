@@ -65,8 +65,7 @@ struct FloatingBarView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Above the pills, which tuck under it while hidden.
-            bar.zIndex(1)
+            bar
             // Animated on its own, so the pills' spring never slows the rest of the
             // bar: the placeholder and the tab hint still change at once.
             quickPromptArea
