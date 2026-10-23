@@ -37,18 +37,19 @@ entry.
 
 A markdown- or config-only change that does not touch `Sources/` needs no rebuild.
 
-## GLM reviews and collaboration
+## Delegated work
 
-Model, `#high`, when to run a review, and how to brief one are in the global `AGENTS.md`.
-What is specific to this repo:
+Which model to delegate to, and what stays with the main agent (reviews, planning, tricky
+logic, final verification), are in the global instructions. What is specific to this repo:
 
-- **Also use it outside review** — research, planning, sanity-checking an approach before
-  writing it, any question where a second opinion is cheaper than a wrong guess.
-- **Give it the constraints:** Swift 6 with `SWIFT_STRICT_CONCURRENCY: complete`, macOS 14
-  deployment target, not sandboxed.
-- **Verify its claims rather than relaying them.** Two misses on this repo so far: it
-  asserted that `addModels` enforced an alias rule `canAddDraftModel` actually permits, and
-  claimed a byte-loop read cost "seconds" when measurement showed ~30 ms for 778 KB.
+- **Give children the constraints:** Swift 6 with `SWIFT_STRICT_CONCURRENCY: complete`,
+  macOS 14 deployment target, not sandboxed.
+- **Children do not run `./run-debug.sh`.** It quits and relaunches the app the user is
+  working in. The main agent rebuilds once the result is checked and applied.
+- **Verify their claims rather than relaying them.** Past misses from a second model on
+  this repo: it asserted that `addModels` enforced an alias rule `canAddDraftModel` actually
+  permits, and claimed a byte-loop read cost "seconds" when measurement showed ~30 ms for
+  778 KB.
 
 ## Other build facts
 
