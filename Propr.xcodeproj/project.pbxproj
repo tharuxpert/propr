@@ -17,6 +17,7 @@
 		175BC78E6BFE1FBF699C3942 /* CustomInstructions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C161A896EF80B4F2BB076235 /* CustomInstructions.swift */; };
 		18304B612AD98077F8D2EEA4 /* SearchProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD6ECC01E365A7C98FFA52FA /* SearchProvider.swift */; };
 		19E2D649F328046473EC1B12 /* OnboardingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26088ADA097DE290EDA0A187 /* OnboardingView.swift */; };
+		1AB175DC901B46C9B7CA5C84 /* QuickPromptRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */; };
 		1ED66005BF837E2236B1D32A /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6EF88BB1DC3E553F6B94CA /* AIService.swift */; };
 		20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */; };
 		21ED182E748C1D0DC0067711 /* AILookupRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B135C377077BEEC7913818 /* AILookupRequest.swift */; };
@@ -97,6 +98,7 @@
 		DE9B3715F1E442F202A18D63 /* QuickPromptsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C197F608D48A2E2BF59FD20D /* QuickPromptsTests.swift */; };
 		E1CAB360CA3E516859A6F73E /* GeneralSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */; };
 		E322DA89C1F42440295DEDAD /* TerminalApps.swift in Sources */ = {isa = PBXBuildFile; fileRef = 93DE19428A72A8063B962EA4 /* TerminalApps.swift */; };
+		E35D2729881AD041526B9385 /* FloatingBarView+QuickPrompts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */; };
 		E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F23611B0B693E2FD16EFCB4B /* ProprApp.swift */; };
 		EA06C07E4560D6E5E3531499 /* TriggerPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = EACB17E5999A4290BF4747A6 /* TriggerPreferences.swift */; };
 		EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = F1AD5CE47278593973DE0896 /* ProviderIconStore.swift */; };
@@ -164,10 +166,12 @@
 		5848DE460275B09268D62776 /* RefineSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineSettingsView.swift; sourceTree = "<group>"; };
 		58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefinePreferences.swift; sourceTree = "<group>"; };
 		5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSessionState.swift; sourceTree = "<group>"; };
+		62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+QuickPrompts.swift"; sourceTree = "<group>"; };
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
 		65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+StreamingApply.swift"; sourceTree = "<group>"; };
 		687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalAppsTests.swift; sourceTree = "<group>"; };
 		68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormState.swift; sourceTree = "<group>"; };
+		69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptRow.swift; sourceTree = "<group>"; };
 		71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+FallbackApply.swift"; sourceTree = "<group>"; };
 		71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
@@ -265,6 +269,7 @@
 				B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */,
 				30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */,
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
+				62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */,
 				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
 				CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */,
 				BC3CFE06765D24588F37A915 /* Info.plist */,
@@ -272,6 +277,7 @@
 				40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */,
 				52389F30283FC8DEAE46A772 /* Propr.entitlements */,
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
+				69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */,
 				161EBF53261BD7EB56D4B3A1 /* QuickPrompts.swift */,
 				58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */,
 				0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */,
@@ -636,6 +642,7 @@
 				6CB4285C23D48E82AADA9678 /* FloatingBarSourceStrip.swift in Sources */,
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
 				0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */,
+				E35D2729881AD041526B9385 /* FloatingBarView+QuickPrompts.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,
 				EC7BAF4974496734530D7EF2 /* FnTapDetector.swift in Sources */,
@@ -657,6 +664,7 @@
 				E950FE2F9ED74968E410E7EA /* ProprApp.swift in Sources */,
 				EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */,
 				8B5214EC61877BD3B3EBDF35 /* ProviderLogo.swift in Sources */,
+				1AB175DC901B46C9B7CA5C84 /* QuickPromptRow.swift in Sources */,
 				33E166A04E5B9DBA1C4588AC /* QuickPrompts.swift in Sources */,
 				AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */,
 				3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */,

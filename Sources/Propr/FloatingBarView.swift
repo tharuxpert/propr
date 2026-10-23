@@ -11,10 +11,17 @@ struct FloatingBarView: View {
     let onStop: () -> Void
     let onClose: () -> Void
     var onUndo: (() -> Void)? = nil
+    /// The bar's content changed height outside the session state, so the panel
+    /// must be resized to it.
+    var onContentResize: (() -> Void)? = nil
 
-    @State private var prompt: String = ""
+    @State var prompt: String = ""
     @FocusState private var isPromptFocused: Bool
-    @Namespace private var glassNamespace
+    @Namespace var glassNamespace
+    @AppStorage(QuickPrompts.key) var quickPrompts = QuickPrompts.defaults
+    /// Keeps the pills' space for a moment after they hide, so the panel does not
+    /// shrink under them while they flow back into the bar.
+    @State var holdsQuickPromptSpace = false
 
     /// With text captured the bar can edit it or answer about it, so the fresh
     /// prompt stays open-ended. With an empty context the bar writes at the cursor
@@ -34,7 +41,7 @@ struct FloatingBarView: View {
             : "Ask or edit anything…"
     }
 
-    private var displayedContextText: String {
+    var displayedContextText: String {
         sessionState.latestAppliedText ?? snapshot.contextText
     }
 
@@ -57,6 +64,21 @@ struct FloatingBarView: View {
     }
 
     var body: some View {
+        VStack(spacing: QuickPromptRow.spacing) {
+            bar
+            quickPromptArea
+        }
+        .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
+        .animation(.spring(duration: 0.45, bounce: 0.3), value: showsQuickPrompts)
+        .onAppear { holdsQuickPromptSpace = showsQuickPrompts }
+        .onChange(of: showsQuickPrompts) { _, shows in
+            quickPromptVisibilityChanged(to: shows)
+        }
+    }
+
+    /// The bar itself: the source strip, the composer and whatever the last request
+    /// produced.
+    private var bar: some View {
         VStack(spacing: 0) {
             // One even inset, roughly the corner radius, so the keys in the corners
             // never crowd the rounding.
@@ -193,10 +215,19 @@ struct FloatingBarView: View {
     /// Matches the rounding macOS uses on floating panels of this size.
     private static let cornerRadius: CGFloat = 16
 
+    /// How near the pills and the bar must be before their glass flows together.
+    /// Wider than the gap between them, so they rest joined by liquid bridges.
+    private static let glassBlendSpacing: CGFloat = 14
+
     private func submitPrompt() {
-        guard !trimmedPrompt.isEmpty, !sessionState.isBusy else { return }
+        guard !trimmedPrompt.isEmpty else { return }
+        send(trimmedPrompt, intent: sessionState.isAskMode ? .ask : .auto)
+    }
+
+    func send(_ instruction: String, intent: RefineIntent) {
+        guard !sessionState.isBusy else { return }
         sessionState.startRequest()
-        onRefine(trimmedPrompt, sessionState.isAskMode ? .ask : .auto)
+        onRefine(instruction, intent)
     }
 
     private var modeSymbol: String {

@@ -45,7 +45,13 @@ extension FloatingBarController {
                 },
                 onStop: { [weak self] in self?.stopRefine() },
                 onClose: { [weak self] in self?.hide() },
-                onUndo: { [weak self] in self?.undoLastApply() }
+                onUndo: { [weak self] in self?.undoLastApply() },
+                onContentResize: { [weak self] in
+                    // Resize once SwiftUI has laid out the new content.
+                    DispatchQueue.main.async {
+                        self?.sizePanelToFitContent(recenter: false)
+                    }
+                }
             )
             .id(summonID)
         )
@@ -98,6 +104,8 @@ extension FloatingBarController {
         }
 
         hosting.setFrameSize(size)
+        // The window shadow traces the drawn shapes, which just changed.
+        panel.invalidateShadow()
     }
 
     /// Watches the session state so the panel can grow/shrink as content changes.
