@@ -23,13 +23,12 @@ extension FloatingBarView {
         if hasQuickPrompts {
             QuickPromptRow(
                 prompts: visibleQuickPrompts,
-                isShown: showsQuickPrompts,
+                isShown: revealsQuickPrompts,
                 holdsSpace: holdsQuickPromptSpace,
                 isEnabled: !sessionState.isBusy,
                 glassNamespace: glassNamespace,
                 onSend: sendQuickPrompt
             )
-            .animation(Self.quickPromptAnimation, value: showsQuickPrompts)
         }
     }
 
@@ -42,15 +41,24 @@ extension FloatingBarView {
         send(instruction, intent: quickPrompt.mode.intent)
     }
 
-    /// The row takes its space as soon as the pills show. When they hide it keeps
-    /// it until they are back under the bar, so the panel does not shrink under
-    /// them mid-animation.
+    /// The panel only grows a pass after the content does, so pills animated out at
+    /// once would start below its bottom edge, cut off, and pop into view halfway.
+    /// They wait for the room first. On the way back the room is kept until they
+    /// are in, so the panel does not shrink under them.
+    ///
+    /// Only the reveal is animated, which keeps the spring off the rest of the bar.
     func quickPromptVisibilityChanged(to shows: Bool) {
         if shows {
             holdsQuickPromptSpace = true
+            Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(40))
+                guard showsQuickPrompts else { return }
+                withAnimation(Self.quickPromptAnimation) { revealsQuickPrompts = true }
+            }
             return
         }
 
+        withAnimation(Self.quickPromptAnimation) { revealsQuickPrompts = false }
         Task { @MainActor in
             try? await Task.sleep(for: .milliseconds(400))
             guard !showsQuickPrompts else { return }

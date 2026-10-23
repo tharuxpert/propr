@@ -22,6 +22,9 @@ struct FloatingBarView: View {
     /// Keeps the pills' space for a moment after they hide, so the panel does not
     /// shrink under them while they flow back into the bar.
     @State var holdsQuickPromptSpace = false
+    /// Whether the pills are out. Trails `showsQuickPrompts` on the way in, until
+    /// the panel has grown to make room for them.
+    @State var revealsQuickPrompts = false
 
     /// With text captured the bar can edit it or answer about it, so the fresh
     /// prompt stays open-ended. With an empty context the bar writes at the cursor
@@ -82,7 +85,10 @@ struct FloatingBarView: View {
         // later, and until then the hosting view would centre the content in the
         // old frame, jumping the bar up and back down.
         .frame(maxHeight: .infinity, alignment: .top)
-        .onAppear { holdsQuickPromptSpace = showsQuickPrompts }
+        .onAppear {
+            holdsQuickPromptSpace = showsQuickPrompts
+            revealsQuickPrompts = showsQuickPrompts
+        }
         .onChange(of: showsQuickPrompts) { _, shows in
             quickPromptVisibilityChanged(to: shows)
         }
