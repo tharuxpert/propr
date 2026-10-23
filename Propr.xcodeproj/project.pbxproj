@@ -77,6 +77,7 @@
 		AB8DAA524752E1CFE613B66D /* AIError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 44C2ADA94D5205A5D117BD9A /* AIError.swift */; };
 		AC3004232DBB6A50D6859B77 /* TerminalAppsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */; };
 		AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */; };
+		AE66A5AFD86FF0255FDE8665 /* FloatingBarView+QuickPromptStamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */; };
 		B081ADD7C7F620FFDACAD9DB /* LookupModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 042D7A55F1CD1844733DB149 /* LookupModelTests.swift */; };
 		B0B05628BEC4994DE87B434D /* CustomInstructionsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5665DE8325F5BB73088990EA /* CustomInstructionsTests.swift */; };
 		B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */; };
@@ -111,6 +112,7 @@
 		F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */ = {isa = PBXBuildFile; productRef = 1C04ED90828FD1CE2248C986 /* Permiso */; };
 		F82906A48443542ED45F96BF /* SearchAnswerFormatter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50FA3CD6F0FB4D610360732B /* SearchAnswerFormatter.swift */; };
 		FB4B7256873269C13E7DEB32 /* HotkeyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57AF235346F30B7E4AA43E81 /* HotkeyTests.swift */; };
+		FFD2D595EEA0C0251B5C38FD /* QuickPromptStamp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -147,6 +149,7 @@
 		2DD828550A5805F72FE9B5B3 /* FloatingBarController+Answer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+Answer.swift"; sourceTree = "<group>"; };
 		2F6EF88BB1DC3E553F6B94CA /* AIService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AIService.swift; sourceTree = "<group>"; };
 		30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSurface.swift; sourceTree = "<group>"; };
+		3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptStamp.swift; sourceTree = "<group>"; };
 		34148042249D3D059403D041 /* SettingsSectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsSectionTests.swift; sourceTree = "<group>"; };
 		36B135C377077BEEC7913818 /* AILookupRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupRequest.swift; sourceTree = "<group>"; };
 		3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CommandDoubleTapDetector.swift; sourceTree = "<group>"; };
@@ -175,6 +178,7 @@
 		687BA942B67D3C180822CD9C /* TerminalAppsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalAppsTests.swift; sourceTree = "<group>"; };
 		68BD0D0F2AEB3D8D1425F1B1 /* EndpointFormState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointFormState.swift; sourceTree = "<group>"; };
 		69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptRow.swift; sourceTree = "<group>"; };
+		70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+QuickPromptStamp.swift"; sourceTree = "<group>"; };
 		71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarController+FallbackApply.swift"; sourceTree = "<group>"; };
 		71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
@@ -275,6 +279,7 @@
 				4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */,
 				678BCADB85745FE21B01B414 /* FloatingBarView+Composer.swift */,
 				62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */,
+				70E96881ED6DB527729D1E10 /* FloatingBarView+QuickPromptStamp.swift */,
 				918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */,
 				CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */,
 				BC3CFE06765D24588F37A915 /* Info.plist */,
@@ -284,6 +289,7 @@
 				F23611B0B693E2FD16EFCB4B /* ProprApp.swift */,
 				69A8C42F4DFB734A718A2699 /* QuickPromptRow.swift */,
 				161EBF53261BD7EB56D4B3A1 /* QuickPrompts.swift */,
+				3178862077F3F5B150A0DFC8 /* QuickPromptStamp.swift */,
 				58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */,
 				0CD8C37C4826016AECF464A9 /* SourceAppKeyboard.swift */,
 				D57AACF05D72BA774AF70D00 /* StatusItemController.swift */,
@@ -650,6 +656,7 @@
 				446728CADB7BA5D4F29468EA /* FloatingBarStatusViews.swift in Sources */,
 				0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */,
 				F491EB8684B164CC0B61F78A /* FloatingBarView+Composer.swift in Sources */,
+				AE66A5AFD86FF0255FDE8665 /* FloatingBarView+QuickPromptStamp.swift in Sources */,
 				E35D2729881AD041526B9385 /* FloatingBarView+QuickPrompts.swift in Sources */,
 				DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */,
 				55540486CD63341BEFC67C1E /* FloatingPanelHostingView.swift in Sources */,
@@ -673,6 +680,7 @@
 				EBC8EEF30542A091E62AAB4A /* ProviderIconStore.swift in Sources */,
 				8B5214EC61877BD3B3EBDF35 /* ProviderLogo.swift in Sources */,
 				1AB175DC901B46C9B7CA5C84 /* QuickPromptRow.swift in Sources */,
+				FFD2D595EEA0C0251B5C38FD /* QuickPromptStamp.swift in Sources */,
 				33E166A04E5B9DBA1C4588AC /* QuickPrompts.swift in Sources */,
 				AD2E8CC4413810341CD6541D /* QuickPromptsEditor.swift in Sources */,
 				3D19CEDE012BB6DE566BC5F1 /* RefinePreferences.swift in Sources */,

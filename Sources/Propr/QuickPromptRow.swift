@@ -14,6 +14,9 @@ struct QuickPromptRow: View {
     let isEnabled: Bool
     let glassNamespace: Namespace.ID
     let onSend: (QuickPrompt) -> Void
+    /// Reports where each pill's text starts, in the stamp's stage coordinates:
+    /// its leading edge at its vertical centre.
+    let onTextOriginChange: (UUID, CGPoint) -> Void
 
     /// Between the pills, and between the bar and the first line of them.
     static let spacing: CGFloat = 8
@@ -44,6 +47,12 @@ struct QuickPromptRow: View {
             onSend(prompt)
         } label: {
             QuickPromptPillLabel(prompt: prompt)
+                .onGeometryChange(for: CGPoint.self) { proxy in
+                    let frame = proxy.frame(in: .named(QuickPromptStamp.stage))
+                    return CGPoint(x: frame.minX + QuickPromptPillLabel.horizontalPadding, y: frame.midY)
+                } action: { origin in
+                    onTextOriginChange(prompt.id, origin)
+                }
         }
         .buttonStyle(.plain)
         // Disabled while hidden too, which also turns its shortcut off.
@@ -67,11 +76,13 @@ private struct QuickPromptPillLabel: View {
 
     @Environment(\.isEnabled) private var isEnabled
 
+    static let horizontalPadding: CGFloat = 12
+
     var body: some View {
         Text(prompt.instruction ?? prompt.text)
-            .font(.system(size: 12, weight: .medium))
+            .font(.system(size: QuickPromptStamp.pillFontSize, weight: .medium))
             .lineLimit(1)
-            .padding(.horizontal, 12)
+            .padding(.horizontal, Self.horizontalPadding)
         .frame(height: 26)
         .opacity(isEnabled ? 1 : 0.5)
         .contentShape(Capsule())

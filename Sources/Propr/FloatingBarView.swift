@@ -1,4 +1,5 @@
 import AppKit
+import Pow
 import SwiftUI
 
 /// The actual floating bar UI shown inside the NSPanel.
@@ -28,6 +29,15 @@ struct FloatingBarView: View {
     /// The mode whose pills are out. Trails the bar's mode while one set swaps
     /// for the other.
     @State var displayedQuickPromptMode: QuickPrompt.Mode = .edit
+    /// A quick prompt flying into the composer, until it is sent.
+    @State var quickPromptStamp: QuickPromptStamp?
+    /// Counts stamps landing, so each one sets off the landing effects.
+    @State var quickPromptLandings = 0
+    /// Where each pill's text and the composer's text start, in stage coordinates:
+    /// the two ends of a stamp's flight.
+    @State var pillTextOrigins: [UUID: CGPoint] = [:]
+    @State var promptTextOrigin: CGPoint?
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
 
     var displayedContextText: String {
         sessionState.latestAppliedText ?? snapshot.contextText
@@ -49,6 +59,14 @@ struct FloatingBarView: View {
             quickPromptArea
         }
         .modifier(GlassGroup(spacing: Self.glassBlendSpacing))
+        .coordinateSpace(.named(QuickPromptStamp.stage))
+        .overlay(alignment: .topLeading) {
+            if let quickPromptStamp {
+                QuickPromptStampFlight(stamp: quickPromptStamp)
+            }
+        }
+        // The whole bar, glass and all, takes the hit when a stamp lands.
+        .changeEffect(.shake(rate: .fast), value: quickPromptLandings)
         // Natural height, whatever frame the panel currently has.
         .fixedSize(horizontal: false, vertical: true)
         .onGeometryChange(for: CGFloat.self) { proxy in

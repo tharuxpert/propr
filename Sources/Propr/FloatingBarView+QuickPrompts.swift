@@ -14,9 +14,9 @@ extension FloatingBarView {
     }
 
     /// Only while nothing has been typed: a pill sends its own instruction, so it
-    /// would throw a typed one away.
+    /// would throw a typed one away. A stamp in flight sends them back too.
     var showsQuickPrompts: Bool {
-        prompt.isEmpty && !quickPrompts(for: quickPromptMode).isEmpty
+        prompt.isEmpty && quickPromptStamp == nil && !quickPrompts(for: quickPromptMode).isEmpty
     }
 
     @ViewBuilder
@@ -27,22 +27,16 @@ extension FloatingBarView {
                 prompts: prompts,
                 isShown: revealsQuickPrompts,
                 holdsSpace: holdsQuickPromptSpace,
-                isEnabled: !sessionState.isBusy,
+                isEnabled: !sessionState.isBusy && quickPromptStamp == nil,
                 glassNamespace: glassNamespace,
-                onSend: sendQuickPrompt
+                onSend: sendQuickPrompt,
+                onTextOriginChange: { id, origin in pillTextOrigins[id] = origin }
             )
         }
     }
 
     static var quickPromptAnimation: Animation {
         .spring(duration: 0.35, bounce: 0.2)
-    }
-
-    func sendQuickPrompt(_ quickPrompt: QuickPrompt) {
-        guard let instruction = quickPrompt.instruction else { return }
-        // Pills show only in their own modes, so the bar's current one is always
-        // a mode this prompt was offered in.
-        send(instruction, intent: quickPromptMode.intent)
     }
 
     /// The panel only grows a pass after the content does, so pills animated out at
