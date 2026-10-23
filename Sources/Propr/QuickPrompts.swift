@@ -94,6 +94,11 @@ struct QuickPrompts: RawRepresentable, Equatable, Sendable {
         Array(items.filter { $0.instruction != nil }.prefix(Self.limit))
     }
 
+    /// The pills for one mode of the bar, in order.
+    func visible(in mode: QuickPrompt.Mode) -> [QuickPrompt] {
+        visible.filter { $0.mode == mode }
+    }
+
     var canAdd: Bool { items.count < Self.limit }
 
     static var stored: QuickPrompts {

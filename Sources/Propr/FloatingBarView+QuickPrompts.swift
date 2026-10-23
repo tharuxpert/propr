@@ -1,28 +1,30 @@
 import SwiftUI
 
-// The quick prompt pills under the bar: when they show, and keeping the panel sized
-// to them as they come and go.
+// The quick prompt pills under the bar: which show, when, and keeping the panel
+// sized to them as they come and go.
 extension FloatingBarView {
-    var visibleQuickPrompts: [QuickPrompt] {
-        quickPrompts.visible
+    /// The bar's mode, which decides which pills it offers.
+    var quickPromptMode: QuickPrompt.Mode {
+        sessionState.isAskMode ? .ask : .edit
     }
 
-    /// Whether the bar offers pills at all: only with text to act on.
-    var hasQuickPrompts: Bool {
-        !displayedContextText.isEmpty && !visibleQuickPrompts.isEmpty
+    /// Only with text to act on, and only the pills for `mode`.
+    func quickPrompts(for mode: QuickPrompt.Mode) -> [QuickPrompt] {
+        displayedContextText.isEmpty ? [] : quickPrompts.visible(in: mode)
     }
 
     /// Only while nothing has been typed: a pill sends its own instruction, so it
     /// would throw a typed one away.
     var showsQuickPrompts: Bool {
-        hasQuickPrompts && prompt.isEmpty
+        prompt.isEmpty && !quickPrompts(for: quickPromptMode).isEmpty
     }
 
     @ViewBuilder
     var quickPromptArea: some View {
-        if hasQuickPrompts {
+        let prompts = quickPrompts(for: displayedQuickPromptMode)
+        if !prompts.isEmpty {
             QuickPromptRow(
-                prompts: visibleQuickPrompts,
+                prompts: prompts,
                 isShown: revealsQuickPrompts,
                 holdsSpace: holdsQuickPromptSpace,
                 isEnabled: !sessionState.isBusy,
@@ -50,6 +52,7 @@ extension FloatingBarView {
     func quickPromptVisibilityChanged(to shows: Bool) {
         if shows {
             holdsQuickPromptSpace = true
+            displayedQuickPromptMode = quickPromptMode
             Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(40))
                 guard showsQuickPrompts else { return }
@@ -63,6 +66,21 @@ extension FloatingBarView {
             try? await Task.sleep(for: .milliseconds(400))
             guard !showsQuickPrompts else { return }
             holdsQuickPromptSpace = false
+        }
+    }
+
+    /// Tab swaps the set: the pills for the old mode go back into the bar and the
+    /// new mode's come out. A switch that shows or hides the pills altogether is
+    /// left to `quickPromptVisibilityChanged`.
+    func quickPromptModeChanged() {
+        guard showsQuickPrompts, displayedQuickPromptMode != quickPromptMode else { return }
+
+        withAnimation(Self.quickPromptAnimation) { revealsQuickPrompts = false }
+        Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(250))
+            guard showsQuickPrompts else { return }
+            displayedQuickPromptMode = quickPromptMode
+            withAnimation(Self.quickPromptAnimation) { revealsQuickPrompts = true }
         }
     }
 }

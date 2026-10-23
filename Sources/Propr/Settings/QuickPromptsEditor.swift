@@ -31,8 +31,8 @@ struct QuickPromptsEditor: View {
             }
 
             SettingsNote(
-                "Shown under the bar while it has text and you haven't typed. "
-                    + "Ask answers in the bar; Edit changes your text. ⌘1–⌘\(QuickPrompts.limit) send them."
+                "Shown under the bar while it has text and you haven't typed: Ask prompts "
+                    + "in Ask mode, Edit prompts in Edit mode. ⌘1, ⌘2… send them in order."
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)

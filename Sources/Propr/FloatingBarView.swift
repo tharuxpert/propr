@@ -25,6 +25,9 @@ struct FloatingBarView: View {
     /// Whether the pills are out. Trails `showsQuickPrompts` on the way in, until
     /// the panel has grown to make room for them.
     @State var revealsQuickPrompts = false
+    /// The mode whose pills are out. Trails the bar's mode while one set swaps
+    /// for the other.
+    @State var displayedQuickPromptMode: QuickPrompt.Mode = .edit
 
     /// With text captured the bar can edit it or answer about it, so the fresh
     /// prompt stays open-ended. With an empty context the bar writes at the cursor
@@ -88,6 +91,10 @@ struct FloatingBarView: View {
         .onAppear {
             holdsQuickPromptSpace = showsQuickPrompts
             revealsQuickPrompts = showsQuickPrompts
+            displayedQuickPromptMode = quickPromptMode
+        }
+        .onChange(of: sessionState.isAskMode) {
+            quickPromptModeChanged()
         }
         .onChange(of: showsQuickPrompts) { _, shows in
             quickPromptVisibilityChanged(to: shows)

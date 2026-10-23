@@ -36,6 +36,14 @@ struct QuickPromptsTests {
         #expect(prompts.visible.first?.text == "Prompt 0")
     }
 
+    @Test("Each mode of the bar gets only its own prompts, in order")
+    func perMode() {
+        let prompts = QuickPrompts.defaults
+        #expect(prompts.visible(in: .ask).map(\.text)
+            == ["What does this mean?", "Explain in simple words"])
+        #expect(prompts.visible(in: .edit).map(\.text) == ["Make it shorter", "Fix grammar"])
+    }
+
     @Test("Instructions are trimmed, and each mode maps to its intent")
     func instruction() {
         #expect(QuickPrompt(text: "  Fix grammar \n", mode: .edit).instruction == "Fix grammar")
