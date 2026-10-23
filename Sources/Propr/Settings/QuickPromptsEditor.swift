@@ -31,8 +31,8 @@ struct QuickPromptsEditor: View {
             }
 
             SettingsNote(
-                "Shown under the bar while it has text and you haven't typed: Ask prompts "
-                    + "in Ask mode, Edit prompts in Edit mode. ⌘1, ⌘2… send them in order."
+                "Shown under the bar while it has text and you haven't typed, in the modes "
+                    + "you pick, and sent in the bar's current mode. ⌘1, ⌘2… send them in order."
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -48,13 +48,14 @@ struct QuickPromptsEditor: View {
                     }
                 }
 
-            Picker("Mode", selection: prompt.mode) {
+            // Joined like a segmented control, but either or both can be on.
+            ControlGroup {
                 ForEach(QuickPrompt.Mode.allCases, id: \.self) { mode in
-                    Text(mode.title).tag(mode)
+                    Toggle(mode.title, isOn: isOffered(in: mode, prompt))
+                        .toggleStyle(.button)
+                        .help("Show this prompt in \(mode.title) mode")
                 }
             }
-            .labelsHidden()
-            .pickerStyle(.segmented)
             .fixedSize()
 
             Button {
@@ -69,9 +70,23 @@ struct QuickPromptsEditor: View {
         .frame(minHeight: Self.rowHeight - 8)
     }
 
+    /// Whether `prompt` shows in `mode`. Its last mode cannot be switched off, or
+    /// the prompt would never show anywhere.
+    private func isOffered(in mode: QuickPrompt.Mode, _ prompt: Binding<QuickPrompt>) -> Binding<Bool> {
+        Binding {
+            prompt.wrappedValue.modes.contains(mode)
+        } set: { isOn in
+            if isOn {
+                prompt.wrappedValue.modes.insert(mode)
+            } else if prompt.wrappedValue.modes != [mode] {
+                prompt.wrappedValue.modes.remove(mode)
+            }
+        }
+    }
+
     private func addPrompt() {
         guard prompts.canAdd else { return }
-        prompts.items.append(QuickPrompt(text: "", mode: .ask))
+        prompts.items.append(QuickPrompt(text: "", modes: [.ask, .edit]))
     }
 }
 

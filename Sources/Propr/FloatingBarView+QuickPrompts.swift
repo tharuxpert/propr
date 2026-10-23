@@ -40,7 +40,9 @@ extension FloatingBarView {
 
     func sendQuickPrompt(_ quickPrompt: QuickPrompt) {
         guard let instruction = quickPrompt.instruction else { return }
-        send(instruction, intent: quickPrompt.mode.intent)
+        // Pills show only in their own modes, so the bar's current one is always
+        // a mode this prompt was offered in.
+        send(instruction, intent: quickPromptMode.intent)
     }
 
     /// The panel only grows a pass after the content does, so pills animated out at

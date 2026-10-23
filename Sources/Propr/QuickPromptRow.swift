@@ -48,7 +48,7 @@ struct QuickPromptRow: View {
         .buttonStyle(.plain)
         // Disabled while hidden too, which also turns its shortcut off.
         .disabled(!isEnabled || !isShown)
-        .help("\(prompt.mode.title): \(prompt.text) (⌘\(number))")
+        .help("\(prompt.text) (⌘\(number))")
         .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
         .modifier(
             QuickPromptPillSurface(
@@ -60,22 +60,18 @@ struct QuickPromptRow: View {
     }
 }
 
-/// A pill's text, with a small mark for whether it answers or edits.
+/// A pill's text. No mode mark: the pills follow the bar's mode, whose key already
+/// shows it.
 private struct QuickPromptPillLabel: View {
     let prompt: QuickPrompt
 
     @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
-        HStack(spacing: 5) {
-            Image(systemName: prompt.mode == .ask ? "questionmark.bubble" : "pencil.line")
-                .font(.system(size: 10, weight: .semibold))
-                .foregroundStyle(.secondary)
-            Text(prompt.instruction ?? prompt.text)
-                .font(.system(size: 12, weight: .medium))
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 11)
+        Text(prompt.instruction ?? prompt.text)
+            .font(.system(size: 12, weight: .medium))
+            .lineLimit(1)
+            .padding(.horizontal, 12)
         .frame(height: 26)
         .opacity(isEnabled ? 1 : 0.5)
         .contentShape(Capsule())

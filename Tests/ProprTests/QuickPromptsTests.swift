@@ -9,10 +9,19 @@ struct QuickPromptsTests {
     @Test("A saved list reads back unchanged")
     func roundTrip() {
         let prompts = QuickPrompts(items: [
-            QuickPrompt(text: "Translate to French", mode: .edit),
-            QuickPrompt(text: "Who wrote this?", mode: .ask),
+            QuickPrompt(text: "Translate to French", modes: [.edit]),
+            QuickPrompt(text: "Who wrote this?", modes: [.ask]),
+            QuickPrompt(text: "Summarize", modes: [.ask, .edit]),
         ])
         #expect(QuickPrompts(rawValue: prompts.rawValue) == prompts)
+    }
+
+    @Test("A list saved with one mode per prompt still reads")
+    func singleModeList() {
+        let id = UUID()
+        let stored = "[{\"id\":\"\(id.uuidString)\",\"mode\":\"edit\",\"text\":\"Fix grammar\"}]"
+        #expect(QuickPrompts(rawValue: stored).items
+            == [QuickPrompt(id: id, text: "Fix grammar", modes: [.edit])])
     }
 
     @Test("An unreadable value falls back to the defaults")
@@ -28,25 +37,28 @@ struct QuickPromptsTests {
 
     @Test("Blank prompts are hidden and the bar shows at most the limit")
     func visible() {
-        let blank = QuickPrompt(text: "  \n ", mode: .ask)
-        let many = (0..<10).map { QuickPrompt(text: "Prompt \($0)", mode: .edit) }
+        let blank = QuickPrompt(text: "  \n ", modes: [.ask])
+        let many = (0..<10).map { QuickPrompt(text: "Prompt \($0)", modes: [.edit]) }
         let prompts = QuickPrompts(items: [blank] + many)
 
         #expect(prompts.visible.count == QuickPrompts.limit)
         #expect(prompts.visible.first?.text == "Prompt 0")
     }
 
-    @Test("Each mode of the bar gets only its own prompts, in order")
+    @Test("Each mode of the bar gets its own prompts and those in both, in order")
     func perMode() {
-        let prompts = QuickPrompts.defaults
-        #expect(prompts.visible(in: .ask).map(\.text)
-            == ["What does this mean?", "Explain in simple words"])
-        #expect(prompts.visible(in: .edit).map(\.text) == ["Make it shorter", "Fix grammar"])
+        let prompts = QuickPrompts(items: [
+            QuickPrompt(text: "What does this mean?", modes: [.ask]),
+            QuickPrompt(text: "Summarize", modes: [.ask, .edit]),
+            QuickPrompt(text: "Fix grammar", modes: [.edit]),
+        ])
+        #expect(prompts.visible(in: .ask).map(\.text) == ["What does this mean?", "Summarize"])
+        #expect(prompts.visible(in: .edit).map(\.text) == ["Summarize", "Fix grammar"])
     }
 
     @Test("Instructions are trimmed, and each mode maps to its intent")
     func instruction() {
-        #expect(QuickPrompt(text: "  Fix grammar \n", mode: .edit).instruction == "Fix grammar")
+        #expect(QuickPrompt(text: "  Fix grammar \n", modes: [.edit]).instruction == "Fix grammar")
         #expect(QuickPrompt.Mode.ask.intent == .ask)
         #expect(QuickPrompt.Mode.edit.intent == .auto)
     }

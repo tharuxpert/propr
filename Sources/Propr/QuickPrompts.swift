@@ -2,10 +2,10 @@ import Foundation
 
 /// One saved instruction the bar offers as a pill, sent with a single click.
 struct QuickPrompt: Codable, Hashable, Identifiable, Sendable {
-    /// Whether the prompt answers in the bar or edits the captured text. Each prompt
-    /// carries its own, so "What does this mean?" never rewrites the text just
-    /// because the bar happens to be in Edit mode.
-    enum Mode: String, Codable, CaseIterable, Sendable {
+    /// A mode of the bar: answer in the bar, or edit the captured text. A prompt
+    /// shows in the modes it is offered in and is sent in whichever is current,
+    /// so "What does this mean?" never rewrites the text unless it was put in Edit.
+    enum Mode: String, Codable, CaseIterable, Comparable, Sendable {
         case ask
         case edit
 
@@ -22,11 +22,47 @@ struct QuickPrompt: Codable, Hashable, Identifiable, Sendable {
             case .edit: .auto
             }
         }
+
+        static func < (lhs: Mode, rhs: Mode) -> Bool {
+            allCases.firstIndex(of: lhs)! < allCases.firstIndex(of: rhs)!
+        }
     }
 
     var id = UUID()
     var text: String
-    var mode: Mode
+    /// Never empty: Settings will not switch off a prompt's last mode.
+    var modes: Set<Mode>
+
+    init(id: UUID = UUID(), text: String, modes: Set<Mode>) {
+        self.id = id
+        self.text = text
+        self.modes = modes
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, text, modes
+        /// Before a prompt could be in both modes it stored just one.
+        case mode
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        text = try container.decode(String.self, forKey: .text)
+        if let modes = try container.decodeIfPresent(Set<Mode>.self, forKey: .modes), !modes.isEmpty {
+            self.modes = modes
+        } else {
+            modes = [try container.decode(Mode.self, forKey: .mode)]
+        }
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(text, forKey: .text)
+        // Sorted so the stored text is stable.
+        try container.encode(modes.sorted(), forKey: .modes)
+    }
 
     /// The text as sent, or nil when it is blank and the pill should not show.
     var instruction: String? {
@@ -48,10 +84,10 @@ struct QuickPrompts: RawRepresentable, Equatable, Sendable {
     static let textLimit = 60
 
     static let defaults = QuickPrompts(items: [
-        QuickPrompt(text: "What does this mean?", mode: .ask),
-        QuickPrompt(text: "Explain in simple words", mode: .ask),
-        QuickPrompt(text: "Make it shorter", mode: .edit),
-        QuickPrompt(text: "Fix grammar", mode: .edit),
+        QuickPrompt(text: "What does this mean?", modes: [.ask]),
+        QuickPrompt(text: "Explain in simple words", modes: [.ask]),
+        QuickPrompt(text: "Make it shorter", modes: [.edit]),
+        QuickPrompt(text: "Fix grammar", modes: [.edit]),
     ])
 
     var items: [QuickPrompt]
@@ -96,7 +132,7 @@ struct QuickPrompts: RawRepresentable, Equatable, Sendable {
 
     /// The pills for one mode of the bar, in order.
     func visible(in mode: QuickPrompt.Mode) -> [QuickPrompt] {
-        visible.filter { $0.mode == mode }
+        visible.filter { $0.modes.contains(mode) }
     }
 
     var canAdd: Bool { items.count < Self.limit }
