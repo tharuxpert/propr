@@ -13,6 +13,11 @@ packages:
   Permiso:
     url: https://github.com/tharuxpert/permiso
     revision: 7b960ad83b514ecf0a097395672ed0674d59f8f0  # Removed Sendable conformance (NSImage fix for Swift 6)
+  # Effects for the quick prompt stamp. Pinned to main: the last tag (v0.3.1) is
+  # from 2023 and predates the fix for the current SDK's ambiguous `.pi`.
+  Pow:
+    url: https://github.com/EmergeTools/Pow
+    revision: 1b4b1dda28c50b95f0872927ee2226fe8b58950e  # Fix ambiguous use of .pi (#83)
 
 settings:
   SWIFT_VERSION: 6
@@ -68,6 +73,8 @@ targets:
     dependencies:
       - package: Permiso
         product: Permiso
+      - package: Pow
+        product: Pow
       # Xcode runs ExtractAppIntentsMetadata for Swift app targets. Linking the
       # framework keeps that step quiet even though Propr defines no App Intents.
       - sdk: AppIntents.framework

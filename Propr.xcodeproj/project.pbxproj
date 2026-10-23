@@ -21,6 +21,7 @@
 		1ED66005BF837E2236B1D32A /* AIService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F6EF88BB1DC3E553F6B94CA /* AIService.swift */; };
 		20933BF5F7ED1CFAE4BE3F8A /* FloatingBarSessionState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */; };
 		21ED182E748C1D0DC0067711 /* AILookupRequest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 36B135C377077BEEC7913818 /* AILookupRequest.swift */; };
+		238C7390577D89C3AF8AC1D3 /* Pow in Frameworks */ = {isa = PBXBuildFile; productRef = 6371F2B42C9F693957119461 /* Pow */; };
 		25CED71435B4452550DF3818 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 71BF17B821BCE8AB74B0FB82 /* Assets.xcassets */; };
 		269F1D27DF7BB71BEEE02C63 /* PasteboardSnapshotTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A7527DEDC336FC1A984AB8C /* PasteboardSnapshotTests.swift */; };
 		26D811DB7382469F14FFF81E /* CommandDoubleTapDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3752589BE97D77E8984891D8 /* CommandDoubleTapDetector.swift */; };
@@ -238,6 +239,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				F65FDA772EB8C608DC3E614F /* Permiso in Frameworks */,
+				238C7390577D89C3AF8AC1D3 /* Pow in Frameworks */,
 				0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -504,6 +506,7 @@
 			name = Propr;
 			packageProductDependencies = (
 				1C04ED90828FD1CE2248C986 /* Permiso */,
+				6371F2B42C9F693957119461 /* Pow */,
 			);
 			productName = Propr;
 			productReference = C9CEFC5E6FD2EEFA1A786DCB /* Propr.app */;
@@ -555,6 +558,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */,
+				83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C9A4BF0A8D139C3B444C9D9D /* Products */;
@@ -959,6 +963,14 @@
 				revision = 7b960ad83b514ecf0a097395672ed0674d59f8f0;
 			};
 		};
+		83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/EmergeTools/Pow";
+			requirement = {
+				kind = revision;
+				revision = 1b4b1dda28c50b95f0872927ee2226fe8b58950e;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -966,6 +978,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0FE39FFB974DC3EE8CF5F694 /* XCRemoteSwiftPackageReference "permiso" */;
 			productName = Permiso;
+		};
+		6371F2B42C9F693957119461 /* Pow */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 83DBE6819020BD2063A3791D /* XCRemoteSwiftPackageReference "Pow" */;
+			productName = Pow;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
