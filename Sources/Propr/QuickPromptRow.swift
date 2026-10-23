@@ -49,9 +49,8 @@ struct QuickPromptRow: View {
         .disabled(!isEnabled || !isShown)
         .help("\(prompt.mode.title): \(prompt.text) (⌘\(number))")
         .keyboardShortcut(KeyEquivalent(Character(String(number))), modifiers: .command)
-        .modifier(QuickPromptPillSurface(id: prompt.id, glassNamespace: glassNamespace))
-        .scaleEffect(isShown ? 1 : 0.6, anchor: .top)
-        .opacity(isShown ? 1 : 0)
+        .modifier(
+            QuickPromptPillSurface(id: prompt.id, isShown: isShown, glassNamespace: glassNamespace))
     }
 }
 
@@ -80,20 +79,33 @@ private struct QuickPromptPillLabel: View {
 /// Glass for each pill on macOS 26; the bar's own vibrancy, as a capsule, before it.
 private struct QuickPromptPillSurface: ViewModifier {
     let id: UUID
+    let isShown: Bool
     let glassNamespace: Namespace.ID
 
     func body(content: Content) -> some View {
         if #available(macOS 26.0, *) {
-            content
-                .glassEffect(.regular.interactive(), in: Capsule())
+            // The glass group draws each glass shape and its content itself, so an
+            // opacity or scale outside the glass is ignored. The label fades inside
+            // it, and the glass itself is switched off while hidden, or the tucked
+            // pills would show through the bar.
+            hiding(content)
+                .glassEffect(isShown ? .regular.interactive() : .identity, in: Capsule())
                 .glassEffectID(id, in: glassNamespace)
         } else {
-            content
-                .background(Color.black.opacity(0.3))
-                .background(VisualEffectBackground(material: .hudWindow, cornerRadius: 13))
-                .clipShape(Capsule())
-                .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+            hiding(
+                content
+                    .background(Color.black.opacity(0.3))
+                    .background(VisualEffectBackground(material: .hudWindow, cornerRadius: 13))
+                    .clipShape(Capsule())
+                    .overlay(Capsule().strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+            )
         }
+    }
+
+    private func hiding(_ view: some View) -> some View {
+        view
+            .scaleEffect(isShown ? 1 : 0.6, anchor: .top)
+            .opacity(isShown ? 1 : 0)
     }
 }
 
