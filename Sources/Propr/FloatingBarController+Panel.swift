@@ -173,7 +173,16 @@ extension FloatingBarController {
         newPanel.isFloatingPanel = true
         newPanel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.floatingWindow)))
         newPanel.hidesOnDeactivate = false
-        newPanel.hasShadow = true
+        // A window shadow on a clear borderless panel is derived from the drawn alpha,
+        // and since the bar became Liquid Glass that alpha includes the quick prompt
+        // pills. The shadow then hugs their capsules, and its inner edge reads as a
+        // hard black outline around them. Glass draws its own elevation, so the window
+        // shadow goes on 26+. The older vibrancy path fills the bar and still needs it.
+        if #available(macOS 26.0, *) {
+            newPanel.hasShadow = false
+        } else {
+            newPanel.hasShadow = true
+        }
         newPanel.backgroundColor = .clear
         newPanel.isOpaque = false
         newPanel.ignoresMouseEvents = false
