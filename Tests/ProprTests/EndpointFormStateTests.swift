@@ -216,6 +216,31 @@ struct EndpointFormStateTests {
         #expect(form.models == before)
     }
 
+    @Test("A model typed by hand keeps its trimmed identifier and alias")
+    func addTypedModel() {
+        var form = validForm()
+        form.models = []
+
+        form.addModel(named: " gpt-4o ", alias: " GPT-4o ")
+        form.addModel(named: "m-2", alias: "  ")
+
+        #expect(form.models.map(\.name) == ["gpt-4o", "m-2"])
+        #expect(form.models.map(\.alias) == ["GPT-4o", nil])
+    }
+
+    @Test("A typed model is not added when its identifier or alias is taken")
+    func addTypedModelRejected() {
+        var form = validForm()
+        form.models = [CustomModel(name: "gpt-4o", alias: "Fast")]
+        let before = form.models
+
+        form.addModel(named: "gpt-4o", alias: "")
+        form.addModel(named: "m-2", alias: "fast")
+        form.addModel(named: "m-3", alias: "GPT-4O")
+
+        #expect(form.models == before)
+    }
+
     @Test("Removing a model removes only that model")
     func removeModel() {
         var form = validForm()

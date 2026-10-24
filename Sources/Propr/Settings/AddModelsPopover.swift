@@ -16,10 +16,16 @@ struct AddModelsPopover: View {
     /// Whether an identifier can still be added. Ones already on the provider are
     /// shown, but not selectable.
     let canAdd: (String) -> Bool
+    /// Why an alias cannot be used for a model being added, or nil when it can.
+    let aliasError: (String) -> String?
+    /// Adds models ticked in the catalog.
     let onAdd: ([String]) -> Void
+    /// Adds a typed model ID, with its alias, which may be blank.
+    let onAddTyped: (_ id: String, _ alias: String) -> Void
     let onClose: () -> Void
 
     @State private var query = ""
+    @State private var alias = ""
     @State private var selection: Set<String> = []
 
     private var trimmedQuery: String {
@@ -134,25 +140,36 @@ struct AddModelsPopover: View {
         .padding(24)
     }
 
+    /// The typed ID, with a field to give it the name Propr shows in its menus.
     private func typedRow(_ id: String) -> some View {
-        Button {
-            add([id])
-        } label: {
-            Label {
-                Text("Add “\(id)”")
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-            } icon: {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
                 Image(systemName: "plus.circle.fill")
                     .foregroundStyle(.tint)
+                Text(id)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .help(id)
+
+                Spacer(minLength: 0)
+
+                TextField("Alias", text: $alias, prompt: Text(verbatim: "Alias (optional)"))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 130)
+                    .onSubmit { addTyped(id) }
+
+                Button("Add") { addTyped(id) }
+                    .disabled(aliasError(alias) != nil)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+
+            if let message = aliasError(alias) {
+                Text(message)
+                    .font(.callout)
+                    .foregroundStyle(.red)
+            }
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .help("Add \(id) as a model ID, exactly as typed")
     }
 
     private func row(for id: String) -> some View {
@@ -221,13 +238,19 @@ struct AddModelsPopover: View {
 
     // MARK: - Actions
 
-    /// Return adds what is ticked, or the typed ID when nothing is.
+    /// Return adds what is ticked, or the typed ID, with its alias, when nothing is.
     private func submit() {
         if !selection.isEmpty {
             add(catalog.ids.filter { selection.contains($0) })
         } else if let typedID {
-            add([typedID])
+            addTyped(typedID)
         }
+    }
+
+    private func addTyped(_ id: String) {
+        guard aliasError(alias) == nil else { return }
+        onAddTyped(id, alias)
+        onClose()
     }
 
     private func add(_ ids: [String]) {

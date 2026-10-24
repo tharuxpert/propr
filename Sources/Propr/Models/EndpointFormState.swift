@@ -100,16 +100,17 @@ extension EndpointFormState {
     }
 
     /// Why `alias` cannot be the name Propr shows for `model`, or nil when it can.
+    /// With no model, the alias is checked for one about to be added.
     ///
     /// Aliases are compared case-insensitively, because they are only ever shown to a
     /// human, and must not collide with another model's display name or identifier.
     /// A blank alias is always fine: it clears the alias.
-    func aliasError(_ alias: String, for model: CustomModel) -> String? {
+    func aliasError(_ alias: String, for model: CustomModel? = nil) -> String? {
         let alias = alias.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !alias.isEmpty else { return nil }
 
         let clashes = models.contains { other in
-            other.id != model.id
+            other.id != model?.id
                 && (other.displayName.caseInsensitiveCompare(alias) == .orderedSame
                     || other.name.caseInsensitiveCompare(alias) == .orderedSame)
         }
@@ -137,6 +138,16 @@ extension EndpointFormState {
 
         let trimmed = alias.trimmingCharacters(in: .whitespacesAndNewlines)
         models[index].alias = trimmed.isEmpty || trimmed == models[index].name ? nil : trimmed
+    }
+
+    /// Adds one model typed by hand, with an alias when one is given. No-op when
+    /// `canAddModel(named:)` rejects the identifier or `aliasError` the alias.
+    mutating func addModel(named name: String, alias: String) {
+        let model = CustomModel(name: name.trimmingCharacters(in: .whitespacesAndNewlines))
+        guard canAddModel(named: model.name), aliasError(alias) == nil else { return }
+
+        models.append(model)
+        setAlias(alias, for: model)
     }
 
     mutating func removeModel(_ model: CustomModel) {

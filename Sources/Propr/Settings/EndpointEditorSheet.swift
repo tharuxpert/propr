@@ -138,7 +138,9 @@ struct EndpointEditorSheet: View {
                                     // pasted with a trailing newline is a 401 on most providers.
                                     load: { catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey) },
                                     canAdd: { form.canAddModel(named: $0) },
+                                    aliasError: { form.aliasError($0) },
                                     onAdd: { form.addModels(names: $0) },
+                                    onAddTyped: { form.addModel(named: $0, alias: $1) },
                                     onClose: { isAddingModels = false }
                                 )
                             }
