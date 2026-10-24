@@ -3,8 +3,22 @@ name: Build
 on:
   push:
     branches: [main]
+    # Docs-only changes cannot break the build. main is not branch-protected, so
+    # a skipped run never leaves a PR waiting on a required check.
+    paths-ignore: ['**.md', 'LICENSE']
   pull_request:
     branches: [main]
+    paths-ignore: ['**.md', 'LICENSE']
+
+# A newer push to the same branch or PR makes the running build moot.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Swift packages are fetched here instead of into DerivedData, so they can be
+  # cached between runs.
+  SPM_DIR: ${{ github.workspace }}/.spm
 
 jobs:
   build:
@@ -27,6 +41,14 @@ jobs:
       - name: Generate Xcode project
         run: xcodegen generate
 
+      # Every package is pinned to a revision in project.yml, so its hash names
+      # the exact set of sources.
+      - name: Cache Swift packages
+        uses: actions/cache@v6
+        with:
+          path: ${{ env.SPM_DIR }}
+          key: spm-${{ runner.os }}-${{ hashFiles('project.yml') }}
+
       # Signing is left enabled, unlike a plain build. The unit tests are hosted in
       # Propr.app, so the app has to actually launch — and on Apple Silicon an
       # unsigned binary will not execute at all. Configs/Signing.xcconfig supplies
@@ -38,6 +60,7 @@ jobs:
             -project Propr.xcodeproj \
             -scheme Propr \
             -destination 'platform=macOS,arch=arm64' \
+            -clonedSourcePackagesDirPath "$SPM_DIR" \
             COMPILER_INDEX_STORE_ENABLE=NO \
             build-for-testing
 
@@ -47,5 +70,6 @@ jobs:
             -project Propr.xcodeproj \
             -scheme Propr \
             -destination 'platform=macOS,arch=arm64' \
+            -clonedSourcePackagesDirPath "$SPM_DIR" \
             COMPILER_INDEX_STORE_ENABLE=NO \
             test-without-building
