@@ -16,10 +16,6 @@ struct EndpointFormState: Equatable {
     var apiKey: String = ""
     var models: [CustomModel] = []
 
-    /// The "add a model" row beneath the list, not yet committed to `models`.
-    var draftModelName: String = ""
-    var draftModelAlias: String = ""
-
     init() {}
 
     /// Seeds the form from an existing endpoint, for editing.
@@ -95,31 +91,29 @@ extension EndpointFormState {
         return Set(names).count == names.count
     }
 
-    /// Whether the draft model row can be committed to `models`.
+    /// Whether `name` can be added as a new model: not blank, and not an identifier
+    /// already on the list. Identifiers are compared case-sensitively, because that
+    /// is how providers treat them.
+    func canAddModel(named name: String) -> Bool {
+        let name = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        return !name.isEmpty && !models.contains(where: { $0.name == name })
+    }
+
+    /// Why `alias` cannot be the name Propr shows for `model`, or nil when it can.
     ///
-    /// Model identifiers are compared case-sensitively, because that is how providers
-    /// treat them. Aliases are compared case-insensitively, because they are only ever
-    /// shown to a human, and must not collide with another entry's display name or
-    /// identifier.
-    var canAddDraftModel: Bool {
-        let name = draftModelName.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !name.isEmpty else { return false }
+    /// Aliases are compared case-insensitively, because they are only ever shown to a
+    /// human, and must not collide with another model's display name or identifier.
+    /// A blank alias is always fine: it clears the alias.
+    func aliasError(_ alias: String, for model: CustomModel) -> String? {
+        let alias = alias.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !alias.isEmpty else { return nil }
 
-        if models.contains(where: { $0.name == name }) {
-            return false
+        let clashes = models.contains { other in
+            other.id != model.id
+                && (other.displayName.caseInsensitiveCompare(alias) == .orderedSame
+                    || other.name.caseInsensitiveCompare(alias) == .orderedSame)
         }
-
-        let alias = draftModelAlias.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !alias.isEmpty else { return true }
-
-        if models.contains(where: { $0.displayName.caseInsensitiveCompare(alias) == .orderedSame }) {
-            return false
-        }
-        if models.contains(where: { $0.name.caseInsensitiveCompare(alias) == .orderedSame }) {
-            return false
-        }
-
-        return true
+        return clashes ? "Another model already goes by this name." : nil
     }
 
     func canSubmit(in context: ValidationContext) -> Bool {
@@ -133,49 +127,35 @@ extension EndpointFormState {
 // MARK: - Mutation
 
 extension EndpointFormState {
-    /// Commits the draft model row. No-op when the draft is not valid, so callers do
-    /// not have to re-check.
-    mutating func addDraftModel() {
-        guard canAddDraftModel else { return }
+    /// Gives `model` a new alias, or clears it when `alias` is blank or just repeats
+    /// the identifier. No-op when `aliasError` rejects it, so callers do not have to
+    /// re-check.
+    mutating func setAlias(_ alias: String, for model: CustomModel) {
+        guard aliasError(alias, for: model) == nil,
+            let index = models.firstIndex(where: { $0.id == model.id })
+        else { return }
 
-        let name = draftModelName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let alias = draftModelAlias.trimmingCharacters(in: .whitespacesAndNewlines)
-
-        models.append(CustomModel(name: name, alias: alias.isEmpty ? nil : alias))
-        draftModelName = ""
-        draftModelAlias = ""
+        let trimmed = alias.trimmingCharacters(in: .whitespacesAndNewlines)
+        models[index].alias = trimmed.isEmpty || trimmed == models[index].name ? nil : trimmed
     }
 
     mutating func removeModel(_ model: CustomModel) {
         models.removeAll { $0.id == model.id }
     }
 
-    /// Appends models picked from the provider's own catalog.
+    /// Appends models, picked from the provider's catalog or typed by hand.
     ///
-    /// Enforces the identifier rule only: compared case-sensitively, and skipped when
-    /// already present, exactly as `canAddDraftModel` does. No alias is set — an alias is
-    /// what the user reads in the menu, and aliases collide case-insensitively against
-    /// identifiers and other aliases, so one invented from an identifier would create a
-    /// collision for the user to undo.
-    ///
-    /// Note this cannot reach the alias rules `canAddDraftModel` applies to a typed
-    /// alias, because there is no alias to check. A display name matching an existing
-    /// alias is possible here and equally possible by hand; the form has never ruled it
-    /// out, and tightening it is a change to the manual path too, not to this one.
+    /// Enforces the identifier rule of `canAddModel(named:)` and skips what it rejects.
+    /// No alias is set — an alias is what the user reads in the menu, and aliases
+    /// collide case-insensitively against identifiers and other aliases, so one
+    /// invented from an identifier would create a collision for the user to undo.
+    /// One is given afterwards with `setAlias(_:for:)`, which checks those rules.
     mutating func addModels(names: [String]) {
         for name in names {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty,
-                !models.contains(where: { $0.name == trimmed })
-            else { continue }
-
+            guard canAddModel(named: trimmed) else { continue }
             models.append(CustomModel(name: trimmed))
         }
-    }
-
-    mutating func clearDraftModel() {
-        draftModelName = ""
-        draftModelAlias = ""
     }
 
     /// Builds the endpoint this form describes, normalising the URL.

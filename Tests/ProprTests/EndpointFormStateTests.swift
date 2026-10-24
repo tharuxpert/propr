@@ -137,81 +137,83 @@ struct EndpointFormStateTests {
         #expect(duplicate.modelsAreValid == false)
     }
 
-    // MARK: - Draft model row
+    // MARK: - Adding and naming models
 
-    @Test("A blank draft model cannot be added")
-    func blankDraft() {
-        var form = validForm()
-        form.draftModelName = "   "
-        #expect(form.canAddDraftModel == false)
+    @Test("A blank model cannot be added")
+    func blankModel() {
+        #expect(validForm().canAddModel(named: "   ") == false)
     }
 
     @Test("Model identifiers are compared case-sensitively")
-    func draftIdentifierIsCaseSensitive() {
+    func identifierIsCaseSensitive() {
         var form = validForm()
         form.models = [CustomModel(name: "gpt-4o")]
 
-        form.draftModelName = "gpt-4o"
-        #expect(form.canAddDraftModel == false)
-
+        #expect(form.canAddModel(named: "gpt-4o") == false)
+        #expect(form.canAddModel(named: " gpt-4o ") == false)
         // Providers treat identifiers as case-sensitive, so this is a different model.
-        form.draftModelName = "GPT-4O"
-        #expect(form.canAddDraftModel == true)
+        #expect(form.canAddModel(named: "GPT-4O") == true)
     }
 
-    /// This is the rule the edit flow was missing entirely before the two copies
-    /// were merged — it validated only the identifier, never the alias.
-    @Test("A draft alias cannot collide with an existing display name")
-    func draftAliasCollidesWithDisplayName() {
+    @Test("An alias cannot collide with another model's display name")
+    func aliasCollidesWithDisplayName() {
         var form = validForm()
-        form.models = [CustomModel(name: "m-1", alias: "Fast Model")]
-        form.draftModelName = "m-2"
-        form.draftModelAlias = "fast model"
-        #expect(form.canAddDraftModel == false)
+        let other = CustomModel(name: "m-2")
+        form.models = [CustomModel(name: "m-1", alias: "Fast Model"), other]
+        #expect(form.aliasError("fast model", for: other) != nil)
     }
 
-    @Test("A draft alias cannot collide with an existing identifier")
-    func draftAliasCollidesWithIdentifier() {
+    @Test("An alias cannot collide with another model's identifier")
+    func aliasCollidesWithIdentifier() {
         var form = validForm()
-        form.models = [CustomModel(name: "gpt-4o")]
-        form.draftModelName = "m-2"
-        form.draftModelAlias = "GPT-4o"
-        #expect(form.canAddDraftModel == false)
+        let other = CustomModel(name: "m-2")
+        form.models = [CustomModel(name: "gpt-4o"), other]
+        #expect(form.aliasError("GPT-4o", for: other) != nil)
     }
 
-    @Test("Adding a draft model clears the draft row")
-    func addingDraftClearsIt() {
+    @Test("A model may keep its own alias, in any case")
+    func aliasDoesNotCollideWithItself() {
         var form = validForm()
-        form.models = []
-        form.draftModelName = "gpt-4o"
-        form.draftModelAlias = "GPT-4o mini"
-
-        form.addDraftModel()
-
-        #expect(form.models.count == 1)
-        #expect(form.models.first?.name == "gpt-4o")
-        #expect(form.models.first?.alias == "GPT-4o mini")
-        #expect(form.draftModelName.isEmpty)
-        #expect(form.draftModelAlias.isEmpty)
+        let model = CustomModel(name: "m-1", alias: "Fast Model")
+        form.models = [model]
+        #expect(form.aliasError("FAST MODEL", for: model) == nil)
     }
 
-    @Test("Adding an invalid draft model does nothing")
-    func addingInvalidDraftIsNoOp() {
+    @Test("Setting an alias trims it and changes only that model")
+    func setAlias() {
         var form = validForm()
-        let before = form.models
-        form.draftModelName = "   "
-        form.addDraftModel()
-        #expect(form.models == before)
+        let model = CustomModel(name: "gpt-4o")
+        form.models = [model, CustomModel(name: "m-2")]
+
+        form.setAlias("  GPT-4o mini \n", for: model)
+
+        #expect(form.models.map(\.alias) == ["GPT-4o mini", nil])
     }
 
-    @Test("An empty alias is stored as nil rather than an empty string")
-    func emptyAliasBecomesNil() {
+    @Test("A blank alias, or one that repeats the identifier, clears the alias")
+    func clearingAlias() {
         var form = validForm()
-        form.models = []
-        form.draftModelName = "gpt-4o"
-        form.draftModelAlias = "   "
-        form.addDraftModel()
+        let model = CustomModel(name: "gpt-4o", alias: "Old")
+        form.models = [model]
+
+        form.setAlias("   ", for: model)
         #expect(form.models.first?.alias == nil)
+
+        form.models = [model]
+        form.setAlias("gpt-4o", for: model)
+        #expect(form.models.first?.alias == nil)
+    }
+
+    @Test("A rejected alias changes nothing")
+    func rejectedAliasIsNoOp() {
+        var form = validForm()
+        let model = CustomModel(name: "m-2", alias: "Kept")
+        form.models = [CustomModel(name: "gpt-4o"), model]
+        let before = form.models
+
+        form.setAlias("GPT-4o", for: model)
+
+        #expect(form.models == before)
     }
 
     @Test("Removing a model removes only that model")

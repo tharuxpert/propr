@@ -110,8 +110,8 @@ enum ModelCatalogError: Error, Equatable, LocalizedError {
 ///
 /// Deliberately an instance rather than a singleton, unlike `ProviderIconStore`. The
 /// result belongs to the URL being typed in this sheet, so a cache shared between
-/// sheets would outlive the thing it describes. It dies with the sheet, and every press
-/// of the load button is therefore a fresh answer — which is also why there is no disk
+/// sheets would outlive the thing it describes. It dies with the sheet, and every
+/// sheet therefore asks afresh — which is also why there is no disk
 /// cache and no expiry to reason about.
 @MainActor
 @Observable
