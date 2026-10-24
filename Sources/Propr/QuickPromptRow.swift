@@ -47,11 +47,12 @@ struct QuickPromptRow: View {
             onSend(prompt)
         } label: {
             QuickPromptPillLabel(prompt: prompt)
-                .onGeometryChange(for: CGPoint.self) { proxy in
-                    let frame = proxy.frame(in: .named(QuickPromptStamp.stage))
-                    return CGPoint(x: frame.minX + QuickPromptPillLabel.horizontalPadding, y: frame.midY)
+                .onGeometryChange(for: CGPoint?.self) { proxy in
+                    QuickPromptStamp.textOrigin(
+                        of: proxy.frame(in: .named(QuickPromptStamp.stage)),
+                        inset: QuickPromptPillLabel.horizontalPadding)
                 } action: { origin in
-                    onTextOriginChange(prompt.id, origin)
+                    if let origin { onTextOriginChange(prompt.id, origin) }
                 }
         }
         .buttonStyle(.plain)

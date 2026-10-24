@@ -17,6 +17,18 @@ struct QuickPromptStamp: Equatable, Identifiable {
     /// How long the stamp is left to settle before the prompt is sent.
     static let settleDelay: Duration = .milliseconds(220)
 
+    /// Where text starts in `frame`: its leading edge, `inset` in, at its vertical
+    /// centre. Nil for an empty frame.
+    ///
+    /// Just after the bar appears, SwiftUI passes through a layout in which every
+    /// pill has an empty frame. Taken at face value it put each pill at the top of
+    /// the bar, and since the pills then sat still nothing corrected it, so the
+    /// first stamp flew in from there.
+    static func textOrigin(of frame: CGRect, inset: CGFloat) -> CGPoint? {
+        guard frame.width > 0, frame.height > 0 else { return nil }
+        return CGPoint(x: frame.minX + inset, y: frame.midY)
+    }
+
     /// The pill's text and the composer's are drawn at these sizes.
     static let pillFontSize: CGFloat = 12
     static let composerFontSize: CGFloat = 16
