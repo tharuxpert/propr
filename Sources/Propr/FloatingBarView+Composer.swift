@@ -57,11 +57,11 @@ extension FloatingBarView {
                 .font(.system(size: QuickPromptStamp.composerFontSize))
                 .focused($isPromptFocused)
                 // Where a quick prompt's stamp lands.
-                .onGeometryChange(for: CGPoint.self) { proxy in
-                    let frame = proxy.frame(in: .named(QuickPromptStamp.stage))
-                    return CGPoint(x: frame.minX, y: frame.midY)
+                .onGeometryChange(for: CGPoint?.self) { proxy in
+                    QuickPromptStamp.textOrigin(
+                        of: proxy.frame(in: .named(QuickPromptStamp.stage)), inset: 0)
                 } action: { origin in
-                    promptTextOrigin = origin
+                    if let origin { promptTextOrigin = origin }
                 }
                 .onKeyPress(.tab) {
                     toggleAskMode()

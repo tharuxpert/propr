@@ -56,6 +56,15 @@ struct QuickPromptsTests {
         #expect(prompts.visible(in: .edit).map(\.text) == ["Summarize", "Fix grammar"])
     }
 
+    @Test("A stamp starts where the text does, and never from an empty frame")
+    func stampOrigin() {
+        let pill = CGRect(x: 160, y: 300, width: 150, height: 26)
+        #expect(QuickPromptStamp.textOrigin(of: pill, inset: 12) == CGPoint(x: 172, y: 313))
+        // The empty frames SwiftUI reports just after the bar appears.
+        #expect(QuickPromptStamp.textOrigin(of: .zero, inset: 12) == nil)
+        #expect(QuickPromptStamp.textOrigin(of: CGRect(x: 0, y: 0, width: 150, height: 0), inset: 12) == nil)
+    }
+
     @Test("Instructions are trimmed, and each mode maps to its intent")
     func instruction() {
         #expect(QuickPrompt(text: "  Fix grammar \n", modes: [.edit]).instruction == "Fix grammar")

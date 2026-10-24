@@ -24,8 +24,9 @@ struct FloatingBarSurface: ViewModifier {
 
     func body(content: Content) -> some View {
         surface(content.clipShape(shape))
-        // No SwiftUI shadow: the panel sets `hasShadow`, and the window shadow
-        // follows the drawn shapes. Drawing both stacked two shadows.
+        // No SwiftUI shadow. Before Liquid Glass the panel's own `hasShadow` drew one
+        // from the drawn shapes; on 26+ that is off because the shadow also traced the
+        // quick prompt pills and read as a black outline. The glass supplies elevation.
     }
 
     @ViewBuilder
