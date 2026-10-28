@@ -138,6 +138,17 @@ struct AddModelsPopover: View {
     }
 
     private var footer: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("This is everything the provider offers, so some models, such as embedding and speech ones, can't be used for chat.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            actions
+        }
+    }
+
+    private var actions: some View {
         HStack(spacing: 8) {
             Text(summary)
                 .font(.callout)

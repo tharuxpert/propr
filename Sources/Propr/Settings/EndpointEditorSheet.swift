@@ -170,10 +170,6 @@ struct EndpointEditorSheet: View {
                     }
                 } header: {
                     Text("Models")
-                } footer: {
-                    Text(
-                        "An alias is the name Propr shows in its menus. A provider's list is its whole catalog, so it can include models Propr can't chat with, such as embedding and speech models."
-                    )
                 }
             }
             .formStyle(.grouped)
