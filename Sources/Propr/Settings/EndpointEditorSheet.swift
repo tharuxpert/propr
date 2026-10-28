@@ -20,6 +20,7 @@ struct EndpointEditorSheet: View {
     @State private var didPrefill = false
     @State private var catalog = ModelCatalogLoader()
     @State private var isAddingModels = false
+    @State private var isAddingCustomModel = false
     @FocusState private var focusedField: Field?
 
     /// Every text field, so focus can be cleared from whichever one has it.
@@ -132,25 +133,37 @@ struct EndpointEditorSheet: View {
                         )
                     }
 
-                    HStack {
-                        Button("Add Models…") {
+                    HStack(spacing: 8) {
+                        Button("Add from Provider…") {
                             clearFocus()
                             isAddingModels = true
                         }
-                            .popover(isPresented: $isAddingModels, arrowEdge: .bottom) {
-                                AddModelsPopover(
-                                    catalog: catalog,
-                                    canLoad: canLoadCatalog,
-                                    // The trimmed key, matching what `save` persists: a key
-                                    // pasted with a trailing newline is a 401 on most providers.
-                                    load: { catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey) },
-                                    canAdd: { form.canAddModel(named: $0) },
-                                    aliasError: { form.aliasError($0) },
-                                    onAdd: { form.addModels(names: $0) },
-                                    onAddTyped: { form.addModel(named: $0, alias: $1) },
-                                    onClose: { isAddingModels = false }
-                                )
-                            }
+                        .popover(isPresented: $isAddingModels, arrowEdge: .bottom) {
+                            AddModelsPopover(
+                                catalog: catalog,
+                                canLoad: canLoadCatalog,
+                                // The trimmed key, matching what `save` persists: a key
+                                // pasted with a trailing newline is a 401 on most providers.
+                                load: { catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey) },
+                                canAdd: { form.canAddModel(named: $0) },
+                                onAdd: { form.addModels(names: $0) },
+                                onClose: { isAddingModels = false }
+                            )
+                        }
+
+                        Button("Add Custom Model…") {
+                            clearFocus()
+                            isAddingCustomModel = true
+                        }
+                        .popover(isPresented: $isAddingCustomModel, arrowEdge: .bottom) {
+                            AddCustomModelPopover(
+                                canAdd: { form.canAddModel(named: $0) },
+                                aliasError: { form.aliasError($0) },
+                                onAdd: { form.addModel(named: $0, alias: $1) },
+                                onClose: { isAddingCustomModel = false }
+                            )
+                        }
+
                         Spacer(minLength: 0)
                     }
                 } header: {

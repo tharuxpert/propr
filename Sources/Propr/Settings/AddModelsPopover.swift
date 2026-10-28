@@ -1,12 +1,10 @@
 import SwiftUI
 
-/// Adds models to a provider: one search over the provider's own catalog, which also
-/// takes a model ID typed by hand, for endpoints that publish no catalog and for
-/// models missing from one.
+/// Adds models from the provider's own catalog, found by search and ticked.
+/// Models it does not list are added with `AddCustomModelPopover`.
 ///
 /// A popover rather than part of the editor. A catalog runs to hundreds of rows, and
-/// inline it put a scroll view inside the editor's scrolling form, with the hand-typed
-/// row as a third way in below it.
+/// inline it put a scroll view inside the editor's scrolling form.
 struct AddModelsPopover: View {
     let catalog: ModelCatalogLoader
     /// Whether the catalog can be requested: the URL is usable and any key it needs
@@ -16,16 +14,10 @@ struct AddModelsPopover: View {
     /// Whether an identifier can still be added. Ones already on the provider are
     /// shown, but not selectable.
     let canAdd: (String) -> Bool
-    /// Why an alias cannot be used for a model being added, or nil when it can.
-    let aliasError: (String) -> String?
-    /// Adds models ticked in the catalog.
     let onAdd: ([String]) -> Void
-    /// Adds a typed model ID, with its alias, which may be blank.
-    let onAddTyped: (_ id: String, _ alias: String) -> Void
     let onClose: () -> Void
 
     @State private var query = ""
-    @State private var alias = ""
     @State private var selection: Set<String> = []
 
     private var trimmedQuery: String {
@@ -45,19 +37,11 @@ struct AddModelsPopover: View {
         matches.filter(canAdd)
     }
 
-    /// The search text as a model ID of its own, offered when the catalog does not
-    /// list it exactly.
-    private var typedID: String? {
-        let id = trimmedQuery
-        guard !id.isEmpty, !catalog.ids.contains(id), canAdd(id) else { return nil }
-        return id
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             TextField(
                 "Search", text: $query,
-                prompt: Text(verbatim: catalog.ids.isEmpty ? "Model ID" : "Search or type a model ID")
+                prompt: Text(verbatim: "Search models")
             )
             .textFieldStyle(.roundedBorder)
             .onSubmit(submit)
@@ -65,17 +49,9 @@ struct AddModelsPopover: View {
 
             Divider()
 
-            VStack(alignment: .leading, spacing: 0) {
-                if let typedID {
-                    typedRow(typedID)
-                    Divider()
-                }
-                list
-            }
-            .frame(height: 280)
+            list
+                .frame(height: 280)
 
-            // Without a catalog there is nothing to tick: a typed ID is added from
-            // its own row, or with Return.
             if !catalog.ids.isEmpty {
                 Divider()
 
@@ -104,11 +80,7 @@ struct AddModelsPopover: View {
             status
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if matches.isEmpty {
-            if typedID == nil {
-                ContentUnavailableView.search(text: trimmedQuery)
-            } else {
-                Spacer(minLength: 0)
-            }
+            ContentUnavailableView.search(text: trimmedQuery)
         } else {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 0) {
@@ -130,7 +102,7 @@ struct AddModelsPopover: View {
                     Button("Try Again", action: load)
                 }
             } else {
-                Text("Fill in the base URL and API key to browse this provider's models, or type a model ID above.")
+                Text("Fill in the base URL and API key to browse this provider's models.")
             }
         }
         .font(.callout)
@@ -138,38 +110,6 @@ struct AddModelsPopover: View {
         .multilineTextAlignment(.center)
         .fixedSize(horizontal: false, vertical: true)
         .padding(24)
-    }
-
-    /// The typed ID, with a field to give it the name Propr shows in its menus.
-    private func typedRow(_ id: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Image(systemName: "plus.circle.fill")
-                    .foregroundStyle(.tint)
-                Text(id)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .help(id)
-
-                Spacer(minLength: 0)
-
-                TextField("Alias", text: $alias, prompt: Text(verbatim: "Alias (optional)"))
-                    .textFieldStyle(.roundedBorder)
-                    .frame(width: 130)
-                    .onSubmit { addTyped(id) }
-
-                Button("Add") { addTyped(id) }
-                    .disabled(aliasError(alias) != nil)
-            }
-
-            if let message = aliasError(alias) {
-                Text(message)
-                    .font(.callout)
-                    .foregroundStyle(.red)
-            }
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
     }
 
     private func row(for id: String) -> some View {
@@ -238,19 +178,10 @@ struct AddModelsPopover: View {
 
     // MARK: - Actions
 
-    /// Return adds what is ticked, or the typed ID, with its alias, when nothing is.
+    /// Return adds what is ticked.
     private func submit() {
-        if !selection.isEmpty {
-            add(catalog.ids.filter { selection.contains($0) })
-        } else if let typedID {
-            addTyped(typedID)
-        }
-    }
-
-    private func addTyped(_ id: String) {
-        guard aliasError(alias) == nil else { return }
-        onAddTyped(id, alias)
-        onClose()
+        guard !selection.isEmpty else { return }
+        add(catalog.ids.filter { selection.contains($0) })
     }
 
     private func add(_ ids: [String]) {

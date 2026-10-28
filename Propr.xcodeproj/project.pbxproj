@@ -91,6 +91,7 @@
 		C41689373CFCF59CC532B5EF /* ShortcutConflicts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D04E532EE362C9FB949CD3 /* ShortcutConflicts.swift */; };
 		C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */; };
 		CE15BBC3E89CAFBA6BB51E5A /* EndpointFormStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */; };
+		CE8205420BF8797CDC2D1195 /* AddCustomModelPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */; };
 		D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */; };
 		D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4E90C0D95E39B952432F396 /* SelectionCaptureService.swift */; };
 		D3A3D2DACA9F1EA6768491E5 /* ProviderIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EDBF67D5AB0E7B78279C7FC /* ProviderIconTests.swift */; };
@@ -205,6 +206,7 @@
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A8B75F494DA84AAD50407762 /* CustomInstructionsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomInstructionsEditor.swift; sourceTree = "<group>"; };
+		AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddCustomModelPopover.swift; sourceTree = "<group>"; };
 		B2100A64253B76D2D755C64F /* ModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalog.swift; sourceTree = "<group>"; };
 		B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarAnswerView.swift; sourceTree = "<group>"; };
 		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
@@ -325,6 +327,7 @@
 			isa = PBXGroup;
 			children = (
 				427876A480CD6A376CFE186A /* AboutSettingsView.swift */,
+				AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */,
 				8EF7638FF6843211601AB112 /* AddModelsPopover.swift */,
 				A8B75F494DA84AAD50407762 /* CustomInstructionsEditor.swift */,
 				FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */,
@@ -638,6 +641,7 @@
 				3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */,
 				35829BFA7FEAABCEB369D75E /* AboutSettingsView.swift in Sources */,
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,
+				CE8205420BF8797CDC2D1195 /* AddCustomModelPopover.swift in Sources */,
 				DB1AB147EFB7204DEB438B13 /* AddModelsPopover.swift in Sources */,
 				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
