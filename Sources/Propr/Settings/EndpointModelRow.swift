@@ -8,6 +8,8 @@ struct EndpointModelRow: View {
     let aliasError: (String) -> String?
     let onRename: (String) -> Void
     let onRemove: () -> Void
+    /// Called as the alias editor opens, before it takes focus.
+    let onEditingAlias: () -> Void
 
     @State private var isRenaming = false
 
@@ -54,7 +56,10 @@ struct EndpointModelRow: View {
 
     @ViewBuilder
     private var actions: some View {
-        Button(model.alias == nil ? "Add Alias…" : "Rename…") { isRenaming = true }
+        Button(model.alias == nil ? "Add Alias…" : "Rename…") {
+            onEditingAlias()
+            isRenaming = true
+        }
         Divider()
         Button("Remove", role: .destructive, action: onRemove)
     }

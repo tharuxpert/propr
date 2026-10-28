@@ -22,8 +22,9 @@ struct EndpointEditorSheet: View {
     @State private var isAddingModels = false
     @FocusState private var focusedField: Field?
 
+    /// Every text field, so focus can be cleared from whichever one has it.
     private enum Field: Hashable {
-        case name
+        case name, baseURL, apiKey
     }
 
     private var isEditing: Bool { endpoint != nil }
@@ -89,6 +90,7 @@ struct EndpointEditorSheet: View {
                         )
                         .labelsHidden()
                         .multilineTextAlignment(.leading)
+                        .focused($focusedField, equals: .baseURL)
                     }
                     validationMessage(form.urlError)
 
@@ -100,6 +102,7 @@ struct EndpointEditorSheet: View {
                             )
                             .labelsHidden()
                             .multilineTextAlignment(.leading)
+                            .focused($focusedField, equals: .apiKey)
                         }
                         validationMessage(form.apiKeyError)
                     }
@@ -124,12 +127,16 @@ struct EndpointEditorSheet: View {
                             model: model,
                             aliasError: { form.aliasError($0, for: model) },
                             onRename: { form.setAlias($0, for: model) },
-                            onRemove: { form.removeModel(model) }
+                            onRemove: { form.removeModel(model) },
+                            onEditingAlias: clearFocus
                         )
                     }
 
                     HStack {
-                        Button("Add Models…") { isAddingModels = true }
+                        Button("Add Models…") {
+                            clearFocus()
+                            isAddingModels = true
+                        }
                             .popover(isPresented: $isAddingModels, arrowEdge: .bottom) {
                                 AddModelsPopover(
                                     catalog: catalog,
@@ -197,6 +204,13 @@ struct EndpointEditorSheet: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 20)
         .padding(.top, 20)
+    }
+
+    /// Takes focus off the sheet's fields before a popover opens. Otherwise the
+    /// field keeps it while the popover is up, and closing the popover hands focus
+    /// back to that field, scrolling the form up to it.
+    private func clearFocus() {
+        focusedField = nil
     }
 
     /// Shows a rule only once it is actually violated, so the form is not shouting
