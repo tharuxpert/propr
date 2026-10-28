@@ -1,44 +1,30 @@
 import SwiftUI
 
-/// Edits the quick prompts the bar offers as pills: the text of each, which of the
-/// bar's modes it shows in, and their order. Drag a row to reorder it.
+/// Edits the quick prompts the bar offers as pills: the text of each, and which of
+/// the bar's modes it shows in. They keep the order they were added in.
 ///
 /// Laid out like a Mac settings list: plain rows in a box, with + and − beneath.
+/// A stack rather than a List: without reordering a List brings nothing, and it
+/// needed its height and its label alignment set by hand.
 struct QuickPromptsEditor: View {
     @Binding var prompts: QuickPrompts
 
-    @State private var selection: QuickPrompt.ID?
     @FocusState private var focusedPrompt: QuickPrompt.ID?
-
-    /// Height of one row, used to size the list to its content: a list inside the
-    /// scrolling pane cannot size itself.
-    private static let rowHeight: CGFloat = 30
-    /// Where the first row's text sits, from the top of the box.
-    private static let firstRowBaseline: CGFloat = 20
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 6, style: .continuous)
     }
 
-    /// The prompt − removes: the one being typed in, else the selected row.
-    private var removable: QuickPrompt.ID? {
-        focusedPrompt ?? selection
-    }
-
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            // Not clipped to the box: the list's drop indicator starts with a circle
-            // that sits on the box's edge, and a clip cut it in half.
             VStack(spacing: 0) {
-                list
+                rows
                 Divider()
                 toolbar
             }
             .background(shape.fill(Color(nsColor: .controlBackgroundColor)))
+            .clipShape(shape)
             .overlay(shape.strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
-            // A list reports no text baseline, so the form would line its label up with
-            // the box's top edge. Report the first row's baseline instead.
-            .alignmentGuide(.firstTextBaseline) { _ in Self.firstRowBaseline }
 
             SettingsNote(
                 "Shown under the bar before you type. ⌘1–⌘\(QuickPrompts.limit) send them in this order.")
@@ -48,38 +34,30 @@ struct QuickPromptsEditor: View {
 
     // MARK: - Pieces
 
-    private var list: some View {
-        List(selection: $selection) {
-            ForEach($prompts.items) { $prompt in
-                row($prompt)
-                    .tag(prompt.id)
-            }
-            .onMove { source, destination in
-                prompts.items.move(fromOffsets: source, toOffset: destination)
-            }
-        }
-        .listStyle(.plain)
-        .scrollContentBackground(.hidden)
-        .scrollDisabled(true)
-        .onDeleteCommand(perform: removeSelected)
-        .frame(height: max(1, CGFloat(prompts.items.count)) * Self.rowHeight + 8)
-        .overlay {
-            if prompts.items.isEmpty {
-                Text("No quick prompts")
-                    .foregroundStyle(.secondary)
+    @ViewBuilder
+    private var rows: some View {
+        if prompts.items.isEmpty {
+            Text("No quick prompts")
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 36)
+        } else {
+            VStack(spacing: 0) {
+                ForEach($prompts.items) { $prompt in
+                    if prompt.id != prompts.items.first?.id {
+                        Divider()
+                            .padding(.leading, 10)
+                    }
+                    row($prompt)
+                }
             }
         }
     }
 
     private func row(_ prompt: Binding<QuickPrompt>) -> some View {
         HStack(spacing: 8) {
-            Image(systemName: "line.3.horizontal")
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .help("Drag to reorder")
-
             TextField("Prompt", text: prompt.text, prompt: Text("e.g. Translate to French"))
                 .textFieldStyle(.plain)
+                .labelsHidden()
                 .focused($focusedPrompt, equals: prompt.wrappedValue.id)
                 .onChange(of: prompt.wrappedValue.text) { _, newValue in
                     if newValue.count > QuickPrompts.textLimit {
@@ -89,7 +67,8 @@ struct QuickPromptsEditor: View {
 
             ModesMenu(modes: prompt.modes)
         }
-        .frame(height: Self.rowHeight - 8)
+        .padding(.horizontal, 10)
+        .frame(height: 32)
         .contextMenu {
             Button("Remove") { remove(prompt.wrappedValue.id) }
         }
@@ -107,12 +86,12 @@ struct QuickPromptsEditor: View {
             Divider()
                 .frame(height: 14)
 
-            Button(action: removeSelected) {
+            Button(action: removeFocused) {
                 Image(systemName: "minus")
                     .frame(width: 24, height: 22)
             }
-            .disabled(removable == nil)
-            .help("Remove the selected prompt")
+            .disabled(focusedPrompt == nil)
+            .help("Remove the prompt you're editing")
 
             Spacer()
 
@@ -131,18 +110,16 @@ struct QuickPromptsEditor: View {
         guard prompts.canAdd else { return }
         let prompt = QuickPrompt(text: "", modes: [.ask, .edit])
         prompts.items.append(prompt)
-        selection = prompt.id
         focusedPrompt = prompt.id
     }
 
-    private func removeSelected() {
-        guard let id = removable else { return }
+    private func removeFocused() {
+        guard let id = focusedPrompt else { return }
         remove(id)
     }
 
     private func remove(_ id: QuickPrompt.ID) {
         prompts.items.removeAll { $0.id == id }
-        if selection == id { selection = nil }
         if focusedPrompt == id { focusedPrompt = nil }
     }
 }
