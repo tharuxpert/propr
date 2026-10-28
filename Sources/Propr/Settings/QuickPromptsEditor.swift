@@ -124,7 +124,7 @@ struct QuickPromptsEditor: View {
     }
 }
 
-/// Which of the bar's modes a prompt shows in, as a quiet popup: both, or just one.
+/// Which of the bar's modes a prompt shows in: both, or just one.
 /// Never neither, or the prompt would show nowhere.
 private struct ModesMenu: View {
     @Binding var modes: Set<QuickPrompt.Mode>
@@ -136,6 +136,9 @@ private struct ModesMenu: View {
     }
 
     var body: some View {
+        // A pop-up drawn the way System Settings draws one in its grouped forms: the
+        // value, then the chevrons in a small circle. SwiftUI only gives a picker that
+        // look inside a grouped form, and this pane uses the columns form.
         Menu {
             Picker("Show In", selection: $modes) {
                 ForEach(Self.choices, id: \.self) { choice in
@@ -143,12 +146,20 @@ private struct ModesMenu: View {
                 }
             }
             .pickerStyle(.inline)
+            .labelsHidden()
         } label: {
-            Text(Self.title(for: modes))
+            HStack(spacing: 12) {
+                Text(Self.title(for: modes))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(Color.primary.opacity(0.1)))
+            }
+            .contentShape(Rectangle())
         }
         .menuStyle(.button)
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .fixedSize()
         .help("Which of the bar's modes this prompt shows in")
     }
