@@ -124,16 +124,14 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             item.isEnabled = false
             submenu.addItem(item)
         } else {
-            for model in models {
+            addModelItems(to: submenu, from: models) { model in
                 let item = NSMenuItem(title: model.displayName, action: #selector(selectModel(_:)), keyEquivalent: "")
                 item.target = self
                 item.representedObject = model.id.uuidString
-                
                 if model.id == ModelStore.shared.selectedModelID {
                     item.state = .on
                 }
-                
-                submenu.addItem(item)
+                return item
             }
         }
         
@@ -150,11 +148,11 @@ final class StatusItemController: NSObject, NSMenuDelegate {
         let submenu = NSMenu()
         submenu.autoenablesItems = false
         
+        let available = ModelStore.shared.allAvailableModels
         let items = ModelStore.lookupModelMenuItems(
-            lookupID: ModelStore.shared.lookupModelID,
-            available: ModelStore.shared.allAvailableModels)
-        
-        for item in items {
+            lookupID: ModelStore.shared.lookupModelID, available: available)
+
+        func menuItem(for item: LookupModelMenuItem) -> NSMenuItem {
             let menuItem = NSMenuItem(
                 title: item.title, action: #selector(selectLookupModel(_:)), keyEquivalent: "")
             menuItem.target = self
@@ -162,15 +160,44 @@ final class StatusItemController: NSObject, NSMenuDelegate {
             if item.isSelected {
                 menuItem.state = .on
             }
-            submenu.addItem(menuItem)
-            
-            // Keep the nil choice ("Same as Refine Model") visually apart from the models.
-            if item.modelID == nil {
-                submenu.addItem(.separator())
-            }
+            return menuItem
         }
-        
+
+        // The nil choice ("Same as Refine Model") first, kept apart from the models.
+        if let sameAsRefine = items.first(where: { $0.modelID == nil }) {
+            submenu.addItem(menuItem(for: sameAsRefine))
+        }
+
+        let byModelID = Dictionary(
+            items.compactMap { item in item.modelID.map { ($0, item) } },
+            uniquingKeysWith: { first, _ in first })
+        if !byModelID.isEmpty {
+            submenu.addItem(.separator())
+        }
+        addModelItems(to: submenu, from: available) { model in
+            byModelID[model.id].map(menuItem(for:))
+        }
+
         return submenu
+    }
+
+    /// Adds `models` to `menu` under a heading for each provider, in the order the
+    /// providers are listed in Settings, the way the Settings pickers group them.
+    /// Several providers can serve the same model, so a bare list could not tell them
+    /// apart.
+    private func addModelItems(
+        to menu: NSMenu, from models: [ModelSelection],
+        item makeItem: (ModelSelection) -> NSMenuItem?
+    ) {
+        for endpoint in ModelStore.shared.customEndpoints {
+            let items = models
+                .filter { $0.endpointID == endpoint.id }
+                .compactMap(makeItem)
+            guard !items.isEmpty else { continue }
+
+            menu.addItem(.sectionHeader(title: endpoint.name))
+            items.forEach(menu.addItem)
+        }
     }
     
     // Called by the system right before the menu is shown.
