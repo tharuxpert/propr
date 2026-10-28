@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import WebKit
 
 /// Read-only lookup UI. Selection capture and gesture routing live outside this class.
@@ -9,7 +10,8 @@ final class SearchPanelController: NSObject {
 
     private var panel: SearchPanel?
     private let queryField = NSTextField()
-    private let providerTabs = NSSegmentedControl()
+    private let sourceModel = LookupSourceModel(selection: .google)
+    private lazy var providerTabs = NSHostingView(rootView: LookupSourceSwitch(model: sourceModel))
     private let contentView = NSView()
     private let placeholder = NSTextField(labelWithString: "Select text or type a search")
     private let loadingIndicator = NSProgressIndicator()
@@ -35,7 +37,7 @@ final class SearchPanelController: NSObject {
         // Every new lookup starts on the source chosen in Settings; switching tabs
         // inside the panel only lasts for that lookup.
         selectedProvider = SearchProvider.defaultForLookup
-        providerTabs.selectedSegment = SearchProvider.allCases.firstIndex(of: selectedProvider) ?? 0
+        sourceModel.selection = selectedProvider
         place(panel, near: screenPoint)
         panel.orderFront(nil)
         panel.makeKey()
@@ -119,17 +121,7 @@ final class SearchPanelController: NSObject {
         separator.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(separator)
 
-        providerTabs.segmentCount = SearchProvider.allCases.count
-        for (index, provider) in SearchProvider.allCases.enumerated() {
-            providerTabs.setLabel(provider.title, forSegment: index)
-        }
-        providerTabs.trackingMode = .selectOne
-        // Automatic lets AppKit draw the system's own segmented control, Liquid Glass
-        // from macOS 26. `.rounded` pinned it to the old rounded-rectangle artwork.
-        providerTabs.segmentStyle = .automatic
-        providerTabs.selectedSegment = 0
-        providerTabs.target = self
-        providerTabs.action = #selector(providerChanged)
+        sourceModel.onSelect = { [weak self] provider in self?.providerChanged(to: provider) }
         providerTabs.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(providerTabs)
 
@@ -380,9 +372,8 @@ final class SearchPanelController: NSObject {
         placeholder.isHidden = false
     }
 
-    @objc private func providerChanged() {
-        guard SearchProvider.allCases.indices.contains(providerTabs.selectedSegment) else { return }
-        selectedProvider = SearchProvider.allCases[providerTabs.selectedSegment]
+    private func providerChanged(to provider: SearchProvider) {
+        selectedProvider = provider
         searchNow()
     }
 

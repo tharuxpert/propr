@@ -10,6 +10,7 @@
 		01CC00005F82501D0666A031 /* CustomEndpoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = D8AFFC32E1AC72339FF6C95F /* CustomEndpoint.swift */; };
 		0668564EACF318EF188DA60D /* FloatingBarSurface.swift in Sources */ = {isa = PBXBuildFile; fileRef = 30FCFDD651B381B1CB0C16EE /* FloatingBarSurface.swift */; };
 		0A3DF0F779C5054E40E4E39A /* AppIntents.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 39D6C1C202E14BE0422D6C8C /* AppIntents.framework */; };
+		0EEC7B2658C50AF4AAF5FAD4 /* LookupSourceSwitch.swift in Sources */ = {isa = PBXBuildFile; fileRef = 806E065D9BFDDC014301C2C1 /* LookupSourceSwitch.swift */; };
 		10E2F1C813530EBE4B9A8B33 /* ForceClickPressDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D06F0349E94ED0C3D086656 /* ForceClickPressDetector.swift */; };
 		12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */ = {isa = PBXBuildFile; fileRef = 078229C716BD9E386FAEC0B6 /* Duration+Nanoseconds.swift */; };
 		126530E8DEE7708B39A76F2F /* ChatCompletionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1F512087016E0425A46C15B0 /* ChatCompletionTests.swift */; };
@@ -191,6 +192,7 @@
 		71E20536CC8405CBDD62ED00 /* KeystrokeUndo.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeystrokeUndo.swift; sourceTree = "<group>"; };
 		75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickPromptsEditor.swift; sourceTree = "<group>"; };
 		7600E7B3B3BE5165DB36FB64 /* AppDelegate+Windows.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "AppDelegate+Windows.swift"; sourceTree = "<group>"; };
+		806E065D9BFDDC014301C2C1 /* LookupSourceSwitch.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupSourceSwitch.swift; sourceTree = "<group>"; };
 		827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSettingsView.swift; sourceTree = "<group>"; };
 		88311BF34253F68358B6423E /* SelectionCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCaptureTests.swift; sourceTree = "<group>"; };
 		89491E74541EC1FD3672F272 /* LookupSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupSettingsView.swift; sourceTree = "<group>"; };
@@ -315,6 +317,7 @@
 		2AF10F661557D17CDA86171B /* UI */ = {
 			isa = PBXGroup;
 			children = (
+				806E065D9BFDDC014301C2C1 /* LookupSourceSwitch.swift */,
 				50FA3CD6F0FB4D610360732B /* SearchAnswerFormatter.swift */,
 				9ECBAA31B8DFE7F9B2A25B02 /* SearchPanel.swift */,
 				3B7578011130C67BA08139F5 /* SearchPanelController.swift */,
@@ -684,6 +687,7 @@
 				1484CBD677ED2E8795DC4809 /* KeystrokeUndo.swift in Sources */,
 				7882D558C061CCF872F8B48A /* LookupPreferences.swift in Sources */,
 				3992C0FC875F2A3D1FD17F32 /* LookupSettingsView.swift in Sources */,
+				0EEC7B2658C50AF4AAF5FAD4 /* LookupSourceSwitch.swift in Sources */,
 				3499F2E0D252BE0F02761651 /* ModelCatalog.swift in Sources */,
 				50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */,
 				B6E6A1DE7FA20F95EC7BEB75 /* ModelReply.swift in Sources */,
