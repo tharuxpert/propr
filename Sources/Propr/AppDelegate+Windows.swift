@@ -8,10 +8,10 @@ extension AppDelegate {
     @objc func openSettingsWindow(_ note: Notification) {
         // Read the requested pane here. On first open the SettingsView does not exist
         // yet, so the notification would otherwise be lost — "Manage Models…" opened
-        // on General.
+        // on General. Nil when no pane was asked for.
         let section =
             (note.userInfo?["selectSection"] as? String)
-            .flatMap(SettingsSection.init(rawValue:)) ?? .general
+            .flatMap(SettingsSection.init(rawValue:))
 
         NSApp.activate(ignoringOtherApps: true)
 
@@ -20,14 +20,17 @@ extension AppDelegate {
         }
     }
 
+    /// Brings Settings forward on `section`. With no section, a window already open
+    /// keeps the pane it is on, so reopening Settings from the menu just focuses it,
+    /// and a new window starts on General.
     @MainActor
-    func showSettingsWindow(section: SettingsSection = .general) {
+    func showSettingsWindow(section: SettingsSection? = nil) {
         if let window = settingsWindow,
             let tabs = window.contentViewController as? SettingsTabViewController
         {
-            tabs.select(section)
+            if let section { tabs.select(section) }
         } else {
-            let tabs = SettingsTabViewController(initialSection: section)
+            let tabs = SettingsTabViewController(initialSection: section ?? .general)
             let window = NSWindow(contentViewController: tabs)
 
             // `.preference` is AppKit's settings-window toolbar: title above, the

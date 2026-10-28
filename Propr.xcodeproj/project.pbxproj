@@ -62,6 +62,7 @@
 		73959275AACEED19AAD987D4 /* PasteboardSnapshot.swift in Sources */ = {isa = PBXBuildFile; fileRef = 40FCEA9590F3FDAFD313B1DC /* PasteboardSnapshot.swift */; };
 		73F507865DF3D8F4FD78488A /* FloatingBarController+FallbackApply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 71B809E4510F19A8C2864AEE /* FloatingBarController+FallbackApply.swift */; };
 		7620A0EC15EE9562C8ACCB32 /* ModelReplyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F74673AD381A1CEB1E25EDCF /* ModelReplyTests.swift */; };
+		76C19FCD1C2C7EEE6BA2B208 /* EndpointModelRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 59CD8874F74FC1AFA9FD02DA /* EndpointModelRow.swift */; };
 		776F3D64A9CEE9BDC1122781 /* SettingsPane.swift in Sources */ = {isa = PBXBuildFile; fileRef = FD53E73CB320245AA2900D60 /* SettingsPane.swift */; };
 		7882D558C061CCF872F8B48A /* LookupPreferences.swift in Sources */ = {isa = PBXBuildFile; fileRef = FFFCB6BA1673454F431F53E9 /* LookupPreferences.swift */; };
 		8576ACF58E24EEF8F22106F8 /* ModelCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D505AFC6D5CFD866E7933279 /* ModelCatalogTests.swift */; };
@@ -72,7 +73,6 @@
 		96AF400F7D537677F4704E91 /* ModelsSettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */; };
 		9E88EE28C921E4FB9A4C9321 /* SettingsTabViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = D05AF5DF1B049941D1FABE43 /* SettingsTabViewController.swift */; };
 		A053967C0C6D803D5B127D2C /* FloatingBarController+Target.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1437687C8474DC068AAE418C /* FloatingBarController+Target.swift */; };
-		A14FF2AEA60992821ED4B1B6 /* ModelCatalogPicker.swift in Sources */ = {isa = PBXBuildFile; fileRef = B47A18415C6D3C82F7B241D1 /* ModelCatalogPicker.swift */; };
 		A26ACAA730DFD7FED6800062 /* ShortcutConflictList.swift in Sources */ = {isa = PBXBuildFile; fileRef = BEE53455CCF50660809EE621 /* ShortcutConflictList.swift */; };
 		A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */; };
 		AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */; };
@@ -91,12 +91,14 @@
 		C41689373CFCF59CC532B5EF /* ShortcutConflicts.swift in Sources */ = {isa = PBXBuildFile; fileRef = 57D04E532EE362C9FB949CD3 /* ShortcutConflicts.swift */; };
 		C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */; };
 		CE15BBC3E89CAFBA6BB51E5A /* EndpointFormStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 55182D4C55E3C524D8411004 /* EndpointFormStateTests.swift */; };
+		CE8205420BF8797CDC2D1195 /* AddCustomModelPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */; };
 		D0217EE3BBD7614C3BD9B071 /* FocusedFieldDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = CCEA06BE137990A3AEE04957 /* FocusedFieldDetector.swift */; };
 		D2F9DF94F2BE760FA09F0C95 /* SelectionCaptureService.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4E90C0D95E39B952432F396 /* SelectionCaptureService.swift */; };
 		D3A3D2DACA9F1EA6768491E5 /* ProviderIconTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4EDBF67D5AB0E7B78279C7FC /* ProviderIconTests.swift */; };
 		D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F0DCEF5DD510F6F6C0361E /* ModelStore.swift */; };
 		D533F6DD22B146979ECA5A0E /* FloatingBarController+StreamingApply.swift in Sources */ = {isa = PBXBuildFile; fileRef = 65E0A1F98E4E5A21A61045FC /* FloatingBarController+StreamingApply.swift */; };
 		D9C61413FE127417746A44E5 /* FloatingBarChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1550DABAB54E362B64B56056 /* FloatingBarChrome.swift */; };
+		DB1AB147EFB7204DEB438B13 /* AddModelsPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EF7638FF6843211601AB112 /* AddModelsPopover.swift */; };
 		DCAC7E802BB97413B9188499 /* VisualEffectBackground.swift in Sources */ = {isa = PBXBuildFile; fileRef = B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */; };
 		DE57422E3424BD4A54E33519 /* FloatingBarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AD72F8DDD47526AEFCFEA1D /* FloatingBarView.swift */; };
 		DE9B3715F1E442F202A18D63 /* QuickPromptsTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C197F608D48A2E2BF59FD20D /* QuickPromptsTests.swift */; };
@@ -174,6 +176,7 @@
 		57D04E532EE362C9FB949CD3 /* ShortcutConflicts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutConflicts.swift; sourceTree = "<group>"; };
 		5848DE460275B09268D62776 /* RefineSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefineSettingsView.swift; sourceTree = "<group>"; };
 		58D3AC1FD9249FDC355A4468 /* RefinePreferences.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RefinePreferences.swift; sourceTree = "<group>"; };
+		59CD8874F74FC1AFA9FD02DA /* EndpointModelRow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EndpointModelRow.swift; sourceTree = "<group>"; };
 		5BBC0AFF0F760D2F400AD58E /* FloatingBarSessionState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarSessionState.swift; sourceTree = "<group>"; };
 		62BFB3412157B666AC32EBFF /* FloatingBarView+QuickPrompts.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FloatingBarView+QuickPrompts.swift"; sourceTree = "<group>"; };
 		657DF8869C06BB014548EC7C /* BuiltInProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BuiltInProvider.swift; sourceTree = "<group>"; };
@@ -191,6 +194,7 @@
 		827DB61B2FE3BA789CA5C54F /* ShortcutsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShortcutsSettingsView.swift; sourceTree = "<group>"; };
 		88311BF34253F68358B6423E /* SelectionCaptureTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCaptureTests.swift; sourceTree = "<group>"; };
 		89491E74541EC1FD3672F272 /* LookupSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LookupSettingsView.swift; sourceTree = "<group>"; };
+		8EF7638FF6843211601AB112 /* AddModelsPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddModelsPopover.swift; sourceTree = "<group>"; };
 		91026A33DABF3EF4F433F52A /* ChatCompletionRequest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatCompletionRequest.swift; sourceTree = "<group>"; };
 		918491C466C74E70C580BA2B /* FloatingPanelHostingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingPanelHostingView.swift; sourceTree = "<group>"; };
 		93DE19428A72A8063B962EA4 /* TerminalApps.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TerminalApps.swift; sourceTree = "<group>"; };
@@ -202,11 +206,11 @@
 		A37DF8D089CCDB23049DF075 /* AccessibilityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AccessibilityManager.swift; sourceTree = "<group>"; };
 		A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GeneralSettingsView.swift; sourceTree = "<group>"; };
 		A8B75F494DA84AAD50407762 /* CustomInstructionsEditor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomInstructionsEditor.swift; sourceTree = "<group>"; };
+		AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddCustomModelPopover.swift; sourceTree = "<group>"; };
 		B2100A64253B76D2D755C64F /* ModelCatalog.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalog.swift; sourceTree = "<group>"; };
 		B26E9D6DD27B6FCA0A8D1FE9 /* FloatingBarAnswerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarAnswerView.swift; sourceTree = "<group>"; };
 		B2ACA74F8434B6D0BED913AF /* AILookupResponseTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AILookupResponseTests.swift; sourceTree = "<group>"; };
 		B3430F88D11F036483B98C86 /* VisualEffectBackground.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VisualEffectBackground.swift; sourceTree = "<group>"; };
-		B47A18415C6D3C82F7B241D1 /* ModelCatalogPicker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalogPicker.swift; sourceTree = "<group>"; };
 		B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelsSettingsView.swift; sourceTree = "<group>"; };
 		B6D90A7FA3570671EC9EFA22 /* FloatingBarStatusViews.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingBarStatusViews.swift; sourceTree = "<group>"; };
 		BAA5E29E9AD2F4C245B267A6 /* ModelCatalogFetchTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelCatalogFetchTests.swift; sourceTree = "<group>"; };
@@ -323,12 +327,14 @@
 			isa = PBXGroup;
 			children = (
 				427876A480CD6A376CFE186A /* AboutSettingsView.swift */,
+				AC10872D54A9342A016897AB /* AddCustomModelPopover.swift */,
+				8EF7638FF6843211601AB112 /* AddModelsPopover.swift */,
 				A8B75F494DA84AAD50407762 /* CustomInstructionsEditor.swift */,
 				FCB141981544B8A0BC51B69D /* EndpointEditorSheet.swift */,
+				59CD8874F74FC1AFA9FD02DA /* EndpointModelRow.swift */,
 				4F65B8E3B2B5C4CC04439CC4 /* EndpointRow.swift */,
 				A7084A8519410CADC2CB4429 /* GeneralSettingsView.swift */,
 				89491E74541EC1FD3672F272 /* LookupSettingsView.swift */,
-				B47A18415C6D3C82F7B241D1 /* ModelCatalogPicker.swift */,
 				B515ACF135DA77B6ECF77705 /* ModelsSettingsView.swift */,
 				03650E0EB7DEF2F8F9B836A1 /* ProviderLogo.swift */,
 				75FF34CEA0FE42B15407E20A /* QuickPromptsEditor.swift */,
@@ -635,6 +641,8 @@
 				3F0A86F135435A9C845052ED /* AXTextWriter.swift in Sources */,
 				35829BFA7FEAABCEB369D75E /* AboutSettingsView.swift in Sources */,
 				A2BFF895288CE647CFC5B8DD /* AccessibilityManager.swift in Sources */,
+				CE8205420BF8797CDC2D1195 /* AddCustomModelPopover.swift in Sources */,
+				DB1AB147EFB7204DEB438B13 /* AddModelsPopover.swift in Sources */,
 				885DAFBE2453B32EEB5EC3D2 /* AppDelegate+Windows.swift in Sources */,
 				EBED5E2DFFB47F659EC1EB54 /* BuiltInProvider.swift in Sources */,
 				72072BAE61E249D43F7C75E3 /* ChatCompletionRequest.swift in Sources */,
@@ -646,6 +654,7 @@
 				12531A02E520A14E555144E9 /* Duration+Nanoseconds.swift in Sources */,
 				AB06C0EBC0878E27D54E4312 /* EndpointEditorSheet.swift in Sources */,
 				C413E2D1FEEB0493EB57306B /* EndpointFormState.swift in Sources */,
+				76C19FCD1C2C7EEE6BA2B208 /* EndpointModelRow.swift in Sources */,
 				C86555C22C60A10218FF4E5E /* EndpointRow.swift in Sources */,
 				3E40E9DA5F6B994D0459AF64 /* EndpointURLValidator.swift in Sources */,
 				B18870B5C2D427F182064720 /* FloatingBarAnswerView.swift in Sources */,
@@ -676,7 +685,6 @@
 				7882D558C061CCF872F8B48A /* LookupPreferences.swift in Sources */,
 				3992C0FC875F2A3D1FD17F32 /* LookupSettingsView.swift in Sources */,
 				3499F2E0D252BE0F02761651 /* ModelCatalog.swift in Sources */,
-				A14FF2AEA60992821ED4B1B6 /* ModelCatalogPicker.swift in Sources */,
 				50DEA6FB6ED03DFD6F86AD53 /* ModelConfigStore.swift in Sources */,
 				B6E6A1DE7FA20F95EC7BEB75 /* ModelReply.swift in Sources */,
 				D432BC1B9BAF017631270ED0 /* ModelStore.swift in Sources */,

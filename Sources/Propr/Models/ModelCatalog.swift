@@ -32,42 +32,67 @@ struct ModelCatalogRequest {
     }
 }
 
+/// A provider's model list: the identifiers, and the display names the provider
+/// gives some of them.
+struct ModelCatalog: Equatable, Sendable {
+    /// Deduplicated and sorted for a list a human has to scan.
+    var ids: [String]
+    /// Keyed by identifier. Only providers that publish names have any: OpenRouter
+    /// sends `name`, others `display_name`, and OpenAI's own shape has neither.
+    var displayNames: [String: String] = [:]
+}
+
 /// Reading of the catalog reply, separated from the networking so the shapes can be
 /// tested without a server.
 enum ModelCatalogResponse {
-    /// The model identifiers in `{"data": [{"id": "..."}]}`, deduplicated and sorted
-    /// for a list a human has to scan.
+    /// The models in `{"data": [{"id": "..."}]}`.
     ///
-    /// Returns nil — not an empty list — when the reply is not that shape, so a provider
-    /// that publishes no catalog is told apart from one whose catalog is genuinely
-    /// empty. Providers agree on this one shape: it is what OpenAI, Groq, xAI, Together,
-    /// Fireworks, OpenRouter, DeepSeek, MiMo and Ollama all serve from `/v1/models`.
+    /// Returns nil — not an empty catalog — when the reply is not that shape, so a
+    /// provider that publishes no catalog is told apart from one whose catalog is
+    /// genuinely empty. Providers agree on this one shape: it is what OpenAI, Groq, xAI,
+    /// Together, Fireworks, OpenRouter, DeepSeek, MiMo and Ollama all serve from
+    /// `/v1/models`.
     ///
-    /// Only `id` is read. Ollama's native `{"models": [{"name": ...}]}` is deliberately
-    /// not accepted: those identifiers are not `chat/completions` model names, so
-    /// accepting them would produce entries that fail on first use.
-    static func modelIDs(from data: Data) -> [String]? {
+    /// Ollama's native `{"models": [{"name": ...}]}` is deliberately not accepted: those
+    /// identifiers are not `chat/completions` model names, so accepting them would
+    /// produce entries that fail on first use.
+    static func catalog(from data: Data) -> ModelCatalog? {
         guard let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
             let entries = json["data"] as? [[String: Any]]
         else {
             return nil
         }
 
+        var ids: [String] = []
         var seen = Set<String>()
-        let ids = entries.compactMap { entry -> String? in
-            guard let id = entry["id"] as? String else { return nil }
-            let trimmed = id.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty, seen.insert(trimmed).inserted else { return nil }
-            return trimmed
+        var displayNames: [String: String] = [:]
+        for entry in entries {
+            guard let id = (entry["id"] as? String)?.trimmingCharacters(in: .whitespacesAndNewlines),
+                !id.isEmpty, seen.insert(id).inserted
+            else { continue }
+            ids.append(id)
+
+            // A name that just repeats the identifier says nothing an alias would add.
+            let name = ((entry["name"] ?? entry["display_name"]) as? String)?
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if let name, !name.isEmpty, name != id {
+                displayNames[id] = name
+            }
         }
 
         // Case-insensitive so the list reads alphabetically, with a case-sensitive
         // tie-break so two identifiers differing only in case still sort predictably.
-        return ids.sorted { first, second in
+        let sorted = ids.sorted { first, second in
             let left = first.lowercased()
             let right = second.lowercased()
             return left == right ? first < second : left < right
         }
+        return ModelCatalog(ids: sorted, displayNames: displayNames)
+    }
+
+    /// Just the identifiers of `catalog(from:)`.
+    static func modelIDs(from data: Data) -> [String]? {
+        catalog(from: data)?.ids
     }
 }
 
@@ -110,8 +135,8 @@ enum ModelCatalogError: Error, Equatable, LocalizedError {
 ///
 /// Deliberately an instance rather than a singleton, unlike `ProviderIconStore`. The
 /// result belongs to the URL being typed in this sheet, so a cache shared between
-/// sheets would outlive the thing it describes. It dies with the sheet, and every press
-/// of the load button is therefore a fresh answer — which is also why there is no disk
+/// sheets would outlive the thing it describes. It dies with the sheet, and every
+/// sheet therefore asks afresh — which is also why there is no disk
 /// cache and no expiry to reason about.
 @MainActor
 @Observable
@@ -119,6 +144,8 @@ final class ModelCatalogLoader {
     /// Every identifier the provider returned, deduplicated and sorted. Empty until a
     /// load succeeds.
     private(set) var ids: [String] = []
+    /// The names the provider gives its models, keyed by identifier. Often empty.
+    private(set) var displayNames: [String: String] = [:]
     private(set) var isFetching = false
     private(set) var error: ModelCatalogError?
 
@@ -142,7 +169,7 @@ final class ModelCatalogLoader {
         error = nil
 
         task = Task { [weak self] in
-            let result = await Self.fetchIDs(baseURL: baseURL, apiKey: apiKey)
+            let result = await Self.fetchCatalog(baseURL: baseURL, apiKey: apiKey)
             guard !Task.isCancelled else { return }
             self?.apply(result)
         }
@@ -157,6 +184,7 @@ final class ModelCatalogLoader {
         task?.cancel()
         task = nil
         ids = []
+        displayNames = [:]
         error = nil
         isFetching = false
     }
@@ -169,14 +197,16 @@ final class ModelCatalogLoader {
         isFetching = false
     }
 
-    private func apply(_ result: Result<[String], ModelCatalogError>) {
+    private func apply(_ result: Result<ModelCatalog, ModelCatalogError>) {
         isFetching = false
         switch result {
-        case .success(let ids):
-            self.ids = ids
+        case .success(let catalog):
+            ids = catalog.ids
+            displayNames = catalog.displayNames
             error = nil
         case .failure(let error):
             ids = []
+            displayNames = [:]
             self.error = error
         }
     }
@@ -192,9 +222,9 @@ extension ModelCatalogLoader {
     /// - Parameter session: Injected by tests, so the status handling can be exercised
     ///   without a server. Left nil by the app, which builds an ephemeral session that
     ///   carries the redirect guard.
-    nonisolated static func fetchIDs(
+    nonisolated static func fetchCatalog(
         baseURL: String, apiKey: String, session: URLSession? = nil
-    ) async -> Result<[String], ModelCatalogError> {
+    ) async -> Result<ModelCatalog, ModelCatalogError> {
         let request: URLRequest
         do {
             request = try ModelCatalogRequest(baseURL: baseURL, apiKey: apiKey).makeURLRequest()
@@ -237,10 +267,10 @@ extension ModelCatalogLoader {
                 }
             }
 
-            guard let ids = ModelCatalogResponse.modelIDs(from: data) else {
+            guard let catalog = ModelCatalogResponse.catalog(from: data) else {
                 return .failure(.unsupported)
             }
-            return ids.isEmpty ? .failure(.empty) : .success(ids)
+            return catalog.ids.isEmpty ? .failure(.empty) : .success(catalog)
         } catch is CatalogTooLarge {
             return .failure(.tooLarge)
         } catch {

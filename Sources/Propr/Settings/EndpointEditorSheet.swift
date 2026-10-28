@@ -19,10 +19,13 @@ struct EndpointEditorSheet: View {
     @State private var provider: BuiltInProvider?
     @State private var didPrefill = false
     @State private var catalog = ModelCatalogLoader()
+    @State private var isAddingModels = false
+    @State private var isAddingCustomModel = false
     @FocusState private var focusedField: Field?
 
+    /// Every text field, so focus can be cleared from whichever one has it.
     private enum Field: Hashable {
-        case name, modelID
+        case name, baseURL, apiKey
     }
 
     private var isEditing: Bool { endpoint != nil }
@@ -88,6 +91,7 @@ struct EndpointEditorSheet: View {
                         )
                         .labelsHidden()
                         .multilineTextAlignment(.leading)
+                        .focused($focusedField, equals: .baseURL)
                     }
                     validationMessage(form.urlError)
 
@@ -99,9 +103,12 @@ struct EndpointEditorSheet: View {
                             )
                             .labelsHidden()
                             .multilineTextAlignment(.leading)
+                            .focused($focusedField, equals: .apiKey)
                         }
                         validationMessage(form.apiKeyError)
                     }
+                } header: {
+                    Text("Connection")
                 } footer: {
                     if let provider, !isEditing {
                         Text(provider.description)
@@ -111,90 +118,58 @@ struct EndpointEditorSheet: View {
                 }
 
                 Section {
-                    ForEach(form.models) { model in
-                        LabeledContent {
-                            HStack(spacing: 8) {
-                                if model.alias != nil {
-                                    Text(model.name)
-                                        .font(.callout)
-                                        .foregroundStyle(.tertiary)
-                                }
-                                Button {
-                                    form.removeModel(model)
-                                } label: {
-                                    Image(systemName: "minus.circle.fill")
-                                }
-                                .buttonStyle(.plain)
-                                .foregroundStyle(.secondary)
-                                .help("Remove \(model.displayName)")
-                            }
-                        } label: {
-                            Text(model.displayName)
-                        }
+                    if form.models.isEmpty {
+                        Text("No models yet")
+                            .foregroundStyle(.secondary)
                     }
 
-                    // The provider's own catalog, so identifiers never have to be hunted
-                    // down by hand. An explicit action rather than a fetch on open: the
-                    // request sends the API key, so it must only ever go to a host the
-                    // user has finished typing.
-                    HStack(spacing: 8) {
-                        Button("Load Models from Provider") {
-                            // The trimmed key, matching what `save` persists: a key pasted
-                            // with a trailing newline is a 401 on most providers.
-                            catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey)
-                        }
-                        .disabled(!canLoadCatalog || catalog.isFetching)
+                    ForEach(form.models) { model in
+                        EndpointModelRow(
+                            model: model,
+                            aliasError: { form.aliasError($0, for: model) },
+                            onRename: { form.setAlias($0, for: model) },
+                            onRemove: { form.removeModel(model) },
+                            onEditingAlias: clearFocus
+                        )
+                    }
 
-                        if catalog.isFetching {
-                            ProgressView()
-                                .controlSize(.small)
+                    HStack(spacing: 8) {
+                        Button("Browse Models…") {
+                            clearFocus()
+                            isAddingModels = true
+                        }
+                        .help("Pick from the models this provider offers")
+                        .popover(isPresented: $isAddingModels, arrowEdge: .bottom) {
+                            AddModelsPopover(
+                                catalog: catalog,
+                                canLoad: canLoadCatalog,
+                                // The trimmed key, matching what `save` persists: a key
+                                // pasted with a trailing newline is a 401 on most providers.
+                                load: { catalog.load(baseURL: form.baseURL, apiKey: form.trimmedAPIKey) },
+                                canAdd: { form.canAddModel(named: $0) },
+                                onAdd: { form.addModels(names: $0, aliases: catalog.displayNames) },
+                                onClose: { isAddingModels = false }
+                            )
+                        }
+
+                        Button("Enter Model ID…") {
+                            clearFocus()
+                            isAddingCustomModel = true
+                        }
+                        .help("Add a model this provider doesn't list, by typing its ID")
+                        .popover(isPresented: $isAddingCustomModel, arrowEdge: .bottom) {
+                            AddCustomModelPopover(
+                                canAdd: { form.canAddModel(named: $0) },
+                                aliasError: { form.aliasError($0) },
+                                onAdd: { form.addModel(named: $0, alias: $1) },
+                                onClose: { isAddingCustomModel = false }
+                            )
                         }
 
                         Spacer(minLength: 0)
                     }
-
-                    if let error = catalog.error {
-                        Text(error.errorDescription ?? "The model list could not be loaded.")
-                            .font(.callout)
-                            .foregroundStyle(.red)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
-
-                    if !catalog.ids.isEmpty {
-                        ModelCatalogPicker(
-                            ids: catalog.ids,
-                            alreadyAdded: Set(form.models.map(\.name))
-                        ) { names in
-                            form.addModels(names: names)
-                        }
-                    }
-
-                    // Two inputs share one row, so their labels are hidden and the
-                    // placeholders carry the meaning — otherwise the grouped form turns
-                    // the labels into what looked like column headings.
-                    HStack(spacing: 8) {
-                        TextField("Model ID", text: $form.draftModelName, prompt: Text(verbatim: "Model ID"))
-                            .labelsHidden()
-                            .multilineTextAlignment(.leading)
-                            .focused($focusedField, equals: .modelID)
-                            .onSubmit(addDraftModel)
-                        TextField(
-                            "Alias", text: $form.draftModelAlias, prompt: Text(verbatim: "Alias (optional)")
-                        )
-                        .labelsHidden()
-                        .multilineTextAlignment(.leading)
-                        .frame(maxWidth: 150)
-                        .onSubmit(addDraftModel)
-                        // Distinct from the sheet's own "Add" button below.
-                        Button("Add Model", action: addDraftModel)
-                            .disabled(!form.canAddDraftModel)
-                    }
                 } header: {
                     Text("Models")
-                } footer: {
-                    Text(
-                        "The model ID must match the provider exactly. An alias is what Propr shows in its menu. A provider's list is its whole catalog, so it can include models Propr cannot chat with, such as embeddings and speech models."
-                    )
                 }
             }
             .formStyle(.grouped)
@@ -242,11 +217,11 @@ struct EndpointEditorSheet: View {
         .padding(.top, 20)
     }
 
-    /// Adds the typed model and puts the cursor back in the ID field for the next one.
-    private func addDraftModel() {
-        guard form.canAddDraftModel else { return }
-        form.addDraftModel()
-        focusedField = .modelID
+    /// Takes focus off the sheet's fields before a popover opens. Otherwise the
+    /// field keeps it while the popover is up, and closing the popover hands focus
+    /// back to that field, scrolling the form up to it.
+    private func clearFocus() {
+        focusedField = nil
     }
 
     /// Shows a rule only once it is actually violated, so the form is not shouting
