@@ -60,6 +60,18 @@ struct ModelCatalogTests {
         #expect(ModelCatalogResponse.modelIDs(from: Data(body.utf8)) == ["a", "b", "c"])
     }
 
+    @Test("Display names are read from name or display_name, keyed by identifier")
+    func readsDisplayNames() {
+        let body = """
+            {"data":[{"id":"openai/gpt-4o","name":"OpenAI: GPT-4o"},
+            {"id":"llama","display_name":" Llama 3 "},{"id":"same","name":"same"},
+            {"id":"blank","name":"  "},{"id":"bare"},{"id":"odd","name":42}]}
+            """
+        #expect(
+            ModelCatalogResponse.catalog(from: Data(body.utf8))?.displayNames
+                == ["openai/gpt-4o": "OpenAI: GPT-4o", "llama": "Llama 3"])
+    }
+
     @Test("Identifiers sort case-insensitively with a case-sensitive tie-break")
     func sortsPredictably() {
         let body = #"{"data":[{"id":"Zebra"},{"id":"apple"},{"id":"Apple"},{"id":"apple-2"}]}"#
@@ -214,6 +226,27 @@ struct ModelCatalogTests {
         // Aliases collide case-insensitively and are what the user reads in the menu, so
         // none is invented from an identifier.
         #expect(form.models.allSatisfy { $0.alias == nil })
+    }
+
+    @Test("A picked model takes the provider's name as its alias")
+    func picksUpProviderNames() {
+        var form = EndpointFormState()
+        form.addModels(
+            names: ["openai/gpt-4o", "meta/llama"],
+            aliases: ["openai/gpt-4o": "OpenAI: GPT-4o"])
+
+        #expect(form.models.map(\.alias) == ["OpenAI: GPT-4o", nil])
+    }
+
+    @Test("A provider's name that collides is dropped, and the model still added")
+    func collidingProviderNameIsDropped() {
+        var form = EndpointFormState()
+        form.models = [CustomModel(name: "m-1", alias: "GPT-4o")]
+
+        form.addModels(names: ["openai/gpt-4o"], aliases: ["openai/gpt-4o": "gpt-4o"])
+
+        #expect(form.models.map(\.name) == ["m-1", "openai/gpt-4o"])
+        #expect(form.models.last?.alias == nil)
     }
 
     @Test("An identifier already on the endpoint is not added twice")

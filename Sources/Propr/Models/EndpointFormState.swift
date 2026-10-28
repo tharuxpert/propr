@@ -154,18 +154,23 @@ extension EndpointFormState {
         models.removeAll { $0.id == model.id }
     }
 
-    /// Appends models, picked from the provider's catalog or typed by hand.
+    /// Appends models picked from the provider's catalog, each aliased with the
+    /// display name the provider gives it, when it gives one.
     ///
     /// Enforces the identifier rule of `canAddModel(named:)` and skips what it rejects.
-    /// No alias is set — an alias is what the user reads in the menu, and aliases
-    /// collide case-insensitively against identifiers and other aliases, so one
-    /// invented from an identifier would create a collision for the user to undo.
-    /// One is given afterwards with `setAlias(_:for:)`, which checks those rules.
-    mutating func addModels(names: [String]) {
+    /// A provider's name that would collide with another model's is dropped rather
+    /// than blocking the add, leaving that model on its identifier; the user can name
+    /// it afterwards. No alias is invented from an identifier for the same reason.
+    mutating func addModels(names: [String], aliases: [String: String] = [:]) {
         for name in names {
             let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard canAddModel(named: trimmed) else { continue }
-            models.append(CustomModel(name: trimmed))
+
+            let model = CustomModel(name: trimmed)
+            models.append(model)
+            if let alias = aliases[trimmed] {
+                setAlias(alias, for: model)
+            }
         }
     }
 

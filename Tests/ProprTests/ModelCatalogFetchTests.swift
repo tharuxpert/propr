@@ -22,11 +22,11 @@ struct ModelCatalogFetchTests {
         let configuration = URLSessionConfiguration.ephemeral
         configuration.protocolClasses = [CatalogStub.self]
 
-        return await ModelCatalogLoader.fetchIDs(
+        return await ModelCatalogLoader.fetchCatalog(
             baseURL: baseURL(scenario),
             apiKey: "sk-test",
             session: URLSession(configuration: configuration)
-        )
+        ).map(\.ids)
     }
 
     // MARK: - Success
