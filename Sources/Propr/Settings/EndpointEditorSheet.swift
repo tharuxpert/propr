@@ -134,10 +134,11 @@ struct EndpointEditorSheet: View {
                     }
 
                     HStack(spacing: 8) {
-                        Button("Add from Provider…") {
+                        Button("Browse Models…") {
                             clearFocus()
                             isAddingModels = true
                         }
+                        .help("Pick from the models this provider offers")
                         .popover(isPresented: $isAddingModels, arrowEdge: .bottom) {
                             AddModelsPopover(
                                 catalog: catalog,
@@ -151,10 +152,11 @@ struct EndpointEditorSheet: View {
                             )
                         }
 
-                        Button("Add Custom Model…") {
+                        Button("Enter Model ID…") {
                             clearFocus()
                             isAddingCustomModel = true
                         }
+                        .help("Add a model this provider doesn't list, by typing its ID")
                         .popover(isPresented: $isAddingCustomModel, arrowEdge: .bottom) {
                             AddCustomModelPopover(
                                 canAdd: { form.canAddModel(named: $0) },

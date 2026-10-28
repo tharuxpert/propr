@@ -30,7 +30,7 @@ struct AddCustomModelPopover: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Add Custom Model")
+            Text("Add a Model by ID")
                 .font(.headline)
 
             Grid(alignment: .leading, horizontalSpacing: 8, verticalSpacing: 8) {
