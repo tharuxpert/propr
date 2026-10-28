@@ -124,7 +124,9 @@ final class SearchPanelController: NSObject {
             providerTabs.setLabel(provider.title, forSegment: index)
         }
         providerTabs.trackingMode = .selectOne
-        providerTabs.segmentStyle = .rounded
+        // Automatic lets AppKit draw the system's own segmented control, Liquid Glass
+        // from macOS 26. `.rounded` pinned it to the old rounded-rectangle artwork.
+        providerTabs.segmentStyle = .automatic
         providerTabs.selectedSegment = 0
         providerTabs.target = self
         providerTabs.action = #selector(providerChanged)
