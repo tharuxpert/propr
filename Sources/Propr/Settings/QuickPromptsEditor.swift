@@ -13,6 +13,8 @@ struct QuickPromptsEditor: View {
     /// Height of one row, used to size the list to its content: a list inside the
     /// scrolling pane cannot size itself.
     private static let rowHeight: CGFloat = 30
+    /// Where the first row's text sits, from the top of the box.
+    private static let firstRowBaseline: CGFloat = 20
 
     private var shape: RoundedRectangle {
         RoundedRectangle(cornerRadius: 6, style: .continuous)
@@ -25,14 +27,18 @@ struct QuickPromptsEditor: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
+            // Not clipped to the box: the list's drop indicator starts with a circle
+            // that sits on the box's edge, and a clip cut it in half.
             VStack(spacing: 0) {
                 list
                 Divider()
                 toolbar
             }
             .background(shape.fill(Color(nsColor: .controlBackgroundColor)))
-            .clipShape(shape)
             .overlay(shape.strokeBorder(Color(nsColor: .separatorColor), lineWidth: 0.5))
+            // A list reports no text baseline, so the form would line its label up with
+            // the box's top edge. Report the first row's baseline instead.
+            .alignmentGuide(.firstTextBaseline) { _ in Self.firstRowBaseline }
 
             SettingsNote(
                 "Shown under the bar before you type. ⌘1–⌘\(QuickPrompts.limit) send them in this order.")
