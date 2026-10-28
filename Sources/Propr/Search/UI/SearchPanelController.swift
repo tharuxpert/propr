@@ -1,4 +1,5 @@
 import AppKit
+import SwiftUI
 import WebKit
 
 /// Read-only lookup UI. Selection capture and gesture routing live outside this class.
@@ -9,7 +10,8 @@ final class SearchPanelController: NSObject {
 
     private var panel: SearchPanel?
     private let queryField = NSTextField()
-    private let providerTabs = NSSegmentedControl()
+    private let sourceModel = LookupSourceModel(selection: .google)
+    private lazy var providerTabs = NSHostingView(rootView: LookupSourceSwitch(model: sourceModel))
     private let contentView = NSView()
     private let placeholder = NSTextField(labelWithString: "Select text or type a search")
     private let loadingIndicator = NSProgressIndicator()
@@ -35,7 +37,7 @@ final class SearchPanelController: NSObject {
         // Every new lookup starts on the source chosen in Settings; switching tabs
         // inside the panel only lasts for that lookup.
         selectedProvider = SearchProvider.defaultForLookup
-        providerTabs.selectedSegment = SearchProvider.allCases.firstIndex(of: selectedProvider) ?? 0
+        sourceModel.selection = selectedProvider
         place(panel, near: screenPoint)
         panel.orderFront(nil)
         panel.makeKey()
@@ -58,7 +60,7 @@ final class SearchPanelController: NSObject {
         let size = NSSize(width: 520, height: 580)
         let panel = SearchPanel(
             contentRect: NSRect(origin: .zero, size: size),
-            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView, .resizable],
+            styleMask: [.borderless, .nonactivatingPanel, .fullSizeContentView],
             backing: .buffered,
             defer: false
         )
@@ -66,26 +68,25 @@ final class SearchPanelController: NSObject {
         panel.appearance = NSAppearance(named: .darkAqua)
         panel.level = NSWindow.Level(rawValue: Int(CGWindowLevelForKey(.floatingWindow)))
         panel.hidesOnDeactivate = false
-        panel.hasShadow = true
+        // Liquid Glass draws its own shadow, and the window's would trace the
+        // glass's edge a second time. The vibrancy path before it still needs one.
+        if #available(macOS 26.0, *) {
+            panel.hasShadow = false
+        } else {
+            panel.hasShadow = true
+        }
         panel.backgroundColor = .clear
         panel.isOpaque = false
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isMovableByWindowBackground = true
         panel.acceptsMouseMovedEvents = true
-        panel.minSize = NSSize(width: 360, height: 300)
-        panel.maxSize = NSSize(width: 900, height: 800)
         panel.onCancel = { [weak self] in self?.hide() }
         panel.onResignKey = { [weak self] in self?.hide() }
 
-        let background = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
-        background.material = .windowBackground
-        background.blendingMode = .behindWindow
-        background.state = .active
-        background.wantsLayer = true
-        background.layer?.cornerRadius = 15
-        background.layer?.cornerCurve = .continuous
-        background.layer?.masksToBounds = true
-        panel.contentView = background
+        // Everything sits in `background`, which goes on Liquid Glass from macOS 26,
+        // like the floating bar, and on the window's vibrancy before it.
+        let background = NSView(frame: NSRect(origin: .zero, size: size))
+        panel.contentView = Self.surface(around: background, size: size)
 
         let searchIcon = NSImageView(image: NSImage(
             systemSymbolName: "magnifyingglass", accessibilityDescription: "Search"
@@ -120,15 +121,7 @@ final class SearchPanelController: NSObject {
         separator.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(separator)
 
-        providerTabs.segmentCount = SearchProvider.allCases.count
-        for (index, provider) in SearchProvider.allCases.enumerated() {
-            providerTabs.setLabel(provider.title, forSegment: index)
-        }
-        providerTabs.trackingMode = .selectOne
-        providerTabs.segmentStyle = .rounded
-        providerTabs.selectedSegment = 0
-        providerTabs.target = self
-        providerTabs.action = #selector(providerChanged)
+        sourceModel.onSelect = { [weak self] provider in self?.providerChanged(to: provider) }
         providerTabs.translatesAutoresizingMaskIntoConstraints = false
         background.addSubview(providerTabs)
 
@@ -179,6 +172,32 @@ final class SearchPanelController: NSObject {
         ])
 
         self.panel = panel
+    }
+
+    /// The panel's backdrop, holding `content`: Liquid Glass from macOS 26, and the
+    /// window's vibrancy before it.
+    private static func surface(around content: NSView, size: NSSize) -> NSView {
+        let cornerRadius: CGFloat = 15
+
+        if #available(macOS 26.0, *) {
+            let glass = NSGlassEffectView(frame: NSRect(origin: .zero, size: size))
+            glass.cornerRadius = cornerRadius
+            glass.contentView = content
+            return glass
+        }
+
+        let vibrancy = NSVisualEffectView(frame: NSRect(origin: .zero, size: size))
+        vibrancy.material = .windowBackground
+        vibrancy.blendingMode = .behindWindow
+        vibrancy.state = .active
+        vibrancy.wantsLayer = true
+        vibrancy.layer?.cornerRadius = cornerRadius
+        vibrancy.layer?.cornerCurve = .continuous
+        vibrancy.layer?.masksToBounds = true
+        content.frame = vibrancy.bounds
+        content.autoresizingMask = [.width, .height]
+        vibrancy.addSubview(content)
+        return vibrancy
     }
 
     private func place(_ panel: SearchPanel, near point: CGPoint?) {
@@ -353,9 +372,8 @@ final class SearchPanelController: NSObject {
         placeholder.isHidden = false
     }
 
-    @objc private func providerChanged() {
-        guard SearchProvider.allCases.indices.contains(providerTabs.selectedSegment) else { return }
-        selectedProvider = SearchProvider.allCases[providerTabs.selectedSegment]
+    private func providerChanged(to provider: SearchProvider) {
+        selectedProvider = provider
         searchNow()
     }
 

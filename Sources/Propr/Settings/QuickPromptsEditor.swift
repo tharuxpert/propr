@@ -124,10 +124,12 @@ struct QuickPromptsEditor: View {
     }
 }
 
-/// Which of the bar's modes a prompt shows in, as a quiet popup: both, or just one.
+/// Which of the bar's modes a prompt shows in: both, or just one.
 /// Never neither, or the prompt would show nowhere.
 private struct ModesMenu: View {
     @Binding var modes: Set<QuickPrompt.Mode>
+
+    @State private var isHovering = false
 
     private static let choices: [Set<QuickPrompt.Mode>] = [[.ask, .edit], [.ask], [.edit]]
 
@@ -136,6 +138,9 @@ private struct ModesMenu: View {
     }
 
     var body: some View {
+        // A pop-up drawn the way System Settings draws one in its grouped forms: the
+        // value, then the chevrons in a small circle. SwiftUI only gives a picker that
+        // look inside a grouped form, and this pane uses the columns form.
         Menu {
             Picker("Show In", selection: $modes) {
                 ForEach(Self.choices, id: \.self) { choice in
@@ -143,13 +148,32 @@ private struct ModesMenu: View {
                 }
             }
             .pickerStyle(.inline)
+            .labelsHidden()
         } label: {
-            Text(Self.title(for: modes))
+            // On hover the whole button gets the fill and the chevrons' circle
+            // gives way to it, as in System Settings. The padding is there either
+            // way, so the hover does not move anything.
+            HStack(spacing: 12) {
+                Text(Self.title(for: modes))
+                Image(systemName: "chevron.up.chevron.down")
+                    .font(.system(size: 10, weight: .semibold))
+                    .frame(width: 20, height: 20)
+                    .background(Circle().fill(Color.primary.opacity(isHovering ? 0 : 0.1)))
+            }
+            .padding(.leading, 10)
+            .padding(.trailing, 2)
+            .padding(.vertical, 2)
+            .background(
+                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    .fill(Color.primary.opacity(isHovering ? 0.1 : 0)))
+            .contentShape(Rectangle())
         }
         .menuStyle(.button)
-        .buttonStyle(.borderless)
-        .foregroundStyle(.secondary)
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
         .fixedSize()
+        .onHover { isHovering = $0 }
+        .animation(.easeOut(duration: 0.12), value: isHovering)
         .help("Which of the bar's modes this prompt shows in")
     }
 }
